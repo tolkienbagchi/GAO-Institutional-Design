@@ -96,3 +96,12 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   rejected by an explicit `before` validator, as the brief requires.
 - `_observe` raises `ContractError` if a role's agent has no entry in `state.values`.
 - `build_bidding_only` takes `rule: str` (validated by `BiddingState` on entry, not by the factory).
+
+## 2026-10-21 — M0 task 10: testing helpers
+- Helpers live in `src/gao_idl/testing/__init__.py`, raise `AssertionError` explicitly (no pytest import) and
+  strip `t` (including `increment.t`) before comparing traces for arrival invariance.
+- They assume one pending decision per acting agent and submit `actions[agent]` to every pending request of
+  that agent; a missing pending decision is an `AssertionError`. With more than 5 agents the brief's
+  permutation cap is implemented as: sorted order, reversed order, and every rotation (n+1 orders).
+- `assert_noninterference` submits in sorted agent order in both runs; `assert_incremental_equals_fold` is an
+  alias of the replay check, as briefed.
