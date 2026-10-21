@@ -85,3 +85,14 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - Added `Session.failed` (bool) so callers can tell a failed session (`result is None`) from an unfinished one.
 - `advance()` makes a single `process.step` call per invocation (the brief's "loop" has nothing to iterate in
   M0, where only `Pending` / `Exited` / `FailedResult` exist).
+
+## 2026-10-21 — M0 task 9: bidding layer assumptions
+- The v1 plan's §14 was not available to me, so the free-text observation fields are my choice:
+  `tie_break = "lowest_agent_id"` (sorted agent ids) and `bid_disclosure = "all_bids_after_settlement"` if
+  `reveal_bids` else `"winning_price_only"`. They are descriptive strings only; M0 has no settlement layer
+  and `BidReceipt` never reveals anyone else's bid regardless of `reveal_bids`. Revisit when settlement lands.
+- `Bid.amount` is `strict=True` in addition to `ge=0, allow_inf_nan=False`, so numeric strings such as
+  `"5"` are rejected (pydantic's default lax mode would coerce them); ints are still accepted. Bools are
+  rejected by an explicit `before` validator, as the brief requires.
+- `_observe` raises `ContractError` if a role's agent has no entry in `state.values`.
+- `build_bidding_only` takes `rule: str` (validated by `BiddingState` on entry, not by the factory).
