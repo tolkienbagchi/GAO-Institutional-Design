@@ -29,3 +29,14 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - `StoreView.get` returns a deep copy (brief only requires copy on `set`) so callers cannot mutate stored state.
 - `get` on a key that is in scope but never set raises `KeyError` and emits no event.
 - `Ledger.utility` uses `math.fsum` so the total does not depend on summation order.
+
+## 2026-10-21 — M0 task 6: Layer protocol uses read-only properties; SimpleLayer defaults
+- `Layer` (and later `Process`) declare `name`, `entry`, `exits`, `timeout` as read-only `@property`
+  members instead of plain attributes. The names and types are unchanged; this lets frozen dataclasses
+  such as `SimpleLayer` satisfy the protocol under `mypy --strict`.
+- `SimpleLayer` is a frozen dataclass. Defaults beyond those listed in the brief: `observe` and `outcome`
+  return an empty model, `action_schema` raises `NotImplementedError`, and `export` returns an empty
+  record through the layer's only exit. With more than one exit an explicit `export` is required
+  (`ContractError` at construction).
+- `Contract.roles` may be empty even for layers with roles: roles not listed in a contract are accepted
+  (constraints are opaque in M0), so dynamic role sets such as `bidder:i` need no declaration.
