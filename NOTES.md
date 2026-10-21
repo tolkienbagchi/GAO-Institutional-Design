@@ -12,3 +12,13 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   present system-wide; pytest, mypy and ruff were available as standalone tools.
 - Verification was done by running those tools with `PYTHONPATH=src`. The `hatchling` build config and the
   hypothesis-based tests are therefore unverified here; re-run the real gate where PyPI is reachable.
+
+## 2026-10-21 — M0 task 4: trace sink and clock live in core
+- `TraceSink` and `LogicalClock` are defined in `core/trace.py` (not `composition/process.py`) because
+  `core/store.py` must emit `StoreAccess` events and core must not import composition. `composition.process`
+  re-exports both, so the pinned import path still works.
+- `tick()` increments then returns, so the first event has `t=1`; `now` is the last issued `t` (0 initially).
+- Event `kind` fields have defaults (`kind: Literal["started"] = "started"`) so callers don't repeat them.
+- `LayerEntered` carries only `t` and `path`, as pinned (the layer name is the last path element).
+- mypy config: removed a pinned `python_version = "3.11"`; numpy's stubs use 3.12 syntax and break mypy
+  when it is forced to parse as 3.11. mypy now targets the running interpreter.
