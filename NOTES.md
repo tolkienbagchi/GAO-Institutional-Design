@@ -40,3 +40,25 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   (`ContractError` at construction).
 - `Contract.roles` may be empty even for layers with roles: roles not listed in a contract are accepted
   (constraints are opaque in M0), so dynamic role sets such as `bidder:i` need no declaration.
+
+## 2026-10-21 — M0 task 7: Primitive emits resolution events at settle, not on arrival (deviation)
+- Brief: on `Submitted` emit `ActionAccepted`; on `TimedOut` emit `ActionDefaulted` / `RoleDropped`, each
+  during `collecting`. Problem: the input log does not record where `advance()` was called, so any trace
+  ordering that depends on step boundaries cannot be reproduced by `replay`, and two arrival orders of the
+  same submissions would give different traces (breaking `assert_arrival_invariant`).
+- Implemented instead: `collecting` only records resolutions in the frame. When the layer settles,
+  `ActionAccepted` / `ActionDefaulted` / `RoleDropped` are emitted for every role in sorted role order,
+  immediately before `LayerCompleted`. The trace is therefore a function of the set of resolutions, not of
+  arrival order or step grouping, and also discloses nothing about an action until the barrier is met.
+  The brief's expected kind sequence (`... action_accepted×2, layer_completed, ...`) is unchanged.
+- `Fail` is still handled immediately: `Failed` is emitted and earlier un-settled submissions are dropped.
+- `PrimitiveFrame` gained `defaulted: list[RoleId]`, `exit: Exit | None`, `failed: str | None`
+  (all defaulted) so that resolutions can be emitted at settle and the `done` phase is idempotent for both
+  exit and failure. Existing pinned fields are unchanged.
+- `ctx.path` is the path of the process instance itself, root included: a root `Primitive` runs at
+  `(layer.name,)` and its decision ids look like `bidding#bidder:0`.
+- Within a step, inputs are processed in arrival order; a second input for an already-resolved decision
+  raises `UnknownDecision`.
+- Role iteration uses lexicographic order of `RoleId` strings (so `bidder:10` sorts before `bidder:2`);
+  it is deterministic, just not numeric.
+- `Process.validate`'s `action` is typed `dict[str, Any]`; `Ctx` is a frozen dataclass with `with_path()`.
