@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gao-idl"
+version = "0.0.1"
+description = "Composable multi-agent environments with resumable, replayable sessions"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["pydantic>=2.7", "numpy>=1.26"]
+
+[project.optional-dependencies]
+llm = ["httpx"]
+dev = ["pytest", "hypothesis", "ruff", "mypy"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gao_idl"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+plugins = ["pydantic.mypy"]
