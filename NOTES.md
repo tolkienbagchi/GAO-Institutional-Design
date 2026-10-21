@@ -62,3 +62,26 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - Role iteration uses lexicographic order of `RoleId` strings (so `bidder:10` sorts before `bidder:2`);
   it is deterministic, just not numeric.
 - `Process.validate`'s `action` is typed `dict[str, Any]`; `Ctx` is a frozen dataclass with `with_path()`.
+
+## 2026-10-21 — M0 task 8: Session behaviour details and deviations
+- `ActionRejected` events are appended to the trace at `t = clock.now` WITHOUT ticking the clock, and
+  never enter the input log. `replay` cannot reproduce them, so `check_determinism` excludes
+  `action_rejected` events from the comparison (it compares `events.dump(...)` output otherwise, no `__eq__`
+  tricks). A rejection for a decision that is not pending carries the root path.
+- `submit` checks the session's pending set before `process.validate`: a decision is removed from pending as
+  soon as it is submitted/timed out (the frame only learns at the next `advance()`), so a second submission
+  of the same decision raises `UnknownDecision`. `SessionFinished` is checked first. Every `GaoError` raised
+  by `submit` emits `ActionRejected` first (reason = exception class name), including after finish.
+- `submit` also rejects, as `SchemaError`, actions that are not strictly JSON-able (e.g. NaN, non-JSON
+  objects) so the input log always round-trips through JSON.
+- `timeout` raises `SessionFinished` / `UnknownDecision` but emits no `ActionRejected` (brief only asks for
+  the exception).
+- `replay` calls `advance()` before any event that is not a submission for a currently pending decision, and
+  once at the end, exactly as briefed. A leading `Started` must match `(env_ref, params, seed)` or
+  `DeterminismError` is raised. `Aborted` events are not supported in M0 (no abort API exists); replaying
+  one raises `DeterminismError`.
+- `check_determinism` on a session with queued inputs not yet advanced: the replay always advances, so its
+  trace may be longer; in that case only the shared prefix must match. It also compares ledger snapshots.
+- Added `Session.failed` (bool) so callers can tell a failed session (`result is None`) from an unfinished one.
+- `advance()` makes a single `process.step` call per invocation (the brief's "loop" has nothing to iterate in
+  M0, where only `Pending` / `Exited` / `FailedResult` exist).
