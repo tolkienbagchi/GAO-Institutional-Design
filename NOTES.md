@@ -105,3 +105,17 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   permutation cap is implemented as: sorted order, reversed order, and every rotation (n+1 orders).
 - `assert_noninterference` submits in sorted agent order in both runs; `assert_incremental_equals_fold` is an
   alias of the replay check, as briefed.
+
+## 2026-10-21 — M0 task 11: tests
+- Test-only environment factories live in `tests/runtime/envs.py` and are addressed by `env_ref`
+  (`tests.runtime.envs:...`); this needs `tests/` to be a package and `pythonpath = ["."]` in the pytest config,
+  both added.
+- `test_rejections` also covers numeric strings (`"5"`) and an empty action dict, besides the brief's cases.
+- The hypothesis property tests (`tests/core/test_paths_property.py`) use `pytest.importorskip("hypothesis")`
+  so the suite still runs where hypothesis is missing; they run in CI (hypothesis is in the `dev` extra).
+  Because hypothesis was unavailable in the build sandbox they were NOT executed there. Equivalent
+  numpy-seeded randomized tests (`test_ids_injective_randomized`, `test_random_interleavings_match_canonical_run`)
+  always run. The id-injectivity properties assume names do not contain the reserved characters
+  `/ # @ [ ]` (and `:` for agent ids); the code does not enforce that.
+- Sanity-checked that the suite is not vacuous: temporarily emitting `ActionAccepted` at submit time (the
+  brief's literal wording) makes 7 tests fail, including the barrier and arrival-invariance tests.
