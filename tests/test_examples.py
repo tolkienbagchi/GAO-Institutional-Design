@@ -28,6 +28,7 @@ EXPECTED_OUTPUT = {
     "04_pause_resume": "identical to an uninterrupted run",
     "05_train_and_evaluate": "trained (greedy)",
     "06_information_tests": "ok   test_the_check_has_teeth",
+    "10_congestion": "step 7 model calls: 3",
 }
 
 
@@ -38,7 +39,7 @@ def _env() -> dict[str, str]:
     return {**os.environ, "GAO_EXAMPLE_FAST": "1", "PYTHONPATH": path}
 
 
-def test_the_six_tutorials_exist() -> None:
+def test_the_tutorials_exist() -> None:
     assert [p.stem for p in EXAMPLES] == sorted(EXPECTED_OUTPUT)
 
 
@@ -76,5 +77,10 @@ def test_example_imports_no_internal_module(path: Path) -> None:
 
 @pytest.mark.parametrize("path", EXAMPLES, ids=lambda p: p.stem)
 def test_example_is_mirrored_in_its_tutorial_page(path: Path) -> None:
-    page = (ROOT / "docs" / "tutorials" / f"{path.stem}.md").read_text()
+    # tutorials 1-6 are pages named like their script; later ones drop the number (the M7 brief
+    # names ``docs/tutorials/congestion.md`` for ``examples/10_congestion.py``)
+    pages = [
+        ROOT / "docs" / "tutorials" / f"{n}.md" for n in (path.stem, path.stem.split("_", 1)[1])
+    ]
+    page = next(p for p in pages if p.exists()).read_text()
     assert f'--8<-- "examples/{path.name}"' in page

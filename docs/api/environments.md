@@ -18,6 +18,10 @@ Ready-made environments: auction, congestion pricing, participatory budgeting, r
 
 ::: gao_idl.environments.congestion.llm
 
+## `gao_idl.environments.congestion.model`
+
+::: gao_idl.environments.congestion.model
+
 ## `gao_idl.environments.congestion.scripted`
 
 ::: gao_idl.environments.congestion.scripted

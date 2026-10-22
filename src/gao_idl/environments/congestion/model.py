@@ -7,8 +7,11 @@ The exposure kernel is a surrogate shaped after the UTECH pipeline of Lu et al.,
 Research Part D* 161 (2026) 105628: route flows become emissions, emissions disperse onto zones
 through a fixed weight matrix, and zone concentrations become exposure.
 
-Stability: internal; it may change without notice. Use the names exported by ``gao_idl`` where
-there is one.
+To use a different kernel (the real pipeline, say), replace ``exposure_kernel`` in the exposure
+layer; its inputs are route flows and its outputs the ``Exposure`` record.
+
+Stability: supporting API: documented in the API reference, but not re-exported by
+``gao_idl``; it may change in a minor release before 1.0 (see NOTES.md).
 """
 
 import math

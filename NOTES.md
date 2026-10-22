@@ -1488,3 +1488,22 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   environment modules that may import `gao_idl.llm`; `congestion/llm.py` (required by the brief) is added to it.
 - **Stretch (`revenue_to_pb`) — not done in this task.** It reuses the PB layers inside a stage that does not exist yet; decide at
   the end of the milestone, only if everything else is green. Recorded as a decision to revisit, not as done.
+
+## 2026-10-22 — M7 task 2: tutorial "Congestion pricing as an institution"
+- **Files.** `docs/tutorials/congestion.md` (the path the brief names), `examples/10_congestion.py`, nav entry "10. Congestion
+  pricing". The existing tests expect `docs/tutorials/<example stem>.md`; for stems numbered 10 and up, `tests/test_examples.py`
+  now also accepts the page named without the number (`congestion.md`). `EXPECTED_OUTPUT` gains `10_congestion`, and
+  `test_the_six_tutorials_exist` is renamed `test_the_tutorials_exist` (same check). Both edits are what task 6 asks for anyway.
+- **Walk-through vs the real environment.** Examples may import only non-internal modules, and `layers.py` / `schemas.py` are
+  internal, so steps 1–5 rebuild a *miniature* of the environment from the public API (`SimpleLayer`, `Seq`, `Loop`,
+  `Connector`) around one permissive `Stage` record, with the real kernel from `congestion.model`; steps 6–7 use
+  `build_congestion`. To allow that, `congestion/model.py` is now **supporting** (documented in the API reference), not internal:
+  it is the swappable kernel, which the docs chapter points at. Nothing else changed in `src/`.
+- **Mirroring.** The page shows each step through snippet sections (`--8<-- "examples/10_congestion.py:<section>"`) and the whole
+  script once at the end, which is what the mirror test checks for.
+- **Prose numbers** (tolls `[0, 10, 15, 15, 15, 15]` vs `[0, 10, 15, 10, 10, 10]`; DAC exposure 1,938 vs 1,020, non-DAC 255 vs 638) are
+  quoted from a run of the example; `test_equity_metrics_can_disagree` pins the objectives they come from.
+- **Not verifiable here.** `mkdocs build --strict` needs `mkdocstrings`, which is not installed (PyPI unreachable). I built the
+  tutorial pages with a reduced config (no API pages, no mkdocstrings) and checked that every snippet section resolves and the
+  section markers are stripped; the full strict build stays unverified, as in M0–M6. The real-backend snippet in step 7 is shown,
+  not executed (it needs credentials and `httpx`).
