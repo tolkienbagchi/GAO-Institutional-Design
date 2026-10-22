@@ -21,6 +21,7 @@ packages = ["src/gao_idl"]
 testpaths = ["tests"]
 pythonpath = ["."]
 timeout = 30
+markers = ["slow: long-running tests (CI runs them nightly: pytest -m slow)"]
 
 [tool.ruff]
 line-length = 100

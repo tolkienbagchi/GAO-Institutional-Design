@@ -790,3 +790,32 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   "eval return == 1.0".
 - The horizon is not in the observation (the brief: observation = state index), so the last step's decision is state-aliased with
   earlier steps; harmless for this task.
+
+## 2026-10-22 — M3 task 5: tests, `slow` marker, CI
+- **`slow` marker registered** in `[tool.pytest.ini_options]` (`markers`), so `-m slow` / `-m "not slow"` are warning-free.
+  **CI changed minimally** to match the gate in the brief: the matrix job now runs `mypy` on core, composition, agents and learning,
+  and `pytest -q -m "not slow"`; a `slow` job (`pytest -q -m slow`, Python 3.13) runs only on a nightly `schedule` trigger. The
+  workflow was not executed (no CI here). One test is marked slow: the PD run (1 000 episodes x 5 rounds, about 16 s).
+  Timings here: not-slow 407 passed in about 28 s (limit 60 s), slow 1 passed in about 17 s.
+- **Reading of `test_random_and_scripted_baselines_run_through_same_evaluate`.** `evaluate` takes a *checkpoint*, so a scripted
+  agent cannot be the evaluated learner. Taken as: the random and scripted baselines are the opponent kinds (`"random"`,
+  `"scripted:<name>"`) and all go through the same `evaluate` (same code path, same seeds), together with an *untrained* checkpoint as
+  the baseline learner (empty table = always the first action, "C"), whose returns are known exactly against the scripted opponents
+  (3/round vs a cooperator or tit-for-tat, 0 vs a defector) and statistically against a random one (1.5/round).
+- `test_truncation_bootstraps_vs_terminal` drives the agent directly with synthetic requests and reports and ends the episode with
+  `EpisodeEnd(terminal="truncated")` (no repo environment produces a truncated session through the runner); the numbers are exact
+  (4.3 with bootstrap, 2.5 without). The runner-side derivation of `"truncated"` is covered by M2's `test_terminal_state_reaches_the_adapters`.
+- `test_reward_only_from_disclosed_fields` uses `tests/learning/envs.py:pd_without_payoff_report`, which builds the real
+  `build_repeated_pd` while `gao_idl.environments.pd.pd_round_layer` is patched (during the factory call only) to a copy of the layer
+  whose report omits `own_payoff`. It imports two private helpers of `pd.layers` (`_outcome_model`, `_other`); the ledger is read by the
+  trainer for the returns and shows the learner was paid (all returns > 0) while every recorded reward and every Q-value is 0.
+- `test_settlement_reward_lands_in_final_transition`: the auction gives the learner exactly one decision, so the only transition is the
+  terminal one; the test pins that the reward (own_utility = 8 - 5 = 3.0, delivered after the decision, behind a reward-less bid receipt,
+  elapsed 2) is in it, equals the ledger, and yields the numerically expected Q update. A multi-decision settlement variant would need a
+  repeated auction, which the repo does not have.
+- Hyperparameters were checked on several seeds before pinning (bandit: 6 seeds, eval mean 0.886-0.914; chain: 12 seeds, eval return 1.0
+  each; the chain test runs seeds 0-2). The PD learner needs `epsilon_min=0.1`: with 0.02 one round's greedy move stays "C" (untried "D" there),
+  giving 23/25 = 4.6 per round, which still meets the brief's >= 4.5 but not "always defects".
+- Not verified (no PyPI): the three hypothesis tests, `pytest-timeout` (the `timeout = 30` option still prints "Unknown config option"),
+  `pip install -e ".[dev]"`, `python -m build`, Python 3.11, and the CI workflow. The literal `pytest -q` fails at collection on
+  `tests/core/test_paths_property.py` (`hypothesis` missing), as in M0-M2.

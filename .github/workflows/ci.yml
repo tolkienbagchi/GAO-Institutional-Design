@@ -1,5 +1,9 @@
 name: ci
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "17 3 * * *"  # nightly: also runs the slow job
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -15,5 +19,15 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: ruff check .
       - run: ruff format --check .
-      - run: mypy src/gao_idl/core src/gao_idl/composition
-      - run: pytest -q
+      - run: mypy src/gao_idl/core src/gao_idl/composition src/gao_idl/agents src/gao_idl/learning
+      - run: pytest -q -m "not slow"
+  slow:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -e ".[dev]"
+      - run: pytest -q -m slow

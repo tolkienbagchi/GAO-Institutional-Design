@@ -138,8 +138,7 @@ def test_next_state_bootstraps_from_the_best_action_of_the_next_request() -> Non
     assert a.q[((0,), C)] == 0.5 * (1.0 + 0.9 * 10.0)
 
 
-@pytest.mark.parametrize("bootstrap", [True, False])
-def test_truncation_bootstraps_vs_terminal(bootstrap: bool) -> None:
+def _truncated_episode(bootstrap: bool) -> TableAgent:
     a = agent(QConfig(alpha=0.5, gamma=0.9, epsilon=0.0, bootstrap_on_truncation=bootstrap))
     a.q[((0,), C)], a.q[((0,), D)] = 2.0, 4.0
 
@@ -150,11 +149,18 @@ def test_truncation_bootstraps_vs_terminal(bootstrap: bool) -> None:
         await end(a, "truncated")
 
     go(main)
-    target = 1.0 + 0.9 * 4.0 if bootstrap else 1.0
-    assert a.q[((0,), D)] == 4.0 + 0.5 * (target - 4.0)
-    assert a.q[((0,), D)] == (4.3 if bootstrap else 2.5)
-    (t,) = a.transitions
-    assert (t.done, t.terminal, t.s_next) == (True, "truncated", None)
+    return a
+
+
+def test_truncation_bootstraps_vs_terminal() -> None:
+    boot, terminal = _truncated_episode(True), _truncated_episode(False)
+    # Q(s, D) = 4. The reward is 1, gamma 0.9, alpha 0.5, and max_a Q(s, a) = 4 before the update.
+    assert boot.q[((0,), D)] == 4.0 + 0.5 * (1.0 + 0.9 * 4.0 - 4.0) == 4.3
+    assert terminal.q[((0,), D)] == 4.0 + 0.5 * (1.0 - 4.0) == 2.5
+    assert boot.q[((0,), C)] == terminal.q[((0,), C)] == 2.0  # only the taken action moves
+    for a in (boot, terminal):
+        (t,) = a.transitions
+        assert (t.done, t.terminal, t.s_next, t.r) == (True, "truncated", None, 1.0)
 
 
 def test_a_normal_end_never_bootstraps() -> None:
