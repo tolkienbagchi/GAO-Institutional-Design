@@ -1,14 +1,10 @@
-"""Hypothesis property tests for path-derived ids (skipped if hypothesis is not installed)."""
+"""Hypothesis property tests: ids derived from paths are injective."""
 
-import pytest
+from hypothesis import given
+from hypothesis import strategies as st
 
-pytest.importorskip("hypothesis")
-
-from hypothesis import given  # noqa: E402
-from hypothesis import strategies as st  # noqa: E402
-
-from gao_idl.core.ids import AgentId, RoleId  # noqa: E402
-from gao_idl.core.paths import (  # noqa: E402
+from gao_idl.core.ids import AgentId, RoleId
+from gao_idl.core.paths import (
     Branch,
     LoopIter,
     Path,
@@ -18,6 +14,7 @@ from gao_idl.core.paths import (  # noqa: E402
     report_id,
 )
 
+# Layer/branch names must not contain the reserved characters / # @ [ ] (and ':' for ids' tails).
 names = st.text(alphabet="abcdefghijklmnopqrstuvwxyz_", min_size=1, max_size=5)
 elems: st.SearchStrategy[PathElem] = st.one_of(
     names,
@@ -25,6 +22,7 @@ elems: st.SearchStrategy[PathElem] = st.one_of(
     names.map(Branch),
 )
 paths: st.SearchStrategy[Path] = st.lists(elems, max_size=4).map(tuple)
+# Roles and agents may contain ':' and digits (e.g. "bidder:0") but never '#', '@' or '/'.
 roles = st.text(alphabet="abcdefghijklmnopqrstuvwxyz_:0123", min_size=1, max_size=6)
 
 
