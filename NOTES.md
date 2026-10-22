@@ -676,3 +676,27 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   *normal* `episode_end` phase (after the loop) is running can leave later adapters without a notice.
 - Test: `test_cancelled_runner_sends_failed_episode_end_to_every_adapter` (two humans, one adapter whose `episode_end`
   raises). Mutation check: restoring `except Exception` fails it.
+
+## 2026-10-22 — M3 task 1: codecs (`learning/codecs.py`)
+- **Ambiguity: "raises `ValueError` at construction time ... do this check lazily on first `encode`".** Taken as: argument
+  errors (duplicate / empty / malformed paths, `history` not an int >= 0) raise at construction; a field missing from the
+  observation raises on the first `encode` for each `(layer, role)` and the success is cached. `DecisionRequest` has no
+  observation schema (only `action_schema`), so "not in the request's schema" can only mean "not in `request.observation`".
+- **Ambiguity: which reports does `history` see?** `ObsCodec.encode` receives only `since_last` (reports since the previous
+  decision) and codecs are stateless (a stateful codec would leak training state into evaluation). So `history=h` uses the
+  last `h` reports *of `since_last`*, oldest first, left-padded with `None`. Reports older than the previous decision are
+  never seen; with one report per round and `history=1` that is exactly "the last report".
+- **Addition: keyword-only `report_fields`** on `FieldObsCodec` (default `None` = same as `fields`, i.e. the pinned
+  behaviour). With a single `fields` list every selected field would have to exist in *both* the observation and the report
+  payload, which makes `history` almost useless (PD: `own_history` is observed, `other_move` is reported). A report that lacks
+  a selected field contributes `None` for it; only observation fields are validated.
+- Keys: `freeze` turns JSON values into nested tuples (dict -> tuple of sorted `(key, value)` pairs); `to_jsonable` /
+  `from_jsonable` map tuples <-> lists, so `from_jsonable(to_jsonable(k)) == k` for every frozen key. Non-finite floats are
+  refused (`nan != nan` would break table lookups). Caveat: `True == 1` and `1 == 1.0` hash alike, so such states share a key.
+- `SchemaActCodec` enumerates **required properties only** (as `RandomAgent` does); optional ones are omitted from the action.
+  Supported: `enum`, `const`, `boolean`, integers bounded on both sides (`minimum`/`maximum` or exclusive forms), numbers via
+  `grid` (values are checked against the schema bounds; duplicates dropped). Everything else, unbounded integers, plain
+  strings, arrays, `$ref`, `anyOf`, `multipleOf`, empty domains, non-object schemas, is a `ValueError`; so is a product larger
+  than `MAX_ACTIONS = 10_000` (my choice of "small"). `grid` keys that match no number field are ignored (one codec may serve
+  several layers). Order is property order, first property slowest; this order decides greedy tie-breaks.
+- Added `codec_spec(codec)` = `{"type": class name, "args": codec.config()}` for checkpoints; both codecs have `config()`.
