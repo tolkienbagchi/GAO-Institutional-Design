@@ -1194,3 +1194,35 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   (`test_pb_rules.py`). Slow: two tests, about 36 s (the PD run and the exhaustive EJR enumeration).
 - Observation, not changed: `.github/workflows/ci.yml` runs mypy on `core composition agents learning llm` only, so `environments`, `runtime` and
   `testing` (and thus all of PB) are not type-checked in CI although the brief's gate says "all packages"; `mypy src/gao_idl` passes locally.
+
+## 2026-10-22 — M6 task 0: inherited from M5 (PyPI unreachable again; RandomAgent strings and exclusive bounds)
+- **PyPI is unreachable** (`pip download hypothesis`: DNS "Name or service not known", tried once, not retried). So
+  `pip install -e ".[dev,llm]" && pytest -q` was NOT run, and the hypothesis tests (`tests/core/test_paths_property.py`,
+  `tests/environments/test_pb_rules_property.py`) have still never run in a sandbox. `httpx`, `build`, `hatchling`, `twine`
+  and `mkdocstrings` are not installed either. Gate substitute as in M5:
+  `PYTHONPATH=src:.:/usr/local/lib/python3.13/dist-packages` with the two hypothesis files ignored. Baseline before M6:
+  629 passed, 4 skipped, 2 deselected (not slow).
+- **CI:** the mypy step is now `mypy src/gao_idl` (all packages; it passes locally: 65 source files). CI itself was not run.
+- **`RandomAgent` / `sample_schema` now sample `type: "string"`** (lowercase ASCII letters, length uniform in
+  `[minLength, maxLength]`, default range 1–12). Readings for the cases the brief leaves open: `minLength` alone gives
+  `[minLength, max(minLength, 12)]`; `maxLength` alone gives `[min(1, maxLength), maxLength]` (so `maxLength: 0` is the empty
+  string); an empty range or a negative length is a `ValueError`; a non-integer bound is `NotImplementedError`. `pattern`
+  and `format` on a string stay unsupported (`NotImplementedError`): ignoring them would be unsound.
+- **`exclusiveMinimum` / `exclusiveMaximum` are sampled for `type: "number"` only**, strictly inside (a draw that lands on an
+  open end is redrawn). Open upper bound: `exclusiveMinimum + 10` (as briefed); open lower bound: `[bound - 10, bound)`,
+  mirroring the closed case. With a closed and an exclusive bound on one side the tighter one wins (the exclusive one on a
+  tie). **`integer` with an exclusive bound still raises `NotImplementedError`** — the brief says numbers, and
+  widening it was left out (it would be a small extension: `floor(b) + 1`). An empty or one-ulp-wide open range is a `ValueError`.
+- Tests: 200 sampled `Nomination`s all validate (`test_random_agent_samples_pb_nominations`); strings, exclusive bounds,
+  edge draws (a stub generator that returns exactly the open end), empty ranges; the parametrised
+  "unsupported fragment" test now uses `null`, `integer`+`exclusiveMinimum`, `pattern`, `format` (it used `string` and
+  `number`+`exclusiveMinimum`, which are supported now — this is the intended behaviour change of the brief, not a regression).
+  Mutation check (reverted): dropping the strictness test fails the adjacent-ulp and the edge-draw tests.
+- **Issue found, NOT fixed (semantics decision): `knapsack` crashes on non-cent costs.** With plain `RandomAgent`s
+  (`test_plain_random_agents_run_pb_end_to_end`) greedy, MES and Phragmén complete for 8 seeds each, but `knapsack` raises
+  `ValueError: cost of 'p1' is not a whole number of cents` out of `Session.advance()` (it escapes as an exception, the session
+  is not marked failed), because a nomination cost is any positive float and the knapsack DP needs whole cents. This is the M5
+  behaviour ("costs must be whole cents") but it means one agent's legal nomination can crash a `knapsack` run. Possible
+  fixes, each a semantics change that M6 forbids: reject non-cent costs at nomination (needs the rule in the nomination
+  layer), round, or turn the error into a `Failed` session. Left as is; the test case is `xfail(strict=True, raises=ValueError)`
+  so a future fix flips it loudly. **Demo configs (task 4) therefore do not pair `knapsack` with random nominators.**

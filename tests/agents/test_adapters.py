@@ -17,6 +17,7 @@ from gao_idl.core.errors import UnknownDecision
 from gao_idl.core.ids import AgentId, DecisionId, ReportId, RoleId
 from gao_idl.core.schemas import DecisionRequest, ParticipantReport
 from gao_idl.environments.auction.bidding import Bid
+from gao_idl.environments.pb.schemas import Nomination
 from gao_idl.environments.pd.schemas import PDAction
 from tests.aio import run_test, soon
 
@@ -117,14 +118,16 @@ def test_random_agent_acts_on_real_schemas_and_is_deterministic() -> None:
 @pytest.mark.parametrize(
     "fragment, named",
     [
-        ({"type": "string"}, {"type": "string"}),
+        ({"type": "null"}, {"type": "null"}),
         ({"anyOf": [{"type": "integer"}, {"type": "null"}]}, None),
-        ({"type": "number", "exclusiveMinimum": 0}, None),
+        ({"type": "integer", "exclusiveMinimum": 0}, None),  # exclusive bounds: numbers only
+        ({"type": "string", "pattern": "^a+$"}, None),
+        ({"type": "string", "format": "date-time"}, None),
         ({"$ref": "#/$defs/X"}, None),
         ({"type": "array", "items": {"type": "integer"}}, None),
         (  # the innermost unsupported fragment is the one named
-            {"type": "object", "required": ["a"], "properties": {"a": {"type": "string"}}},
-            {"type": "string"},
+            {"type": "object", "required": ["a"], "properties": {"a": {"type": "null"}}},
+            {"type": "null"},
         ),
     ],
 )
@@ -134,6 +137,117 @@ def test_unsupported_schema_fragments_raise_naming_the_fragment(
     with pytest.raises(NotImplementedError) as info:
         sample_schema(fragment, np.random.default_rng(0))
     assert repr(named or fragment) in str(info.value)
+
+
+def test_strings_have_lowercase_letters_and_bounded_lengths() -> None:
+    rng = np.random.default_rng(0)
+    default = [sample_schema({"type": "string"}, rng) for _ in range(600)]
+    assert {len(x) for x in default} == set(range(1, 13))  # default range 1..12, all of it used
+    assert all(x.isalpha() and x.islower() and x.isascii() for x in default)
+    bounded = [
+        sample_schema({"type": "string", "minLength": 3, "maxLength": 5}, rng) for _ in range(300)
+    ]
+    assert {len(x) for x in bounded} == {3, 4, 5}
+    exact = {
+        len(sample_schema({"type": "string", "minLength": 4, "maxLength": 4}, rng))
+        for _ in range(30)
+    }
+    assert exact == {4}
+    only_min = {len(sample_schema({"type": "string", "minLength": 20}, rng)) for _ in range(100)}
+    assert min(only_min) == 20 and max(only_min) == 20  # max(minLength, 12)
+    only_max = {len(sample_schema({"type": "string", "maxLength": 2}, rng)) for _ in range(100)}
+    assert only_max == {1, 2}
+    empty_ok = {len(sample_schema({"type": "string", "maxLength": 0}, rng)) for _ in range(10)}
+    assert empty_ok == {0}
+    for bad in (
+        {"type": "string", "minLength": 5, "maxLength": 4},
+        {"type": "string", "minLength": -1},
+    ):
+        with pytest.raises(ValueError):
+            sample_schema(bad, rng)
+    with pytest.raises(NotImplementedError):
+        sample_schema({"type": "string", "minLength": 1.5}, rng)
+
+
+def test_exclusive_number_bounds_are_strictly_respected() -> None:
+    rng = np.random.default_rng(2)
+
+    def draws(schema: dict[str, Any], n: int = 400) -> list[float]:
+        return [sample_schema({"type": "number", **schema}, rng) for _ in range(n)]
+
+    above = draws({"exclusiveMinimum": 0})  # open upper bound: exclusiveMinimum + 10
+    assert all(0 < x <= 10 for x in above) and max(above) > 8
+    below = draws({"exclusiveMaximum": 5})
+    assert all(-5 <= x < 5 for x in below) and min(below) < -3
+    both = draws({"exclusiveMinimum": 1, "exclusiveMaximum": 2})
+    assert all(1 < x < 2 for x in both)
+    mixed = draws({"minimum": 1, "exclusiveMinimum": 1, "maximum": 3})  # tie: the exclusive wins
+    assert all(1 < x <= 3 for x in mixed)
+    looser = draws({"minimum": 2, "exclusiveMinimum": 1, "maximum": 3})  # tighter bound wins
+    assert all(2 <= x <= 3 for x in looser) and min(looser) < 2.1
+    closed = draws({"minimum": 0, "maximum": 1})  # closed bounds are unchanged
+    assert all(0 <= x <= 1 for x in closed)
+    tiny = draws({"exclusiveMinimum": 0.0, "exclusiveMaximum": 1e-300})
+    assert all(0.0 < x < 1e-300 for x in tiny)
+
+
+class _EdgeRng:
+    """A generator whose first uniform draw lands exactly on the lower end of the interval."""
+
+    def __init__(self, *, edge: str) -> None:
+        self.edge, self.calls = edge, 0
+
+    def uniform(self, lo: float, hi: float) -> float:
+        self.calls += 1
+        if self.calls == 1:
+            return lo if self.edge == "lo" else hi
+        return (lo + hi) / 2
+
+
+@pytest.mark.parametrize("edge", ["lo", "hi"])
+def test_a_draw_on_an_open_end_is_redrawn(edge: str) -> None:
+    rng = _EdgeRng(edge=edge)
+    x = sample_schema({"type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 4}, rng)  # type: ignore[arg-type]
+    assert x == 2.0 and rng.calls == 2
+    closed = _EdgeRng(edge=edge)  # a closed end may be returned as it is
+    y = sample_schema({"type": "number", "minimum": 0, "maximum": 4}, closed)  # type: ignore[arg-type]
+    assert y == (0.0 if edge == "lo" else 4.0) and closed.calls == 1
+
+
+@pytest.mark.parametrize(
+    "schema",
+    [
+        {"exclusiveMinimum": 1, "exclusiveMaximum": 1},
+        {"exclusiveMinimum": 1, "maximum": 1},
+        {"minimum": 2, "exclusiveMaximum": 2},
+        {"exclusiveMinimum": 2, "exclusiveMaximum": 1},
+        {"exclusiveMinimum": 1.0, "exclusiveMaximum": float(np.nextafter(1.0, 2.0))},
+    ],
+)
+def test_empty_exclusive_ranges_raise(schema: dict[str, Any]) -> None:
+    with pytest.raises(ValueError):
+        sample_schema({"type": "number", **schema}, np.random.default_rng(0))
+
+
+def test_non_numeric_bounds_are_not_guessed() -> None:
+    for bad in ({"exclusiveMinimum": True}, {"exclusiveMinimum": "0"}):
+        with pytest.raises(NotImplementedError):
+            sample_schema({"type": "number", **bad}, np.random.default_rng(0))
+
+
+def test_random_agent_samples_pb_nominations() -> None:
+    """The 200 samples all validate (title length 1..60, strictly positive finite cost)."""
+    rng = np.random.default_rng(7)
+    schema = Nomination.model_json_schema()
+    titles = set()
+    for _ in range(200):
+        raw = sample_schema(schema, rng)
+        nomination = Nomination.model_validate(raw)
+        assert set(raw) == {"title", "cost"} and nomination.cost > 0
+        titles.add(nomination.title)
+    assert len(titles) > 150  # not a constant
+    action = run_test(RandomAgent(5).act(request(schema)))
+    Nomination.model_validate(action)
 
 
 def test_random_agent_needs_an_object_schema() -> None:

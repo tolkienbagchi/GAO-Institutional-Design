@@ -280,6 +280,35 @@ class NominatingRandom:
         await self._random.episode_end(end)
 
 
+KNAPSACK_CENTS = pytest.mark.xfail(
+    raises=ValueError,
+    strict=True,
+    reason="knapsack needs whole-cent costs and a random float cost is not (NOTES.md, M6 task 0)",
+)
+
+
+@pytest.mark.parametrize(
+    "rule", [pytest.param(r, marks=KNAPSACK_CENTS) if r == "knapsack" else r for r in RULES]
+)
+def test_plain_random_agents_run_pb_end_to_end(rule: str) -> None:
+    """Nominations are samplable now (strings, exclusive bounds): no PB-specific adapter needed."""
+    people = ["alice", "bob", "carol", "dan", "erin"]
+    p = params(proposers=["alice", "bob", "carol"], voters=people, budget=10, rule=rule)
+    ports = set()
+    for seed in range(8):
+        session = Session.start(ENV, p, seed)
+        adapters: dict[AgentId, AgentAdapter] = {
+            AgentId(a): RandomAgent(seed * 10 + i) for i, a in enumerate(people)
+        }
+        run_test(run(session, adapters))
+        assert session.finished and not session.failed
+        assert session.result is not None
+        ports.add(session.result.port)
+        assert "action_rejected" not in trace_kinds(session)
+        assert_replay_equivalent(session)
+    assert "done" in ports <= {"done", "none"}  # random costs sometimes exceed the limits
+
+
 @pytest.mark.parametrize("rule", RULES)
 def test_random_agents_complete_pb_for_every_rule(rule: str) -> None:
     people = ["alice", "bob", "carol", "dan", "erin"]

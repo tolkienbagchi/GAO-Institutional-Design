@@ -19,7 +19,7 @@ jobs:
       - run: pip install -e ".[dev,llm]"
       - run: ruff check .
       - run: ruff format --check .
-      - run: mypy src/gao_idl/core src/gao_idl/composition src/gao_idl/agents src/gao_idl/learning src/gao_idl/llm
+      - run: mypy src/gao_idl
       - run: pytest -q -m "not slow"
       - run: python -c "import gao_idl.core, gao_idl.runtime, sys; assert 'httpx' not in sys.modules"
   slow:
