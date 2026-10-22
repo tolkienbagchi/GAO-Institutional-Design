@@ -470,3 +470,18 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   `test_noninterference_of_other_value` / `_own_value_does_matter` stayed (they state auction properties),
   while `test_arrival_invariance_many_bidders_uses_rotations` and
   `test_noninterference_helper_detects_a_leak` moved (they exercise the helpers).
+
+## 2026-10-22 — M1 fix-up task 7: `DictJoiner` keeps the port (breaking change to a briefed shape)
+
+- `DictJoiner.join` now returns record `{branch: {"port": exit.port, "record": exit.record}}` instead of
+  `{branch: exit.record}`, so a downstream connector can tell whether a branch exited normally. The brief's
+  original shape is gone; anything that read `joined[branch]` as the branch record now needs
+  `joined[branch]["record"]`. The `schema` handed to `DictJoiner` validates the new shape.
+- Knock-on: a Par inside a Loop feeds this shape to the feedback connector and into `TruncatedExit.last_exit`
+  (the nested fixture's expected `last_exit` changed accordingly). `Par.exits`, `describe()` and wiring checks
+  are unaffected (they only see the schema and port). The `Port` is stored as its plain string.
+- Updated expectations in `test_par`, `test_store` and `test_nested`; the fixtures' joiner schemas are all
+  `OpenState` (or the deliberately mismatching `NeedsC`), so none needed changing. New tests:
+  `test_dict_joiner_keeps_each_branchs_exit_port` (with a schema for the new shape) and
+  `test_par_branches_that_exit_through_different_ports_stay_distinguishable`. Mutation check: reverting the
+  record shape fails 6 tests.

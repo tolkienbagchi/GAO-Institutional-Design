@@ -80,7 +80,11 @@ class DisjointSplitter:
 
 @dataclass(frozen=True)
 class DictJoiner:
-    """Exits on ``port`` with record ``{branch_name: exit.record}``, checked against ``schema``."""
+    """Exits on ``port`` with record ``{branch: {"port": exit.port, "record": exit.record}}``.
+
+    The record is checked against ``schema``. Keeping each branch's exit port lets a downstream
+    connector tell whether a branch exited normally.
+    """
 
     port: Port
     schema: type[BaseModel]
@@ -92,7 +96,9 @@ class DictJoiner:
 
     def join(self, exits: dict[str, Exit]) -> Exit:
         """Collect the branch records; ContractError if they violate ``schema``."""
-        record = {name: exit_.record for name, exit_ in exits.items()}
+        record = {
+            name: {"port": str(exit_.port), "record": exit_.record} for name, exit_ in exits.items()
+        }
         try:
             self.schema.model_validate(record)
         except ValidationError as e:

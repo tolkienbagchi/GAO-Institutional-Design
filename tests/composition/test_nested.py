@@ -65,7 +65,10 @@ def test_nested_run_ends_through_the_truncated_port_and_replays() -> None:
         port=Port("truncated"),
         record={
             "iterations": 3,
-            "last_exit": {"A": {"payload": 2}, "B": {"payload": 4}},
+            "last_exit": {
+                "A": {"port": "done", "record": {"payload": 2}},
+                "B": {"port": "done", "record": {"payload": 4}},
+            },
         },
     )
     assert [e.kind for e in s.trace].count("truncated") == 1

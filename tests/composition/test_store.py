@@ -97,7 +97,13 @@ def test_par_cross_branch_read_before_write_fails_in_sorted_order() -> None:
 
 def test_par_branches_share_the_store() -> None:
     s = run(envs.PAR_SHARED_STORE, {"writer": "A", "reader": "B"})
-    assert s.result == Exit(port=Port("done"), record={"A": {"n": 42}, "B": {"n": 42}})
+    assert s.result == Exit(
+        port=Port("done"),
+        record={
+            "A": {"port": "done", "record": {"n": 42}},
+            "B": {"port": "done", "record": {"n": 42}},
+        },
+    )
     assert accesses(s) == [
         (["par", Branch("A")], "shared", "write"),
         (["par", Branch("B")], "shared", "read"),

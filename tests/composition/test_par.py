@@ -10,9 +10,9 @@ from gao_idl.core.ids import AgentId, DecisionId, Port, RoleId
 from gao_idl.core.paths import Branch
 from gao_idl.core.schemas import Config, Exit
 from gao_idl.runtime.session import Session
-from gao_idl.testing import assert_replay_equivalent
+from gao_idl.testing import _run_env, assert_replay_equivalent
 from tests.composition import envs
-from tests.composition.layers import Agents, decision_layer, split_agents
+from tests.composition.layers import Agents, choice_layer, decision_layer, split_agents
 
 ALICE, BOB = AgentId("alice"), AgentId("bob")
 DA, DB = DecisionId("par/branch[A]#player"), DecisionId("par/branch[B]#player")
@@ -38,7 +38,13 @@ def test_par_independent_progress() -> None:
     assert not s.finished and s.pending() == [rb]  # ... B is still pending, request unchanged
     s.submit(BOB, rb.decision_id, {"x": 3})
     s.advance()
-    assert s.result == Exit(port=Port("done"), record={"A": {"payload": 2}, "B": {"payload": 3}})
+    assert s.result == Exit(
+        port=Port("done"),
+        record={
+            "A": {"port": "done", "record": {"payload": 2}},
+            "B": {"port": "done", "record": {"payload": 3}},
+        },
+    )
     assert len([e for e in s.trace if e.kind == "layer_completed"]) == 2  # A was not re-run
     assert_replay_equivalent(s)
 
@@ -73,7 +79,13 @@ def test_one_agent_with_several_pending_decisions_inside_par() -> None:
         s.submit(ALICE, DecisionId(did), {"x": 1})
     s.submit(BOB, DB, {"x": 5})
     s.advance()
-    assert s.result == Exit(port=Port("done"), record={"A": {"payload": 2}, "B": {"payload": 5}})
+    assert s.result == Exit(
+        port=Port("done"),
+        record={
+            "A": {"port": "done", "record": {"payload": 2}},
+            "B": {"port": "done", "record": {"payload": 5}},
+        },
+    )
 
 
 def test_par_steps_branches_in_sorted_order_whatever_the_insertion_order() -> None:
@@ -175,3 +187,52 @@ def test_par_frame_is_json_dumpable() -> None:
     dumped = frame.model_dump(mode="json")
     assert sorted(dumped["children"]) == ["A", "B"]
     assert dumped["children"]["A"]["phase"] == "init"
+
+
+def test_dict_joiner_keeps_each_branchs_exit_port() -> None:
+    from pydantic import BaseModel
+
+    class BranchExit(BaseModel):
+        port: str
+        record: dict[str, Any]
+
+    class Joined(BaseModel):
+        A: BranchExit
+        B: BranchExit
+
+    joined = DictJoiner(Port("done"), Joined).join(
+        {
+            "A": Exit(port=Port("a"), record={"payload": 1}),
+            "B": Exit(port=Port("b"), record={"payload": 2}),
+        }
+    )
+    assert joined == Exit(
+        port=Port("done"),
+        record={
+            "A": {"port": "a", "record": {"payload": 1}},
+            "B": {"port": "b", "record": {"payload": 2}},
+        },
+    )
+
+
+def test_par_branches_that_exit_through_different_ports_stay_distinguishable() -> None:
+    def split(cfg: Config) -> dict[str, Config]:
+        return {
+            "A": Config(state={"port": "a", "payload": 1}, roles={}),
+            "B": Config(state={"port": "b", "payload": 2}, roles={}),
+        }
+
+    par = Par(
+        {b: Primitive(choice_layer()) for b in ("A", "B")},
+        DisjointSplitter(split, OpenState),
+        DictJoiner(Port("done"), OpenState),
+    )
+    s = _run_env(par, Config(state={}, roles={}), 1, {})
+    assert s.finished and not s.failed
+    assert s.result == Exit(
+        port=Port("done"),
+        record={
+            "A": {"port": "a", "record": {"payload": 1}},
+            "B": {"port": "b", "record": {"payload": 2}},
+        },
+    )
