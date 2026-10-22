@@ -1152,3 +1152,45 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - `ballot_schema(...)` with a single eligible project gives `{"const": "p0"}` for the item (pydantic's rendering of a one-value `Literal`)
   instead of a one-element `enum`; `RandomAgent`, the local LLM validator and pydantic all handle it. With two or more projects it is an `enum`.
 - Not done, by the brief's "Do not": no runtime/composition change, no cardinal ballots, no cost-utility rules.
+
+## 2026-10-22 — M5 task 4: institution tests (`tests/environments/test_pb.py`, 56 tests)
+- Every test named in the brief exists under its name. Readings and deviations:
+  - **`test_random_agents_complete_pb_for_every_rule`**: `RandomAgent` cannot sample a nomination (`string` with length bounds and
+    `exclusiveMinimum`, both unsupported), and the brief only promises PB-free *ballots*. The test wraps `RandomAgent` in a tiny adapter that
+    answers `nomination` requests from a table and delegates everything else; PB-specific code is those three lines. Parametrised over
+    the four rules, five seeds each, five voters; it asserts no `action_rejected`/`action_defaulted` (every sampled ballot was valid first
+    time) and replay equivalence. Extending `RandomAgent` was not done ("Do not add new runtime features").
+  - **`test_llm_mock_agent_completes_pb`**: proposers are scripted, the two voters are `LLMAgent`s over `MockBackend([{"approve": ["p0","p1"]}])`
+    with the stock `DefaultCodec` (no PB codec). Each mock is called exactly once, receives the request's schema as `response_schema`
+    (enum `p0`, `p1`) and a prompt containing the project title.
+  - **`test_empty_nomination_routes_to_none`** drives `Session.timeout` directly on both proposers (policy `DropRole`), then checks exit port,
+    `role_dropped` count, that no voting request exists, and that voters and proposers got the same public payload. Added: `Fail` policy fails
+    the session, no proposers exits `none`, everything ineligible exits `none` with a public report listing the rejections.
+  - **`test_public_vs_private_report_split`**'s noninterference fixture is hand-written: `gao_idl.testing.assert_noninterference` submits
+    `actions[agent]` to every pending decision of an agent, which cannot drive a pipeline where one agent answers different schemas in
+    different stages. The test compares full `ledger.information` streams of two runs that differ only in one voter's `private_values`: all other
+    agents' streams are identical; the perturbed voter's differs in exactly two items (her voting observation and her funding report).
+  - **`test_ballot_privacy`**: (1) profile where bob's ballot cannot change the funded set (budget fits everything three voters approve):
+    alice's and carol's streams are identical for three different ballots of bob, bob's own differs; (2) control: with `reveal_ballots=True`
+    the same perturbation does change alice's stream (so the test can see a leak); (3) profile where bob's ballot flips the funded set
+    (budget 6): alice's stream differs in exactly one item, the funding report's `funded`, and has no `ballots` key.
+  - **`test_rule_swap_changes_only_funding_stage`**: all four rules on the greedy-trap profile (greedy funds p0, knapsack p1+p2); the trace up to and
+    including the voting stage's `exited` event is identical after `strip_paths`, **with `t` kept** (stricter than the brief), and the next
+    event is `funding_<rule>`'s. Every agent's stream differs only in its last item (the funding report). A second test shows the process
+    trees (`describe`) differ only by the funding layer's name.
+  - **`test_pb_replay_and_partial_restore_between_stages`**: restore (through `json.dumps`/`loads` of the snapshot) before anything, with
+    nomination requests pending, with one nomination already in, between stages, and with one ballot already in; each continuation ends with
+    a trace equal to the uninterrupted run's. Uses `private_values`, `reveal_ballots` and rule `mes`.
+- Added beyond the brief: `build_pb` argument validation (16 cases), the schema follows the nominations (incl. the lone-project `const`),
+  bad nominations (zero, negative, numeric string, bool, NaN, empty/long title, extra/missing key) stay pending, `p{i}` ids ignore arrival
+  order (exact trace equality for forward and reversed submission), the voting receipt and `reveal_ballots`, an overspending/ghost-id rule is
+  caught by `funding_layer`, session params and snapshot are plain JSON.
+- Mutation checks (all reverted, each killed): approval counts leaked into the public report; a voter getting someone else's private value;
+  the ballot schema offering only the first project; the eligibility screen disabled; the rule leaking into pre-funding state; project ids not in
+  proposer order; ballots always revealed; no `none` report from nomination.
+- Two test expectations of mine were wrong at first and were corrected (not the code): with ballots `alice {p0,p2}`, `erin {p2}` greedy funds p2,
+  not p0 (more approvals); a cost equal to the budget is eligible (so the over-budget case needs cost 6 with budget 5).
+- Timings: `pytest -q -m "not slow"` 629 passed, 4 skipped, 2 deselected in about 30 s; the new tests add about 1 s (`test_pb.py`) and 6 s
+  (`test_pb_rules.py`). Slow: two tests, about 36 s (the PD run and the exhaustive EJR enumeration).
+- Observation, not changed: `.github/workflows/ci.yml` runs mypy on `core composition agents learning llm` only, so `environments`, `runtime` and
+  `testing` (and thus all of PB) are not type-checked in CI although the brief's gate says "all packages"; `mypy src/gao_idl` passes locally.
