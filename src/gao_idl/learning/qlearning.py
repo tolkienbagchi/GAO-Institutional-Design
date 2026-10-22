@@ -21,9 +21,11 @@ A transition runs from one of the agent's decisions to its *next* decision, so
 * at ``episode_end`` the last transition is ``(s_K, a_K, r_K, None, done=True)``; ``r_K`` also
   includes the rewards reported after the last decision.
 
-``"normal"`` ends are terminal; ``"truncated"`` ends bootstrap from ``max_a Q(s_K, a)`` when
-``QConfig.bootstrap_on_truncation`` (the agent never sees a state after its last decision, so the
-last state itself is the only available proxy); ``"failed"`` episodes are discarded from learning
+``"normal"`` ends are terminal; ``"truncated"`` ends are terminal too by default. With
+``QConfig.bootstrap_on_truncation=True`` they bootstrap from ``max_a Q(s_K, a)``: the agent's *last*
+state, used as a proxy for the unobserved next state (the agent never sees a state after its last
+decision). That is biased whenever the truncated game would have moved on from ``s_K``;
+``"failed"`` episodes are discarded from learning
 (updates already applied during the episode are rolled back) and counted in ``failed_episodes``.
 
 Checkpoints are plain JSON-able dicts. Table keys are nested tuples of JSON scalars, written as
@@ -59,14 +61,19 @@ QKey = tuple[Hashable, Hashable]
 
 
 class QConfig(FrozenModel):
-    """Hyperparameters. ``epsilon`` decays once per learning episode: ``max(min, eps * decay)``."""
+    """Hyperparameters. ``epsilon`` decays once per learning episode: ``max(min, eps * decay)``.
+
+    ``bootstrap_on_truncation`` (default False: a truncated episode is terminal): if True, a
+    truncated episode bootstraps from ``max_a Q(s_K, a)``, the agent's *last* state, used as a proxy
+    for the unobserved next state. This is biased when the truncated game would have moved on.
+    """
 
     alpha: float = Field(default=0.1, gt=0, le=1)
     gamma: float = Field(default=0.95, ge=0, le=1)
     epsilon: float = Field(default=0.1, ge=0, le=1)
     epsilon_decay: float = Field(default=1.0, gt=0, le=1)
     epsilon_min: float = Field(default=0.0, ge=0, le=1)
-    bootstrap_on_truncation: bool = True
+    bootstrap_on_truncation: bool = False
     discount_by_elapsed: bool = False
 
     @model_validator(mode="after")

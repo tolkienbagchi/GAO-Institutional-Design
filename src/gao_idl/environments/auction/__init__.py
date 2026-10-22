@@ -36,10 +36,11 @@ def build_auction(
     """Environment factory: sealed-bid bidding, then settlement (the full two-layer auction).
 
     ``reserve`` is committed in the settlement layer: bids below it are ignored, and if none
-    clears it the auction exits through ``unsold`` with no payments.
+    clears it the auction exits through ``unsold`` with no payments. The reserve is public: every
+    bidder's observation carries it (``BidObs.reserve``, ``None`` without one).
     """
     state, roles = _bidders(values)
-    state.update(rule=rule, reveal_bids=reveal_bids)
+    state.update(rule=rule, reveal_bids=reveal_bids, reserve=reserve)
     to_settlement = Connector(
         lambda rec, ledger, store: Config(state=rec, roles={}), SettlementState
     )

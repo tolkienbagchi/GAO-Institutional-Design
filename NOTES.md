@@ -819,3 +819,226 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - Not verified (no PyPI): the three hypothesis tests, `pytest-timeout` (the `timeout = 30` option still prints "Unknown config option"),
   `pip install -e ".[dev]"`, `python -m build`, Python 3.11, and the CI workflow. The literal `pytest -q` fails at collection on
   `tests/core/test_paths_property.py` (`hypothesis` missing), as in M0-M2.
+
+## 2026-10-22 — M4 task 0: PyPI still unreachable (no httpx here); truncation default is terminal
+- `REPORT_M3.md` lists `pip install -e ".[dev,llm]"`, the hypothesis tests, `pytest-timeout` and `python -m build` as
+  unverified, so I tried `pip download hypothesis` once: DNS fails ("Name or service not known"), not retried. Still
+  unverified: `pip install -e ".[dev,llm]"`, the 3 hypothesis tests, `pytest-timeout`, `python -m build`, wheel contents,
+  Python 3.11, CI. **`httpx` is not installed in this sandbox** either, so the real HTTP transport of the OpenAI-compatible
+  backend can only be type-checked here, never executed. Gate substitute as in M3:
+  `PYTHONPATH=src:.:/usr/local/lib/python3.13/dist-packages` with `--ignore=tests/core/test_paths_property.py`.
+  Baseline before M4: 407 passed (not slow), 1 deselected.
+- `QConfig.bootstrap_on_truncation` now defaults to `False` (a truncated episode is terminal). The `True` branch is unchanged;
+  its docstrings (field and module) now say it bootstraps from `max_a Q(s_K, a)`, the agent's *last* state used as a proxy for
+  the unobserved next state, and is biased when the truncated game would have moved on. `test_truncation_bootstraps_vs_terminal`
+  already set the flag explicitly in both cases (via `_truncated_episode(bootstrap)`); it gained the assertion that the default
+  is `False`. `test_qconfig_validation` (which pins the full default dump) was updated to `False`. No other test relied on the old
+  default.
+
+## 2026-10-22 — M4 task 1: backends (`llm/backend.py`, `llm/openai_compat.py`, `llm/mock.py`)
+- **`httpx` is not installed here, so the real HTTP call is never executed.** To keep everything else testable the client is split:
+  `OpenAICompatBackend` holds all behaviour (request shape, `response_format` fallback, retries, backoff, scrubbing, response
+  parsing) and talks through an injectable `transport(url, headers, body, timeout_s) -> HttpReply`. The default transport,
+  `httpx_transport` (~8 lines, `httpx.AsyncClient.post`, `httpx.TransportError` -> `TransportFailure`), is the only code that touches
+  httpx; it imports it **inside the function**, so `import gao_idl.llm` never needs httpx (tested in a subprocess). That function is
+  type-checked only (`[[tool.mypy.overrides]] module = "httpx"` with `ignore_missing_imports`, so mypy is happy both with and without
+  httpx installed) and was never run. Everything else is tested through a fake transport. Extra constructor keywords beyond the brief
+  (all keyword-only): `max_retries=3`, `backoff_s=0.5`, `sleep`, `transport`.
+- **Reading of "Transport retries: 3":** three *retries*, i.e. up to 4 requests, with delays 0.5, 1.0, 2.0 s (`backoff_s * 2**k`). Retried:
+  429, 5xx, timeouts and any transport exception. Other 4xx fail at once. The `response_format` fallback is not a transport retry.
+- The 400 fallback fires when the body contains `response_format` and the request had one; it is not remembered (every call tries
+  the structured form first). `Response.parsed` is set only when the server accepted `response_format` and the content parses to a
+  JSON object; otherwise `None`.
+- **Credentials:** the callable is invoked for each request (retries included); the value lives in a local and the request header. It,
+  and the values of extra headers whose name contains `auth`/`key`/`token`/`secret`, are redacted from every error message; the
+  `Authorization`/`x-api-key` header pattern and `Bearer <token>` are redacted by `scrub()` in any case, and `BackendError.__init__`
+  applies `scrub()` itself, so no code path can build a `BackendError` that prints a bearer token. `Response.raw` is the server's JSON
+  with all strings scrubbed (shape unchanged). `repr(backend)` shows only the URL and model.
+- `content: null` becomes empty text (the codec then fails to parse it and the agent repairs); non-string content (parts lists) is a `BackendError`.
+- `llm.backend.current_decision` (a `ContextVar`) is set by `LLMAgent` around each backend call. `LLMBackend.complete` has no
+  decision argument and `ReplayBackend` must serve "per `decision_id`"; this is how it learns which decision is asked about. The mock
+  records it in `MockCall.decision_id`.
+- `MockBackend` raises `MockExhausted` (not a `BackendError`) when the script runs out, so a test bug is not silently retried as a transport error.
+
+## 2026-10-22 — M4 task 2: codec (`llm/codec.py`)
+- `DecisionCodec.render(request, memory, rejections)` has exactly those parameters (tested via `inspect.signature`), so nothing else can
+  be passed. **Render contract I had to add** (the brief does not say how the agent knows what to remember): the result is
+  `[system messages..., *memory, turn messages...]`; the agent stores `render(request, [], [])` minus the leading system messages as
+  the turn it remembers. Codecs must therefore render the same turn for the same request. Pinned `Protocol` unchanged.
+- `DefaultCodec` is split into `system_prompt(request)` and `task_prompt(request)` hooks so environment codecs override text, not
+  mechanics. Rejection reasons are appended to the *task* message ("Your previous reply was rejected: - ... Reply again with corrected
+  JSON only"); the rejected reply itself is not echoed back (the codec is only given the reasons).
+- `parse`: `response.parsed` if present, else the **first balanced `{...}`** in the text (string/escape aware) loaded with `json.loads`.
+  "First" is literal: if that first block is not valid JSON (`"{maybe} then {...}"`), it is a `CodecParseError`, not a search for a
+  later one. The dict is returned unvalidated and uncoerced (`{"amount": "5"}` stays a string).
+- `ReportRenderer` and `DefaultReportRenderer` ("Report (<layer>): <payload JSON>") live here; ids and paths are not in the prompt.
+
+## 2026-10-22 — M4 task 3: memory (`llm/memory.py`)
+- `FullTranscript`, `Window(k)` and `NoMemory` (the brief's "`None` (stateless)": `LLMAgent(memory=None)` maps to it) share a small
+  `Memory` protocol: `append(messages)`, `messages()`, `clear()`, `fresh()`. `fresh()` exists because the brief's default
+  `memory=Window(20)` is a shared default argument; `LLMAgent` takes `memory.fresh()`, so the default instance is only a template and
+  two agents never share a conversation.
+- `Window(k)` stores only the last `k` messages and accepts `k = 0` (remembers nothing); `k` must be an int >= 0 (`ValueError`).
+- What gets appended (turn prompt, own action, reports addressed to the agent) is decided in `LLMAgent`, see task 4.
+
+## 2026-10-22 — M4 task 4: `LLMAgent`, local validator, `AgentFailed` / `agent_failed`
+- **`AgentFailed` lives in `core/errors.py`, not in `llm/`.** The brief has the runner recognise it, but nothing in `core`,
+  `composition` or `runtime` may import `gao_idl.llm`. It is a `GaoError` with `.reasons: list[str]`.
+- **`AgentFailedEvent` (trace kind `agent_failed`: `decision_id`, `agent_id`, `reasons`)** is added to `core/events.py` and to the trace
+  union. It is a trace-only event: `Session.record_agent_failure(decision_id, agent_id, reasons)` (new, called by the runner just before
+  `session.timeout`) emits it at `t = clock.now` **without ticking the clock** and never logs it, exactly like `ActionRejected`
+  (amendment 2). So replay/restore cannot reproduce it, and `check_determinism` now excludes `agent_failed` as well as
+  `action_rejected`. Consequence for invariant 4 worth knowing: the *effect* of a failure (`TimedOut` -> the layer's policy) is in the
+  log and replays; the *reasons* are only in the live trace (the failed attempts' raw replies are in the log, task 5, which is
+  what a replay-with-agents regenerates them from). The order in the trace is `agent_failed` first, then `action_defaulted` /
+  `role_dropped` at settle (amendment 1).
+- Runner change is only in `_settle`: for `AgentFailed` it calls `record_agent_failure` before `timeout`. A `SchemaError`/`Infeasible`
+  from `submit` still goes through the existing one-retry rule.
+- **Redispatch detection.** The brief says to keep `last_decision_id`; one agent can hold several pending decisions at once (invariant 8)
+  and the runner runs them as concurrent tasks, so a single "last" id cannot tell a re-dispatch from an interleaving. The agent keeps a
+  set of the decisions it answered this episode (`_acted`, cleared at `episode_start`) and also exposes `last_decision_id`. A decision
+  seen again gets the rejection reason `"previous action was rejected as infeasible"` (verbatim from the brief). The runner cannot say
+  whether the session refused for schema or feasibility, so a (should-not-happen) `SchemaError` re-dispatch gets the same wording.
+- **Memory rules.** After a successful `act` the turn (the prompt without system messages, from `render(request, [], [])`) and the agent's
+  action as compact JSON are held *provisionally*; they are committed to memory when the next report arrives, the next different
+  decision is asked, or the episode ends. A re-dispatch of the same decision drops its provisional turn first, so a rejected action is
+  not remembered and the prompt is not duplicated. Rejected replies never enter memory; only the final accepted action does. Corner
+  case: if another decision starts between an answer and its re-dispatch, the first answer was already committed and the turn is
+  remembered twice (the runner re-dispatches within the same step, so this needs unusual scheduling).
+- `episode_start` clears the dedupe set, the acted set and (unless `EpisodeContext.keep_conversation`) the memory; `CallRecord`s are
+  cumulative across episodes. A fresh agent attached to a restored session only learns the earlier *reports* (runner catch-up), not its
+  own earlier actions (those are not reports), like `TableAgent`.
+- `CallRecord` fields: `decision_id, attempt, latency_s, usage, model, repair_reason, failure, prompt, response`. The brief names
+  `repair_reason`; I read it as "why this call was a repair" (previous attempt's problem, or the infeasible note) and added `failure`
+  ("why this call's own result was rejected") so both readings are available. `prompt`/`response` only with `record_text=True`.
+- A `BackendError` counts as a failed attempt (the model is **not** told about it: transport problems are not rejection reasons) and
+  the retry uses the same prompt. Any other exception from the backend (including `MockExhausted`) propagates, so the runner turns it
+  into a timeout and a warning, with no `agent_failed` event.
+- **Local validator (`llm/validate.py`)** — `against_json_schema(value, schema) -> list[str]` (empty = valid) covers the briefed
+  keywords plus local `$ref` into `$defs`; everything else is ignored (a pre-check, the layer is the authority). Strict, no coercion:
+  `"5"` is not a number, `5.0` is **not** an integer (stricter than JSON Schema, matching pydantic strict mode), a bool is neither,
+  `True` does not equal `1` in `enum`/`const`, and `NaN`/`inf` are not numbers.
+
+## 2026-10-22 — M4 task 5: recording raw replies in the input log; `ReplayBackend`
+- **`ExternalRecorder` lives in `agents/base.py`** (runtime-checkable protocol, `drain_external() -> list[dict]`, re-exported from
+  `gao_idl.agents`), not in `llm/`, for the same import-direction reason as `AgentFailed`: the runner may not import `gao_idl.llm`.
+  `LLMAgent` implements it.
+- **Envelope key.** One agent can have several decisions in flight and the runner runs them concurrently, so a single shared buffer
+  would mix them. Each drained item therefore carries `"decision_id"`; the runner pops that key and passes the rest to
+  `session.record_external(decision_id, payload)`. The payload is the briefed `{"attempt", "text", "parsed", "usage", "model",
+  "latency_s"}`, `"raw"` only with `LLMAgent(record_raw=True)`.
+- **Addition: failed calls are logged too.** A transport error is recorded as `{"attempt": i, "error": <scrubbed message>}`. Without
+  it a replay would hand the next recorded reply to the first attempt and diverge. `ReplayBackend` raises `BackendError(error)` for
+  such an item, so the agent repeats the same failure. Not in the brief; the payload dict is free-form.
+- Runner: after a flight finishes (answer, exception or `AgentFailed`) and for deadline expiries (after the cancel), the agent's buffer
+  is drained and logged **before** `submit` / `timeout` for that decision. A drain may also write items of other in-flight decisions
+  of the same agent; they are still logged before those decisions' own submissions. Buffers are not drained when the whole run dies.
+  A refused submission (`Infeasible`) is not in the log, but its raw reply is (the log shows both replies, then one `Submitted`).
+- **`ReplayBackend(session_log)`** takes the list of input events (not a `Session`). `complete()` has no decision argument, so it
+  reads `llm.backend.current_decision` (set by `LLMAgent` around each call) and serves the n-th recorded payload for that decision.
+  Outside an agent call, or past the end, it raises `ReplayExhausted` — a `DeterminismError`, deliberately **not** a `BackendError`,
+  so the agent does not retry it and a divergence is loud. `remaining()` / `served` are for assertions. Round trip tested through
+  `json.dumps(snapshot)`: a fresh `Session` driven by `LLMAgent`s over `ReplayBackend`s writes the identical input log (payloads
+  included) and an identical trace (including `agent_failed` and its reasons), with zero mock calls. Also with a `Par` (4-player PD).
+- `Session.replay` is unchanged: it calls `advance()` before each `ExternalResponse` (it is not a submission), which differs from the
+  live batching but cannot change the trace (Par applies inputs one at a time; amendment M1-1) — confirmed by the `Par` test.
+- Mutation check (reverted): not draining/recording in the runner fails 7 tests.
+
+## 2026-10-22 — M4 task 6: environment codecs (`environments/auction/llm.py`, `environments/pd/llm.py`)
+- `AuctionCodec`, `AuctionReportRenderer`, `PDCodec`, `PDReportRenderer`. They subclass `DefaultCodec` / `DefaultReportRenderer` and only
+  override the prompt text; they import nothing but `gao_idl.core.schemas`, `gao_idl.llm.*` and `json` (tested), and are not imported
+  by the environments' `__init__`, so the environments stay usable without the `llm` package.
+- **The prompts state only what the observation says.** The auction observation has the value, the rule name, the bidder list, a
+  tie-break tag and a disclosure tag; the prompt turns those tags into sentences (a lookup table in the codec, a reader's gloss on the
+  tag, not new information) and does **not** state a payoff or utility rule or a reserve, because the observation omits them. The PD
+  prompt does not give a payoff table (the observation has none); the player learns its own payoff from the report after each round.
+  A model therefore plays the PD without knowing the payoffs. That follows the brief ("do not reveal the payoff matrix if the
+  observation omits it") but makes the PD prompt weak; whether the PD observation should carry the payoffs is a game-design question for you.
+- The source-grep test checks the lowercase source for `ledger`, `store`, `session`, `outcome` (docstrings and comments included), which
+  is why the module docstrings avoid those words. Sentinel test: bob's prompts never contain alice's value `7777.5`; a control against
+  `tests.runtime.envs:bidding_leaky` shows the check does find a leak.
+- Round-robin PD: the observation is already per pair, so a prompt shows history only against the current opponent (empty for a new
+  one). Opponent names appear in no PD prompt (the observation does not carry them); the auction prompt names the other bidders because
+  the observation's `bidders` list does.
+
+## 2026-10-22 — M4 task 7: tests (`tests/llm/`), CI
+- Every test named in the brief exists under that name, in `tests/llm/`: `test_default_codec_renders_only_authorized_fields` (parametrised
+  over `DefaultCodec` and `AuctionCodec`, sentinel 7777.5, plus a whole-run check and a control against `bidding_leaky`),
+  `test_structured_output_path_and_fallback_text_path`, `test_invalid_json_then_repair_succeeds`, `test_schema_violation_repair`
+  (as `test_schema_violation_repair_is_caught_locally_before_submit`), `test_infeasible_from_session_triggers_runner_redispatch`
+  (uses `tests.runtime.envs:bidding_capped`, which rejects bids above 10), `test_repairs_exhausted_then_timeout_policy`,
+  `test_transport_error_retries_then_fails`, `test_external_responses_in_log_and_replay_without_calls`,
+  `test_window_memory_bounds_messages`, `test_no_secret_in_logs_or_snapshot`, `test_mixed_population_llm_table_scripted_pd`, and
+  `tests/llm/test_live.py` (skipped unless `GAO_LLM_BASE_URL` is set; also needs httpx; **never run here**).
+- **Reading of the replay test:** "replay with `ReplayBackend`; traces equal; `MockBackend.calls` on a fresh mock is empty" is done as:
+  run live with two mocks; push the snapshot through `json.dumps/loads`; drive a *fresh* `Session` with `LLMAgent`s over `ReplayBackend`s
+  and compare trace, input log (payloads included) and ledger; and separately `Session.restore(snapshot)` (no agent at all) gives
+  the same trace. The "fresh mock" is a mock handed to nobody; its empty `.calls` is trivially true, the real evidence is that the
+  replayed agents have only a `ReplayBackend` and `served` equals the recorded replies. The same is repeated for a 4-player PD in
+  parallel branches (a `Par`) and for a session where a decision failed (so `agent_failed` and its reasons are regenerated).
+- **Reading of `test_mixed_population_llm_table_scripted_pd`:** the PD needs an even population, so four agents: an `LLMAgent`
+  (mock), a learning `TableAgent`, a `ScriptedAgent` and a `RandomAgent`, round-robin, 3 rounds. "Ledger consistent" is checked as: each
+  agent's ledger utility equals the sum of the `own_payoff` in the reports it received, and the total equals the sum of all of them.
+- Extra tests beyond the brief: a concurrency test (one agent holding two roles in one layer, so two decisions in flight; a backend
+  that yields the event loop mid-call and answers by `current_decision`; checks raw replies are logged under the right decision before
+  that decision's submission and that the run replays), a leak test (a server reply echoing the credential is scrubbed from the
+  logged `raw`), static import-direction tests (nothing below `llm/` imports it except the two environment codec files; `llm/` imports
+  nothing from `runtime`, `composition`, `core.ledger`, `core.store`), the gate's httpx check as a subprocess test, and
+  validator/memory/codec/backend unit tests.
+- `tests/llm/helpers.py` holds the small builders. All awaits go through `tests.aio.run_test` (`wait_for`, 10 s) or `asyncio.wait_for`.
+  No test sleeps in real time (`asyncio.sleep(0)` and an injected no-op `sleep` for backoff only).
+- **CI** (`.github/workflows/ci.yml`, not executed): installs `.[dev,llm]`, mypy additionally covers `src/gao_idl/llm`, and the httpx
+  import check from the gate runs as a step; the nightly slow job also installs `llm`. This is the gate of the brief and no more.
+- Mutation checks (all reverted): runner not logging externals -> 7 tests fail; runner not emitting `agent_failed` -> 5 fail;
+  agent not noticing a re-dispatch -> the infeasible test fails; validator accepting numeric strings -> 2 fail.
+
+## M4 fix-up tasks 1-2: payoffs and reserve are observable (2026-10-22)
+
+- **PD** (`build_repeated_pd(disclose_payoffs=True)`): `PDState.disclose_payoffs` carries the flag to the layer; `PDObs.payoffs` is the
+  state's table. When the flag is false the key is *absent* from the dumped observation (a wrap serializer drops a `None`, the same
+  device as `all_bids` in the auction report), not `None`. `PDCodec` renders "Payoffs (your move, their move: your payoff, their
+  payoff)" with four rows only when the key is there. The flag must be a bool (`ContractError` otherwise). It is a plain JSON param, so
+  session `env_ref` params stay replayable. Default is `True`, so default PD runs now show payoffs to their players; the M4 prompt test
+  that asserted no table now runs with `disclose_payoffs=False`.
+- **Auction**: `BiddingState.reserve` and `BidObs.reserve: float | None` (here the key is always present, `None` meaning no reserve, as the
+  brief says). `build_auction` feeds the same `reserve` to the bidding state and to `settlement_layer`, so the two cannot disagree;
+  `build_bidding_only` has no settlement and no reserve. `bid_disclosure` strings are unchanged. `AuctionCodec` says "Reserve price R:
+  bids below R are ignored." or "There is no reserve price.".
+- Reading: the brief says "no digit from the table" for the undisclosed PD prompt. The round index and history legitimately
+  contain digits, so the test checks the round-0 prompt with its "This is round N" line removed.
+
+## M4 fix-up task 3 (M4b): Anthropic Messages API backend (2026-10-22)
+
+- **Commit order.** 3b (`schema_transform.py`, with its unit tests) was committed before 3a (`anthropic.py`), because 3a imports it;
+  the other two are in brief order. The brief's `httpx.MockTransport` tests need `httpx`, which this sandbox lacks, so
+  `tests/llm/test_anthropic.py` drives the backend through the same injected fake transport as the OpenAI-compatible tests (the real
+  request building, retry and parsing code all run) and adds two `httpx.MockTransport` tests behind `pytest.importorskip("httpx")`
+  (they patch `httpx.AsyncClient` so the real `httpx_transport` runs). Those two were **never executed** here.
+- **API facts used** (from the brief, checked against the live docs there on 2026-10-22; I could not re-check them: no network):
+  `POST {base_url}/v1/messages`; headers `x-api-key`, `anthropic-version: 2023-06-01` (the default of `api_version`, overridable),
+  `content-type: application/json`; system text in the top-level `system`; structured output via `output_config.format`
+  `{"type": "json_schema", "schema": ...}`; no beta header, no `output_format`, no tools. `temperature` and `max_tokens` are always
+  sent. If the live docs disagree with this, the docs win; nothing here depends on a field the brief did not name.
+- **Messages.** System messages join with a blank line; consecutive same-role messages merge with a blank line. A request with no
+  user/assistant message raises `BackendError`. A first `assistant` message is passed through as is (not adjusted).
+- **Parsing.** First `text` block (other block types, e.g. thinking, are skipped). `parsed` is set only for a JSON *object*; a
+  `stop_reason` of `refusal` or `max_tokens` forces `parsed=None` (the text is still returned, `raw["stop_reason"]` has the reason).
+  `usage` keeps only `input_tokens` and `output_tokens`. `Response.raw` is the whole reply with the credential scrubbed.
+- **Retries** reuse the OpenAI-compatible policy: 429, 529 and every 5xx plus transport failures, `max_retries=3` retries (4 requests,
+  delays 0.5/1/2 s); other 4xx never retry. The credential is fetched per request and scrubbed (value, `x-api-key` header text).
+- **Stripped schema features** (`to_anthropic_schema`): `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`, `multipleOf`,
+  `minLength`, `maxLength`, `pattern` (always dropped, even simple ones, as the brief prefers) and `maxItems` are removed because the
+  API's schema subset does not accept them; `minItems` above 1 is clamped to 1. Each is appended to the node's `description` as
+  `"(minimum: 0)"` so the model still reads it. Objects lacking `additionalProperties` get `false`; an existing value (for example
+  the schema a `dict[str, float]` field emits) is kept, because the brief says only "lacks it". `$defs`/`$ref`, `enum`, `const`,
+  `anyOf`, `required`, `default`, `title` and `description` are untouched. The walk visits subschema positions only, never
+  `enum`/`const`/`default` data. Pure and idempotent.
+- **The local validator is the authority.** The transform applies to the request only. `LLMAgent` validates against the original
+  schema (`llm/validate.py`, unchanged), so a `{"amount": -1}` the API accepts is still rejected and repaired (a test covers this).
+- **Not changed:** `OpenAICompatBackend`, the validator, the agent, the runner. `OpenAICompatBackend`'s `HttpReply`,
+  `TransportFailure`, `httpx_transport`, `RETRYABLE_STATUS` and `_scrub_json` are imported by the new module (one private helper
+  crosses modules inside the package).
+- `gao_idl.llm.__init__` now exports `AnthropicBackend` and `to_anthropic_schema`. Importing `gao_idl.llm` still never imports
+  `httpx` (checked by the existing subprocess test).
+- Live smoke test `tests/llm/test_live_anthropic.py` (`GAO_ANTHROPIC_API_KEY`, optional `GAO_ANTHROPIC_MODEL`, default
+  `claude-haiku-5-5`, and `GAO_ANTHROPIC_BASE_URL`): skipped here; left for the maintainer.

@@ -16,11 +16,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: pip install -e ".[dev]"
+      - run: pip install -e ".[dev,llm]"
       - run: ruff check .
       - run: ruff format --check .
-      - run: mypy src/gao_idl/core src/gao_idl/composition src/gao_idl/agents src/gao_idl/learning
+      - run: mypy src/gao_idl/core src/gao_idl/composition src/gao_idl/agents src/gao_idl/learning src/gao_idl/llm
       - run: pytest -q -m "not slow"
+      - run: python -c "import gao_idl.core, gao_idl.runtime, sys; assert 'httpx' not in sys.modules"
   slow:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
@@ -29,5 +30,5 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - run: pip install -e ".[dev]"
+      - run: pip install -e ".[dev,llm]"
       - run: pytest -q -m slow

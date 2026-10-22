@@ -21,6 +21,8 @@ class BiddingState(BaseModel):
     values: dict[AgentId, float]
     rule: Literal["first_price", "second_price"]
     reveal_bids: bool
+    reserve: float | None = None
+    """Public reserve price (also committed in the settlement layer); ``None`` means none."""
 
 
 class BidObs(BaseModel):
@@ -31,6 +33,7 @@ class BidObs(BaseModel):
     bidders: list[AgentId]
     tie_break: str
     bid_disclosure: str
+    reserve: float | None = None
 
 
 class Bid(BaseModel):
@@ -75,6 +78,7 @@ def _observe(cfg: Config, role: RoleId, rng: Generator) -> BaseModel:
         bidders=sorted(cfg.roles.values()),
         tie_break=TIE_BREAK,
         bid_disclosure="all_bids_after_settlement" if state.reveal_bids else "winning_price_only",
+        reserve=state.reserve,
     )
 
 

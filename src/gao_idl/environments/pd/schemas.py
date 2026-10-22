@@ -1,8 +1,8 @@
 """Data objects of the repeated prisoner's dilemma."""
 
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import RootModel, field_validator
+from pydantic import RootModel, field_validator, model_serializer
 
 from gao_idl.core.ids import AgentId, RoleId
 from gao_idl.core.schemas import FrozenModel
@@ -30,6 +30,8 @@ class PDState(FrozenModel):
     round_index: int
     history_key: str
     history: list[dict[str, str]] = []
+    disclose_payoffs: bool = True
+    """Whether observations carry the payoff table (the factory's ``disclose_payoffs``)."""
 
     @field_validator("payoffs")
     @classmethod
@@ -40,10 +42,23 @@ class PDState(FrozenModel):
 
 
 class PDObs(FrozenModel):
-    """What a player sees: the round and their history with this opponent only."""
+    """What a player sees: the round, their history with this opponent, and maybe the payoffs.
+
+    ``payoffs`` (the table as ``{"CC": (row, col), ...}``, the same as the state's) is present only
+    when the environment discloses it; otherwise the key is absent from the dumped observation,
+    not ``None``, so codecs and prompts see no placeholder.
+    """
 
     round_index: int
     own_history: list[tuple[str, str]]  # (own, other) per past round, this pair only
+    payoffs: dict[str, tuple[float, float]] | None = None
+
+    @model_serializer(mode="wrap")
+    def _omit_undisclosed_payoffs(self, handler: Any) -> dict[str, Any]:
+        data: dict[str, Any] = handler(self)
+        if data.get("payoffs") is None:
+            data.pop("payoffs", None)
+        return data
 
 
 class PDAction(FrozenModel):

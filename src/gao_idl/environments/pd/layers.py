@@ -49,6 +49,7 @@ def _observe(cfg: Config, role: RoleId, rng: Generator) -> BaseModel:
     return PDObs(
         round_index=state.round_index,
         own_history=[(rec[me], rec[other]) for rec in state.history],
+        payoffs=state.payoffs if state.disclose_payoffs else None,
     )
 
 

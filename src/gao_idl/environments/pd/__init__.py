@@ -55,6 +55,7 @@ def build_repeated_pd(
     payoffs: Mapping[str, Sequence[float]] = STANDARD_PAYOFFS,
     timeout: TimeoutPolicy | dict[str, Any] = Fail(),  # noqa: B008 (frozen model)
     default_move: Literal["C", "D"] | None = None,
+    disclose_payoffs: bool = True,
 ) -> tuple[Process, Config]:
     """Environment factory for the repeated PD; the root process is a ``Loop`` named ``pd``.
 
@@ -66,7 +67,12 @@ def build_repeated_pd(
     ``timeout`` is every pair's policy for an unanswered decision. As session params must be JSON,
     it may be given as a dict (``{"kind": "default"}``). ``DefaultAction`` plays ``default_move``
     (required then; ``ContractError`` otherwise); ``default_move`` is ignored under ``Fail``.
+
+    ``disclose_payoffs`` (default true) puts the payoff table into every player's observation
+    (``PDObs.payoffs``); when false the key is absent and players learn payoffs only from reports.
     """
+    if not isinstance(disclose_payoffs, bool):
+        raise ContractError(f"disclose_payoffs must be a bool, got {disclose_payoffs!r}")
     if isinstance(rounds, bool) or not isinstance(rounds, int) or rounds < 1:
         raise ContractError(f"rounds must be an int >= 1, got {rounds!r}")
     names = [str(a) for a in agents]
@@ -90,6 +96,7 @@ def build_repeated_pd(
                 round_index=inp.round_index,
                 history_key=f"hist:{pid}",
                 history=inp.histories.get(pid, []),
+                disclose_payoffs=disclose_payoffs,
             )
             out[f"pair_{k}"] = Config(
                 state=state.model_dump(mode="json"),
