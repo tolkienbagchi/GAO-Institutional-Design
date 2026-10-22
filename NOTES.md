@@ -540,3 +540,29 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - Tests for noninterference use fixed pairs only: under `round_robin` pair 2's moves legitimately reach alice later
   through the round-robin disclosure (alice's report in the round she meets carol), so there is no such property.
 - `PDOutcome.moves` is keyed by role and `PDRoundExit.moves` by agent, as briefed.
+
+## 2026-10-21 — M2 part B: agent adapters
+- Package `gao_idl.agents` (`base`, `random_agent`, `scripted`, `human`; re-exported from `__init__`).
+  `EpisodeContext` / `EpisodeEnd` are frozen pydantic models with the briefed fields. `EpisodeEnd.final_utility`
+  defaults to `None`; its docstring states that filling it is a disclosure decision (the runner policy flag).
+- **RandomAgent sampling**: `enum`, `const` (what pydantic emits for a one-value `Literal`), `integer` / `number`
+  with `minimum` / `maximum`, `boolean`, `object` with its `required` properties recursively (optional
+  properties are omitted). Open bounds: no `maximum` -> `[min, min+10]` (briefed); my choices for the cases the
+  brief does not cover: no `minimum` -> `[max-10, max]`, neither -> `[0, 10]`. Integers use the integers inside
+  the interval. Anything else raises `NotImplementedError` naming the (innermost) offending fragment, including
+  keywords that would make sampling unsound if ignored (`anyOf`/`oneOf`/`allOf`/`not`, `exclusiveMinimum`/`Maximum`,
+  `multipleOf`) and **`$ref`**. Consequence: an action model with a *nested pydantic model* is not supported, because
+  pydantic emits `$ref`/`$defs` for it (all current actions, `Bid` and `PDAction`, are flat). Resolving local
+  `$defs` is a small extension if a later environment needs it.
+- A sampled action is schema-valid but may be infeasible for the layer (`Layer.feasible`); the runner's
+  one-retry-then-timeout rule is what deals with that.
+- `RandomAgent(seed)` owns a `numpy.random.default_rng(seed)`; `episode_start` does not reseed it, so a second
+  episode with the same agent object continues the stream.
+- `ScriptedAgent` and `HumanTransportAgent` both (a) remember the agent id from `episode_start` and raise
+  `ValueError` if `observe` gets a report addressed to someone else (defence in depth for invariant 1), (b) dedupe
+  reports by `report_id`, (c) forget earlier reports at `episode_start` unless `keep_episode_memory`. (b) and (c) are
+  small additions to the brief for `ScriptedAgent` (it only asked for dedup in the human agent): the runner re-delivers
+  a session's earlier reports when it attaches to a restored session, see the Part C entry.
+- `HumanTransportAgent` additions: `wait_outstanding()` (an `asyncio.Event`-based wait, so tests need no sleeping),
+  and `provide` raises `UnknownDecision` for an id that is not outstanding (already answered, cancelled, or never
+  asked). A deadline cancels `act`, which withdraws the request from `outstanding()`.
