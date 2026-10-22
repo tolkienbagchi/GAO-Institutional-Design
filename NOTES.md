@@ -960,3 +960,34 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - Round-robin PD: the observation is already per pair, so a prompt shows history only against the current opponent (empty for a new
   one). Opponent names appear in no PD prompt (the observation does not carry them); the auction prompt names the other bidders because
   the observation's `bidders` list does.
+
+## 2026-10-22 — M4 task 7: tests (`tests/llm/`), CI
+- Every test named in the brief exists under that name, in `tests/llm/`: `test_default_codec_renders_only_authorized_fields` (parametrised
+  over `DefaultCodec` and `AuctionCodec`, sentinel 7777.5, plus a whole-run check and a control against `bidding_leaky`),
+  `test_structured_output_path_and_fallback_text_path`, `test_invalid_json_then_repair_succeeds`, `test_schema_violation_repair`
+  (as `test_schema_violation_repair_is_caught_locally_before_submit`), `test_infeasible_from_session_triggers_runner_redispatch`
+  (uses `tests.runtime.envs:bidding_capped`, which rejects bids above 10), `test_repairs_exhausted_then_timeout_policy`,
+  `test_transport_error_retries_then_fails`, `test_external_responses_in_log_and_replay_without_calls`,
+  `test_window_memory_bounds_messages`, `test_no_secret_in_logs_or_snapshot`, `test_mixed_population_llm_table_scripted_pd`, and
+  `tests/llm/test_live.py` (skipped unless `GAO_LLM_BASE_URL` is set; also needs httpx; **never run here**).
+- **Reading of the replay test:** "replay with `ReplayBackend`; traces equal; `MockBackend.calls` on a fresh mock is empty" is done as:
+  run live with two mocks; push the snapshot through `json.dumps/loads`; drive a *fresh* `Session` with `LLMAgent`s over `ReplayBackend`s
+  and compare trace, input log (payloads included) and ledger; and separately `Session.restore(snapshot)` (no agent at all) gives
+  the same trace. The "fresh mock" is a mock handed to nobody; its empty `.calls` is trivially true, the real evidence is that the
+  replayed agents have only a `ReplayBackend` and `served` equals the recorded replies. The same is repeated for a 4-player PD in
+  parallel branches (a `Par`) and for a session where a decision failed (so `agent_failed` and its reasons are regenerated).
+- **Reading of `test_mixed_population_llm_table_scripted_pd`:** the PD needs an even population, so four agents: an `LLMAgent`
+  (mock), a learning `TableAgent`, a `ScriptedAgent` and a `RandomAgent`, round-robin, 3 rounds. "Ledger consistent" is checked as: each
+  agent's ledger utility equals the sum of the `own_payoff` in the reports it received, and the total equals the sum of all of them.
+- Extra tests beyond the brief: a concurrency test (one agent holding two roles in one layer, so two decisions in flight; a backend
+  that yields the event loop mid-call and answers by `current_decision`; checks raw replies are logged under the right decision before
+  that decision's submission and that the run replays), a leak test (a server reply echoing the credential is scrubbed from the
+  logged `raw`), static import-direction tests (nothing below `llm/` imports it except the two environment codec files; `llm/` imports
+  nothing from `runtime`, `composition`, `core.ledger`, `core.store`), the gate's httpx check as a subprocess test, and
+  validator/memory/codec/backend unit tests.
+- `tests/llm/helpers.py` holds the small builders. All awaits go through `tests.aio.run_test` (`wait_for`, 10 s) or `asyncio.wait_for`.
+  No test sleeps in real time (`asyncio.sleep(0)` and an injected no-op `sleep` for backoff only).
+- **CI** (`.github/workflows/ci.yml`, not executed): installs `.[dev,llm]`, mypy additionally covers `src/gao_idl/llm`, and the httpx
+  import check from the gate runs as a step; the nightly slow job also installs `llm`. This is the gate of the brief and no more.
+- Mutation checks (all reverted): runner not logging externals -> 7 tests fail; runner not emitting `agent_failed` -> 5 fail;
+  agent not noticing a re-dispatch -> the infeasible test fails; validator accepting numeric strings -> 2 fail.
