@@ -4,18 +4,43 @@ build-backend = "hatchling.build"
 
 [project]
 name = "gao-idl"
-version = "0.0.1"
+version = "0.1.0"
 description = "Composable multi-agent environments with resumable, replayable sessions"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = ["pydantic>=2.7", "numpy>=1.26"]
+keywords = ["multi-agent", "mechanism design", "game theory", "reinforcement learning", "simulation"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+]
 
 [project.optional-dependencies]
 llm = ["httpx"]
-dev = ["pytest", "pytest-timeout", "hypothesis", "ruff", "mypy"]
+dev = ["pytest", "pytest-timeout", "hypothesis", "ruff", "mypy", "build", "twine"]
+docs = ["mkdocs-material>=9.5", "mkdocstrings[python]>=0.25"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gao_idl"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/docs",
+    "/examples",
+    "/scripts",
+    "/mkdocs.yml",
+    "/pyproject.toml",
+    "/README.md",
+    "/NOTES.md",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

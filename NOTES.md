@@ -1226,3 +1226,35 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   fixes, each a semantics change that M6 forbids: reject non-cent costs at nomination (needs the rule in the nomination
   layer), round, or turn the error into a `Failed` session. Left as is; the test case is `xfail(strict=True, raises=ValueError)`
   so a future fix flips it loudly. **Demo configs (task 4) therefore do not pair `knapsack` with random nominators.**
+
+## 2026-10-22 — M6 task 1: packaging (`pyproject.toml`, `gao_idl.selftest`, `scripts/clean_install.sh`)
+- **NOT run (no PyPI, no `build`/`hatchling`/`twine` installed): `python -m build` and `twine check dist/*`.** So the sdist, the
+  wheel and the rendering of `README.md` as the PyPI long description are unverified; what was checked instead: the
+  `pyproject.toml` parses (`tests/test_version.py` reads it with `tomllib` and pins version, `requires-python`, the three extras
+  and the two core dependencies), and the wheel *layout* assumption (`packages = ["src/gao_idl"]`, the same line as since M0) is
+  unchanged. The `[tool.hatch.build.targets.sdist] include = [...]` list is new and unexecuted (paths that do not exist yet,
+  such as `/docs`, simply match nothing).
+- **`clean_install.sh` was exercised only against a hand-made stand-in wheel**
+  (a zip of `src/gao_idl` with `METADATA`/`WHEEL`/`RECORD`, built by a throwaway script outside the repository), with
+  `CLEAN_INSTALL_SYSTEM_SITE=1 CLEAN_INSTALL_PIP_ARGS="--no-index --no-deps"` to reuse the system pydantic/numpy. It passed:
+  new venv, wheel installed, `gao_idl` imported from the venv and not from the repository (`python -I`, cwd outside the repo),
+  `httpx`/`hypothesis`/`pytest` absent from `sys.modules` after `import gao_idl, gao_idl.llm`, `selftest()` OK. The two env
+  knobs are my addition (the brief's script has none; the defaults are the brief's check: no extras, real PyPI). Run
+  `python -m build && bash scripts/clean_install.sh` where PyPI is reachable.
+- **Extras:** `llm = ["httpx"]` and `dev` as before, plus **`build` and `twine` in `dev`** (the gate runs both; no other place
+  to declare them), and `docs = ["mkdocs-material>=9.5", "mkdocstrings[python]>=0.25"]` (lower bounds only, my choice; no upper
+  pins). No change to the core dependencies. No `[project.scripts]`: the two CLIs of task 4 are `python -m` entry points.
+- **Not set, on purpose:** `license`, `authors`, `urls` (the repository has no licence file and I will not invent one; `twine
+  check` does not require them). Also no `py.typed` marker, although `mypy --strict` passes on the package: shipping it is a
+  promise about the typing of the public API that the maintainer should make.
+- `gao_idl.selftest()` lives in `gao_idl/_selftest.py` (internal) and is re-exported with the explicit `as selftest` form. It runs the
+  auction (two `RandomAgent`s, seeds 1 and 2) and the repeated PD (tit-for-tat vs always-defect, 3 rounds; totals 2.0 / 7.0 are
+  asserted), each through `run`, then `check_determinism()` and a snapshot/restore comparison, and prints exit ports and ledger
+  totals. It uses `asyncio.run`, so it cannot be called from inside a running event loop (documented in its docstring).
+  Imports are inside the function, so `import gao_idl` stays light. **Interaction with task 2:** task 1 requires `gao_idl.selftest()`
+  while task 2 says `__init__` re-exports *exactly* a list that does not contain it. Reading: `selftest` stays reachable as an
+  attribute but is not in `__all__`; `tests/test_public_api.py` names it as the one allowed non-exported public attribute.
+- Version is `0.1.0` in `pyproject.toml` and `gao_idl.__version__` (static in both, a test keeps them equal).
+- README refreshed (install section; the one tested Python example is untouched: `tests/test_readme_example.py` still requires exactly
+  one `python` block of at most 22 lines). `tests/test_packaging.py`: import hygiene in a fresh interpreter, `gao_idl.llm` imports
+  without httpx, `selftest` output and determinism.

@@ -1,8 +1,18 @@
 # gao_idl
 
-Composable multi-agent environments built from primitive layers, with resumable, replayable sessions.
-Milestone M0: core types and a single-layer session (sealed-bid bidding as the reference example).
-Install with `pip install -e .[dev]`, run the tests with `pytest -q`.
+Composable multi-agent environments built from primitive layers (one simultaneous decision round
+each) joined with `Seq`, `Par` and `Loop`, with resumable, replayable sessions. Participants can be
+scripted, human, tabular-RL or LLM agents.
+
+## Install
+
+```bash
+pip install gao-idl            # core: pydantic + numpy
+pip install "gao-idl[llm]"     # adds httpx for the LLM backends
+python -c "import gao_idl; gao_idl.selftest()"
+```
+
+From a checkout: `pip install -e ".[dev]"`, then `pytest -q`.
 
 ## Usage
 

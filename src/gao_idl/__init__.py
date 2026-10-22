@@ -1,3 +1,5 @@
 """gao_idl: composable multi-agent environments with resumable sessions."""
 
-__version__ = "0.0.1"
+from gao_idl._selftest import selftest as selftest
+
+__version__ = "0.1.0"
