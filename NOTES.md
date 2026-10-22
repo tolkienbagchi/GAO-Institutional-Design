@@ -1549,3 +1549,22 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - **"Each a one-line parameter or a swappable layer"**: fee, penalty/tol, `p_audit`, `reputation_visible` are parameters; audit
   targeting and fee-on-correctness are layer swaps. The page says so.
 - Prose numbers are quoted from a run; `mkdocs build --strict` remains unverified (no mkdocstrings).
+
+## 2026-10-22 — M7 task 5: skills and `docs/for-agents/llms.md`
+- **Files.** `skills/{design-environment,write-llm-codec,explain-environment}/SKILL.md` (167, 163, 85 lines; limit 400),
+  `docs/for-agents/llms.md` (≈330 lines; limit 1500), `tests/test_skills.py`.
+- **Runnable blocks** are fenced `python` blocks whose first line is `# runnable`; the test `exec`s each with the repository root as
+  working directory and `examples/` on `sys.path` (so skills may use the digit-named example modules). I mutation-checked that a
+  failing assertion in a block fails the test. The design skill's block uses the PD environment, not an invented one, so it needs no
+  importable module.
+- **"Generic fixture names"** are read as every public name in `gao_idl.testing` starting with `assert_` (six); the test requires
+  the design skill to mention all of them.
+- **"Nine invariants"** in `llms.md` are the nine from the shared context verbatim in substance. **"The four information objects"**
+  were not defined in the briefs I was given; I chose observation, action schema, report and exit record (the ledger and trace are
+  listed as researcher-side only). Underdetermined; the design skill's questions refer to these.
+- **Skill links** in `llms.md` are repo paths in code spans, not URLs, because the repository's public URL is not known to me and
+  `mkdocs --strict` rejects links out of `docs/`.
+- **Codec skill's leak test** compares the numbers in the prompt with the numbers in everything the agent was given (observations,
+  schemas, delivered reports). That detects a leak of any hidden number; it does not detect a leak in words.
+- **`llms.md` accuracy** is checked mechanically only for the presence of every public name (23 + 24); signatures and prose were
+  written from the code and the shared-context amendments and are not machine-checked.
