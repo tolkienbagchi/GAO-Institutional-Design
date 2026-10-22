@@ -372,3 +372,23 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - Helper limitation carried over from M0: they submit `actions[agent]` to every pending decision of that
   agent. `_drive` now loops until the session finishes (needed for multi-stage processes), with a cap of
   1000 rounds.
+
+## 2026-10-21 — M1 task 3 follow-up: correction to the Par note (found while writing task 9 tests)
+- **The "one input per call" rule in the task 3 entry was not sufficient.** A randomized-schedule test over
+  `Loop(Par(Seq))` (random submission order, random `advance()` placement, then `check_determinism`) failed
+  on the unmutated code. Cause: a live session runs every input to quiescence (`advance()` loops on
+  `Continue`) before the next input can arrive, but my backlog applied the next input in the *middle* of the
+  previous input's `Continue` chain, so on replay alice's input interleaved with bob's branch moving on to
+  its second layer (index 8 of the trace: `layer_entered B/second` originally, `action_accepted A/first` on
+  replay).
+- Fix (`ParFrame.settling`, commit "Par: apply queued inputs only after settling"): an input is applied only
+  when the previous step made no progress (no branch returned `Continue`, and the Par is not about to join).
+  While settling, the call steps every live branch with no input. Net effect: replaying a log that was
+  batched arbitrarily gives exactly the trace of a session that called `advance()` after every input.
+- Evidence: 900 random schedules (3 environments incl. a 3-branch Par with an agent holding two roles, 300
+  seeds each) replay to identical traces and ledgers; removing the `settling` guard makes
+  `test_random_schedules_replay_to_the_same_trace` and the deterministic regression
+  `test_staggered_answers_with_multi_step_branches_replay_exactly` fail.
+- Assumption this relies on: stepping a quiescent subtree with no inputs is idempotent (emits nothing and
+  returns the same `Pending`). True for `Primitive`, `Seq`, `Loop` and `Par` as built here; a custom
+  `Process` must satisfy it too.

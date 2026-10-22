@@ -106,14 +106,17 @@ Input = Annotated[ev.Submitted | ev.TimedOut, Field(discriminator="kind")]
 class ParFrame(FrozenModel):
     """Data-only state of a Par: one nested frame per branch, plus the exits seen so far.
 
-    ``backlog`` holds inputs not yet applied (they are applied one per step, in log order, so the
-    trace depends only on the input log and not on how it was batched into ``advance()`` calls);
-    ``failed`` makes failure sticky. Both are additions to the brief's fields.
+    ``backlog`` holds inputs not yet applied. They are applied one at a time, in log order, and
+    only once the previous input has run to quiescence (``settling`` is True while the last step
+    made progress), which is exactly what a session that called ``advance()`` after every input
+    would have done: the trace then depends only on the input log, not on how it was batched.
+    ``failed`` makes failure sticky. All three are additions to the brief's fields.
     """
 
     children: dict[str, SerializeAsAny[Frame]]
     exits: dict[str, Exit] = {}
     backlog: list[Input] = []
+    settling: bool = False
     failed: str | None = None
 
 
@@ -221,7 +224,7 @@ class Par:
     def step(
         self, frame: Frame, inputs: list[ev.Submitted | ev.TimedOut], ctx: Ctx
     ) -> tuple[Frame, StepResult]:
-        """Apply at most one input, step every live branch once, or join when all have exited."""
+        """Apply at most one input (once settled), step every live branch once, or join."""
         f = _narrow(frame)
         if f.failed is not None:
             return f, FailedResult(reason=f.failed)
@@ -232,7 +235,7 @@ class Par:
                 raise UnknownDecision(backlog[0].decision_id)
             return self._join(f)
         routed: dict[str, list[ev.Submitted | ev.TimedOut]] = {}
-        if backlog:
+        if backlog and not f.settling:  # never apply an input in the middle of settling the last
             inp = backlog.pop(0)
             owner = next(
                 (n for n in live if owns(child(ctx.path, Branch(n)), inp.decision_id)), None
@@ -261,8 +264,16 @@ class Par:
                 progressed = True
             elif isinstance(result, Pending):
                 requests.extend(result.requests)
-        nxt = f.model_copy(update={"children": children, "exits": exits, "backlog": backlog})
-        if progressed or backlog or len(exits) == len(self.branches):
+        settling = progressed or len(exits) == len(self.branches)  # all exited: join comes next
+        nxt = f.model_copy(
+            update={
+                "children": children,
+                "exits": exits,
+                "backlog": backlog,
+                "settling": settling,
+            }
+        )
+        if settling or backlog:
             return nxt, Continue()
         return nxt, Pending(requests=requests)
 
