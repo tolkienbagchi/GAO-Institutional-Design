@@ -1426,3 +1426,18 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   least the exact cost, so any set that fits the rounded costs fits the exact budget. Cost: results may be conservative
   by under a cent per project. Tests: `test_knapsack_rounds_sub_cent_costs_up`,
   `test_knapsack_never_overspends_exact_budget_randomized` (300 random float instances). `docs/runs.md` wording updated.
+
+## 2026-10-22 — M7 task 0: no numbered task 0 in the brief; PyPI unreachable; reading order
+- **The brief numbers its tasks 1–6 and has no task 0** (the request says "starting with task 0"). As in M5, task 0 is this entry:
+  inherited/environment items, no code. The request also names the brief `M7_tutortials_agent_skills.md`; the attached file is
+  `M7_tutorials_and_agent_skills.md` (typo only). I read the shared context with all amendments, the brief, this file in full and
+  every `briefs/REPORT_*.md` (M0–M6 and the four fix-ups) before touching code.
+- **PyPI is unreachable** (`pip download hypothesis`: "No matching distribution found", tried once, not retried). So
+  `pip install -e ".[dev,llm,docs]"`, the hypothesis tests (`tests/core/test_paths_property.py`,
+  `tests/environments/test_pb_rules_property.py`), `pytest-timeout`, `python -m build`, `httpx`, `mkdocstrings` and Python 3.11 are
+  unavailable/unverified, exactly as in M0–M6. `mkdocs` and `mkdocs-material` are present. Gate substitute:
+  `PYTHONPATH=src:.:/usr/local/lib/python3.13/dist-packages` with the two hypothesis files `--ignore`d. **Baseline before M7:
+  753 passed, 4 skipped, 2 deselected (not slow) in 58 s; ruff, ruff format and `mypy src/gao_idl` (68 files) clean.**
+- Dependencies: M7 adds none (stdlib, numpy and pydantic only).
+- The brief's "Stretch (only if tasks 1–6 are otherwise done)" is item 6 of task 1's layer list, not a reference to the brief's
+  tasks. It is decided at the end of task 1 (see that entry).
