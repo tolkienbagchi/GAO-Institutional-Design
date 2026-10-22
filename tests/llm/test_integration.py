@@ -254,6 +254,7 @@ def test_nothing_below_the_llm_package_imports_it() -> None:
     allowed = {
         SRC / "environments" / "auction" / "llm.py",
         SRC / "environments" / "congestion" / "llm.py",
+        SRC / "environments" / "vcm" / "llm.py",
         SRC / "environments" / "pd" / "llm.py",
     }
     for path in (SRC / "environments").rglob("*.py"):

@@ -1507,3 +1507,29 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   tutorial pages with a reduced config (no API pages, no mkdocstrings) and checked that every snippet section resolves and the
   section markers are stripped; the full strict build stays unverified, as in M0–M6. The real-backend snippet in step 7 is shown,
   not executed (it needs credentials and `httpx`).
+
+## 2026-10-22 — M7 task 3: `environments/vcm` (voluntary carbon market)
+- **Prices and baskets.** Prices are per credit. Credits are pooled across sellers: a buyer's credits come pro rata from the
+  sold projects, so a buyer's true value of a fill is the quantity-weighted true quality of the basket, not of one project.
+- **Verifiers.** The brief did not say how verifiers map to projects; I chose a one-verifier-per-project partition
+  (`Population.check()` enforces it). A verifier's *measurement* (true quality + bias + noise, `sigma`) is distinct from its
+  *report* (what it publishes); honest scripted verifiers publish the measurement. The verification layer accepts only `Fail`
+  timeouts (a missing verification has no sensible default).
+- **Clearing.** Uniform-price call auction, exact `Fraction` arithmetic. Price = midpoint (k=1/2) of the marginal bid/ask pair;
+  ties on the long side are rationed pro rata (not by arrival). Hand-worked cases are tests. `DefaultAction`/`DropRole` on a
+  market role means an order for quantity 0.
+- **Audits.** One uniform draw per project per round, in project order, keyed by path (not by a stateful counter), so the draws
+  do not depend on who acted first. Penalty applies when |reported − true| > `tol`. `mean_error` is 0.0 when nothing was audited.
+  Reputation lives in the store (`rep:<verifier>`, `last:clearing`); the observation connector copies it into state because
+  `observe` has no store access (Amendments).
+- **`settle_on`.** "reported"/"true" changes only the ledger's settlement value; it is not shown to reports (buyer reports state
+  value at known quality), so it cannot leak the truth.
+- **Test drivers.** `assert_noninterference` / `assert_arrival_invariant` need every listed agent pending in round 1, which a
+  multi-stage market lacks; the tests use custom drivers instead.
+- **`population_seed`** seeds only the drawn population, never play.
+- **Slow learning test (decision).** I first tried to show a tabular buyer exploiting the visible track record. On this fixture
+  every trading bid loses money (about −13 vs honest, −20..−24 vs inflating verifier), so the learner stays out whether or not
+  the record is visible. The slow test therefore asserts only that the naive buyer loses and the learner does not; it does not
+  claim a visible-vs-hidden separation for learners. The reputation effect is shown with scripted naive vs skeptical buyers
+  (tutorial step 5). Underdetermined by the brief; conservative reading taken.
+- **Out-of-scope edit.** `vcm/llm.py` added to the import allow-list in `tests/llm/test_integration.py`.
