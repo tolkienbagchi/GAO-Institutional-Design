@@ -859,3 +859,16 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   decision argument and `ReplayBackend` must serve "per `decision_id`"; this is how it learns which decision is asked about. The mock
   records it in `MockCall.decision_id`.
 - `MockBackend` raises `MockExhausted` (not a `BackendError`) when the script runs out, so a test bug is not silently retried as a transport error.
+
+## 2026-10-22 — M4 task 2: codec (`llm/codec.py`)
+- `DecisionCodec.render(request, memory, rejections)` has exactly those parameters (tested via `inspect.signature`), so nothing else can
+  be passed. **Render contract I had to add** (the brief does not say how the agent knows what to remember): the result is
+  `[system messages..., *memory, turn messages...]`; the agent stores `render(request, [], [])` minus the leading system messages as
+  the turn it remembers. Codecs must therefore render the same turn for the same request. Pinned `Protocol` unchanged.
+- `DefaultCodec` is split into `system_prompt(request)` and `task_prompt(request)` hooks so environment codecs override text, not
+  mechanics. Rejection reasons are appended to the *task* message ("Your previous reply was rejected: - ... Reply again with corrected
+  JSON only"); the rejected reply itself is not echoed back (the codec is only given the reasons).
+- `parse`: `response.parsed` if present, else the **first balanced `{...}`** in the text (string/escape aware) loaded with `json.loads`.
+  "First" is literal: if that first block is not valid JSON (`"{maybe} then {...}"`), it is a `CodecParseError`, not a search for a
+  later one. The dict is returned unvalidated and uncoerced (`{"amount": "5"}` stays a string).
+- `ReportRenderer` and `DefaultReportRenderer` ("Report (<layer>): <payload JSON>") live here; ids and paths are not in the prompt.
