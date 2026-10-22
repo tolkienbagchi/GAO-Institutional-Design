@@ -1,11 +1,11 @@
 # Reproducible runs
 
-Two small command-line tools run a session from a JSON file and check that it reproduces. Three
-demo configs are in `examples/configs/`: `auction.json`, `pd.json` and `pb.json`.
+One small command-line tool (`gao-idl`, or `python -m gao_idl.cli`) runs a session from a JSON file and checks that it reproduces. Three demo
+configs are in `examples/configs/`: `auction.json`, `pd.json` and `pb.json`.
 
 ```bash
-python -m gao_idl.run examples/configs/pd.json --out run.json
-python -m gao_idl.replay run.json
+gao-idl run examples/configs/pd.json --out run.json
+gao-idl replay run.json
 ```
 
 The first plays the session to the end and writes `run.json`; the second rebuilds it from the

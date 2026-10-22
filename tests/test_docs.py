@@ -18,7 +18,6 @@ import yaml
 
 import gao_idl
 import gao_idl.llm
-from tests.modules import load_module
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
@@ -28,7 +27,7 @@ def _documented_modules() -> list[str]:
     """Every module whose docstring does not declare it internal."""
     names = []
     for info in pkgutil.walk_packages(gao_idl.__path__, "gao_idl."):
-        module = load_module(info.name)
+        module = importlib.import_module(info.name)
         if not re.search(r"Stability: internal", module.__doc__ or ""):
             names.append(info.name)
     return names

@@ -254,7 +254,7 @@ replay identical
 - [ ] all four agents take part in both layers and the session finishes with the expected exit port
 - [ ] `check_determinism()` passes with the mock-LLM agent in the session
 - [ ] restoring from `session.json` gives the same result
-- [ ] for bonus: `python -m gao_idl.run` and `python -m gao_idl.replay` (see
+- [ ] for bonus: `gao-idl run` and `gao-idl replay` (see
       [Reproducible runs](runs.md)) work on `examples/configs/pd.json`
 
 ## Step 6: every public symbol is documented (5 min)
@@ -292,7 +292,7 @@ name is found in the API reference (`docs/api/index.md` lists every public name 
   possible. It plays a rating layer after the prisoner's dilemma.
 - Known limits you may see, none of which fail the exercise: the `knapsack` funding rule rejects the
   float costs that random agents invent (use `greedy`, `mes` or `phragmen` with random proposers);
-  `gao_idl.run` is a command-line module and must not be imported; the helpers in `gao_idl.testing`
+  the helpers in `gao_idl.testing`
   answer every decision of an agent with the same action.
 - If the participant's layer is more ambitious than the hour allows, stop at step 5 and record how
   far they got.

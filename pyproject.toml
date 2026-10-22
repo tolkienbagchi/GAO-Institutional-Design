@@ -21,6 +21,9 @@ classifiers = [
     "Topic :: Scientific/Engineering",
 ]
 
+[project.scripts]
+gao-idl = "gao_idl.cli:main"
+
 [project.optional-dependencies]
 llm = ["httpx"]
 dev = ["pytest", "pytest-timeout", "hypothesis", "ruff", "mypy", "build", "twine"]

@@ -34,3 +34,12 @@ assert resumed.finished and resumed.result is not None
 print(resumed.result.port)  # settle
 print(resumed.reports_for("alice")[0].payload)  # {'status': 'bid accepted', 'own_bid': 5.0}
 ```
+
+## Command line
+
+```bash
+gao-idl run examples/configs/pd.json --out run.json   # play a JSON config, write the session
+gao-idl replay run.json                               # rebuild it from the log, check it is identical
+```
+
+`python -m gao_idl.cli` does the same. See `docs/runs.md`.

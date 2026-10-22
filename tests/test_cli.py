@@ -1,8 +1,4 @@
-"""``python -m gao_idl.run`` and ``python -m gao_idl.replay`` on the demo configs.
-
-The modules are only ever run with ``-m`` (a subprocess), never imported: importing
-``gao_idl.run`` would replace the function ``gao_idl.run`` (see ``tests/modules.py``).
-"""
+"""``python -m gao_idl.cli run`` and ``... replay`` on the demo configs."""
 
 import json
 import os
@@ -20,11 +16,11 @@ CONFIGS = sorted((ROOT / "examples" / "configs").glob("*.json"))
 LIMIT_SECONDS = 20
 
 
-def _module(name: str, *args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
+def _cli(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
     package_root = str(Path(gao_idl.__file__).resolve().parents[1])
     path = os.pathsep.join(p for p in (package_root, os.environ.get("PYTHONPATH", "")) if p)
     return subprocess.run(
-        [sys.executable, "-W", "error", "-m", name, *args],
+        [sys.executable, "-W", "error", "-m", "gao_idl.cli", *args],
         cwd=cwd,
         env={**os.environ, "PYTHONPATH": path},
         capture_output=True,
@@ -34,7 +30,7 @@ def _module(name: str, *args: str, cwd: Path) -> subprocess.CompletedProcess[str
 
 
 def _run(config: Path, out: Path) -> subprocess.CompletedProcess[str]:
-    return _module("gao_idl.run", str(config), "--out", str(out), cwd=out.parent)
+    return _cli("run", str(config), "--out", str(out), cwd=out.parent)
 
 
 def test_there_is_one_demo_config_per_environment() -> None:
@@ -52,7 +48,7 @@ def test_run_then_replay(config: Path, tmp_path: Path) -> None:
     assert set(record["ledger"]) >= set(json.loads(config.read_text())["agents"])
     assert set(record["snapshot"]) == {"env_ref", "params", "seed", "log"}
 
-    replayed = _module("gao_idl.replay", str(out), cwd=tmp_path)
+    replayed = _cli("replay", str(out), cwd=tmp_path)
     assert replayed.returncode == 0, replayed.stderr
     assert "replay identical" in replayed.stdout
 
@@ -88,7 +84,7 @@ def test_replay_notices_a_changed_ledger(tmp_path: Path) -> None:
     out, record = _recorded(tmp_path)
     record["ledger"]["alice"] += 1.0
     out.write_text(json.dumps(record))
-    replayed = _module("gao_idl.replay", str(out), cwd=tmp_path)
+    replayed = _cli("replay", str(out), cwd=tmp_path)
     assert replayed.returncode == 1
     assert "utility of 'alice'" in replayed.stderr
 
@@ -97,7 +93,7 @@ def test_replay_notices_a_changed_result(tmp_path: Path) -> None:
     out, record = _recorded(tmp_path)
     record["result"]["port"] = "elsewhere"
     out.write_text(json.dumps(record))
-    replayed = _module("gao_idl.replay", str(out), cwd=tmp_path)
+    replayed = _cli("replay", str(out), cwd=tmp_path)
     assert replayed.returncode == 1
     assert "result differs" in replayed.stderr
 
@@ -108,14 +104,14 @@ def test_replay_notices_a_changed_input_log(tmp_path: Path) -> None:
     submitted = next(i for i, e in enumerate(log) if e["kind"] == "submitted")
     log[submitted]["action"] = {"move": "D" if log[submitted]["action"]["move"] == "C" else "C"}
     out.write_text(json.dumps(record))
-    replayed = _module("gao_idl.replay", str(out), cwd=tmp_path)
+    replayed = _cli("replay", str(out), cwd=tmp_path)
     assert replayed.returncode == 1
 
 
 def test_replay_refuses_a_file_of_another_kind(tmp_path: Path) -> None:
     other = tmp_path / "x.json"
     other.write_text(json.dumps({"format": "something/else"}))
-    replayed = _module("gao_idl.replay", str(other), cwd=tmp_path)
+    replayed = _cli("replay", str(other), cwd=tmp_path)
     assert replayed.returncode == 1
     assert "not a gao_idl.run/1 file" in replayed.stderr
 
@@ -140,11 +136,22 @@ def test_a_bad_config_is_reported_not_run(change: dict[str, Any], tmp_path: Path
     assert not (tmp_path / "run.json").exists()
 
 
-def test_the_package_does_not_import_the_entry_points() -> None:
+def test_importing_the_cli_module_leaves_run_a_function() -> None:
     code = (
-        "import sys, gao_idl; "
-        "assert 'gao_idl.run' not in sys.modules and 'gao_idl.replay' not in sys.modules; "
-        "assert callable(gao_idl.run)"
+        "import inspect, gao_idl, gao_idl.cli; "
+        "assert inspect.isfunction(gao_idl.run) and not hasattr(gao_idl.cli, 'nonexistent'); "
+        "assert callable(gao_idl.cli.main)"
     )
     env = {**os.environ, "PYTHONPATH": os.pathsep.join(p for p in sys.path if p)}
     subprocess.run([sys.executable, "-c", code], check=True, env=env)
+
+
+def test_installed_script_name_points_at_main() -> None:
+    import tomllib
+
+    scripts = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["scripts"]
+    assert scripts == {"gao-idl": "gao_idl.cli:main"}
+
+
+def test_no_subcommand_is_a_usage_error(tmp_path: Path) -> None:
+    assert _cli(cwd=tmp_path).returncode == 2

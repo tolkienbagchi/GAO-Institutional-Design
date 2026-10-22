@@ -1381,3 +1381,13 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   3. The PD root `Loop` exits through `done` (record `round_index`, `rounds`, `pairs`) and the reserved `truncated`; an exit port that is not
      routed in a `Seq` is re-exported by the `Seq`, so the connector only needs the `done` route.
 - Wording in the acceptance page is mine; the brief gave only the list of steps.
+
+## 2026-10-22 — M6 fix-up task 1: one CLI module (`gao_idl/cli.py`)
+- `gao_idl/run.py` and `gao_idl/replay.py` are replaced by `gao_idl/cli.py` with argparse subcommands `run CONFIG --out FILE` and `replay FILE`
+  (`python -m gao_idl.cli ...`, and `gao-idl ...` through `[project.scripts] gao-idl = "gao_idl.cli:main"`). Behaviour, exit codes (0/1/2),
+  output format `gao_idl.run/1` and messages are unchanged; the old `-m` warnings and the `tests/modules.py` source-reading workaround are
+  gone, and the module walkers import every module normally. This removes the clash noted in the M6 task 4 entry (that entry is history).
+- `tests/test_cli.py` now drives `python -m gao_idl.cli`, plus: importing `gao_idl.cli` leaves `gao_idl.run` the function, the script
+  entry point in `pyproject.toml`, and a missing subcommand exits 2. Not run here: the installed `gao-idl` executable (needs a real install).
+- Docs updated: `docs/runs.md`, `docs/ACCEPTANCE.md`, `README.md` (new "Command line" section). The module is tier *internal*; the CLI is
+  its supported interface.
