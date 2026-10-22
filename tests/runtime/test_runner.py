@@ -18,8 +18,11 @@ from gao_idl.agents import (
     ScriptedAgent,
 )
 from gao_idl.core import events as ev
+from gao_idl.core.errors import ContractError
 from gao_idl.core.ids import AgentId
 from gao_idl.core.schemas import DecisionRequest, ParticipantReport
+from gao_idl.core.timeout import DefaultAction, DropRole, Fail
+from gao_idl.environments.pd import build_repeated_pd
 from gao_idl.runtime.runner import RunnerPolicy, run, run_sync
 from gao_idl.runtime.session import Session
 from tests.aio import run_test, soon
@@ -565,3 +568,52 @@ def test_provide_after_a_normal_finish_also_raises() -> None:
             human.provide(req.decision_id, {"move": "C"})
 
     run_test(main())
+
+
+# ------------------------------------------------------------------ PD timeout parameter
+
+
+def _timeout_params(**extra: Any) -> dict[str, Any]:
+    return {**pd_params(["alice", "bob"], 2), **extra}
+
+
+def test_pd_deadline_with_default_action_plays_the_default_move() -> None:
+    session = Session.start(PD, _timeout_params(timeout={"kind": "default"}, default_move="D"), 1)
+    adapters: dict[AgentId, AgentAdapter] = {ALICE: NeverAgent(), BOB: ScriptedAgent(always("C"))}
+    run_test(run(session, adapters, RunnerPolicy(deadline_seconds=0.01)))
+    assert session.finished and not session.failed
+    defaulted = [e for e in session.trace if isinstance(e, ev.ActionDefaulted)]
+    assert [(e.decision_id, e.action) for e in defaulted] == [
+        ("pd/loop[0]/round/branch[pair_0]#row", {"move": "D"}),
+        ("pd/loop[1]/round/branch[pair_0]#row", {"move": "D"}),
+    ]
+    assert session.ledger.utility(ALICE) == 10.0  # D against C twice
+    assert session.ledger.utility(BOB) == 0.0
+    session.check_determinism()
+    Session.restore(json.loads(json.dumps(session.snapshot())))  # the params are JSON
+
+
+def test_pd_default_action_through_a_policy_object_and_the_default_fail() -> None:
+    process, _ = build_repeated_pd([ALICE, BOB], 1, timeout=DefaultAction(), default_move="C")
+    assert process.name == "pd"
+    for bad in (
+        {"timeout": DefaultAction()},  # no default_move
+        {"timeout": {"kind": "default"}, "default_move": "X"},
+        {"timeout": DropRole(), "default_move": "C"},
+        {"timeout": {"kind": "nope"}},
+    ):
+        with pytest.raises(ContractError):
+            build_repeated_pd([ALICE, BOB], 1, **bad)
+    build_repeated_pd([ALICE, BOB], 1, timeout=Fail(), default_move="C")  # ignored under Fail
+
+
+def test_pd_deadline_still_fails_by_default() -> None:
+    session = Session.start(PD, pd_params(["alice", "bob"], 1), 1)
+    run_test(
+        run(
+            session,
+            {ALICE: NeverAgent(), BOB: ScriptedAgent(always("C"))},
+            RunnerPolicy(deadline_seconds=0.01),
+        )
+    )
+    assert session.failed

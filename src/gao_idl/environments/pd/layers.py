@@ -1,5 +1,7 @@
 """The two layers of the repeated PD: one pair's round, and the automatic round counter."""
 
+from typing import Literal
+
 from numpy.random import Generator
 from pydantic import BaseModel
 
@@ -8,6 +10,7 @@ from gao_idl.core.ids import AgentId, Port, RoleId
 from gao_idl.core.layer import Contract, SimpleLayer
 from gao_idl.core.schemas import Config, Exit
 from gao_idl.core.store import StoreReadDenied, StoreView
+from gao_idl.core.timeout import DefaultAction, DropRole, Fail, TimeoutPolicy
 from gao_idl.environments.pd.schemas import (
     PDAction,
     PDObs,
@@ -107,11 +110,26 @@ def _report(
     )
 
 
-def pd_round_layer() -> SimpleLayer:
+def pd_round_layer(
+    timeout: TimeoutPolicy = Fail(),  # noqa: B008 (frozen model)
+    default_move: Literal["C", "D"] | None = None,
+) -> SimpleLayer:
     """One pair's round: roles ``row`` and ``col``, history in the store under ``hist:{pair}``.
 
-    The report discloses only this pair's round to its two members. Timeout policy: Fail.
+    The report discloses only this pair's round to its two members. ``timeout`` is the layer's
+    policy for an unanswered decision: ``Fail`` (default) or ``DefaultAction``, which plays
+    ``default_move`` (required then). ``DropRole`` is refused: a round needs both moves.
     """
+    if isinstance(timeout, DropRole):
+        raise ContractError("pd_round cannot use DropRole: the outcome needs both players' moves")
+    if isinstance(timeout, DefaultAction) and default_move not in ("C", "D"):
+        raise ContractError("a DefaultAction timeout needs default_move 'C' or 'D'")
+    fallback = PDAction(move=default_move) if default_move in ("C", "D") else None
+
+    def default_action(cfg: Config, role: RoleId) -> BaseModel:
+        assert fallback is not None  # only called under DefaultAction, which requires it
+        return fallback
+
     return SimpleLayer(
         name="pd_round",
         entry=Contract(
@@ -121,6 +139,8 @@ def pd_round_layer() -> SimpleLayer:
             store_writes=HISTORY_SCOPE,
         ),
         exits={DONE: PDRoundExit},
+        timeout=timeout,
+        default_action=default_action,
         observe=_observe,
         action_schema=_action_schema,
         outcome=_outcome,

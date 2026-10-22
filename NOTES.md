@@ -643,3 +643,15 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   unsatisfiable), not `NotImplementedError`. Arrays of anything else (`$ref`, `integer`, mixed `anyOf`, missing `items`)
   raise `NotImplementedError` naming the whole array fragment. `uniqueItems` is ignored (the result is always unique).
   Tests: a ballot-shaped schema over 200 samples (valid, duplicate-free, sizes 0-3 all occur), bounds, const-shaped items.
+
+## 2026-10-21 — M2 fix-up task 4: PD timeout parameter
+- `build_repeated_pd(..., timeout=Fail(), default_move=None)` and `pd_round_layer(timeout, default_move)`. Session params
+  must be JSON, so `timeout` also accepts the dict form (`{"kind": "default"}`), parsed with a pydantic `TypeAdapter`;
+  a policy object works when calling the factory directly but cannot go through `Session.start` params.
+- `DefaultAction` requires `default_move` in `{"C", "D"}` (`ContractError` otherwise). `default_move` is ignored under
+  `Fail` (not an error: the brief only constrains `DefaultAction`). **`DropRole` is refused with `ContractError`**: the
+  round's outcome needs both players' moves, so a dropped role would crash settlement (my addition to the brief).
+  An unparseable policy dict is also a `ContractError`.
+- Tests (in `test_runner.py`): `test_pd_deadline_with_default_action_plays_the_default_move` (two rounds, both defaulted
+  to `D`, session completes, JSON snapshot/restore works, utilities 10 / 0), bad-argument cases, and a check that the
+  default still fails the session on a deadline.

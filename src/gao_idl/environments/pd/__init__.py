@@ -3,6 +3,8 @@
 from collections.abc import Mapping, Sequence
 from typing import Any, Literal
 
+from pydantic import TypeAdapter, ValidationError
+
 from gao_idl.composition.connector import Connector, LedgerReadOnly
 from gao_idl.composition.loop import Loop
 from gao_idl.composition.par import DictJoiner, DisjointSplitter, Par
@@ -13,6 +15,7 @@ from gao_idl.core.errors import ContractError
 from gao_idl.core.ids import AgentId, Port
 from gao_idl.core.schemas import Config
 from gao_idl.core.store import StoreView
+from gao_idl.core.timeout import Fail, TimeoutPolicy
 from gao_idl.environments.pd.layers import (
     AGAIN,
     COL,
@@ -50,6 +53,8 @@ def build_repeated_pd(
     rounds: int,
     matching: Literal["fixed", "round_robin"] = "fixed",
     payoffs: Mapping[str, Sequence[float]] = STANDARD_PAYOFFS,
+    timeout: TimeoutPolicy | dict[str, Any] = Fail(),  # noqa: B008 (frozen model)
+    default_move: Literal["C", "D"] | None = None,
 ) -> tuple[Process, Config]:
     """Environment factory for the repeated PD; the root process is a ``Loop`` named ``pd``.
 
@@ -57,6 +62,10 @@ def build_repeated_pd(
     joined and handed to the automatic ``round_counter``, which exits ``finished`` after the last
     round (the loop exits through ``done``; truncation never happens) and ``again`` otherwise.
     Histories are private to the pair and live in the store under ``hist:{pair_id}``.
+
+    ``timeout`` is every pair's policy for an unanswered decision. As session params must be JSON,
+    it may be given as a dict (``{"kind": "default"}``). ``DefaultAction`` plays ``default_move``
+    (required then; ``ContractError`` otherwise); ``default_move`` is ignored under ``Fail``.
     """
     if isinstance(rounds, bool) or not isinstance(rounds, int) or rounds < 1:
         raise ContractError(f"rounds must be an int >= 1, got {rounds!r}")
@@ -64,6 +73,11 @@ def build_repeated_pd(
     check_agents(names)
     pairs_for_round(names, matching, 0)  # validates `matching`
     table = _payoffs(payoffs)
+    try:
+        policy: TimeoutPolicy = TypeAdapter(TimeoutPolicy).validate_python(timeout)
+    except ValidationError as e:
+        raise ContractError(f"invalid timeout policy {timeout!r}: {e}") from e
+    pd_round_layer(policy, default_move)  # validates the pair of arguments early
 
     def split(cfg: Config) -> dict[str, Config]:
         inp = PDRoundInput.model_validate(cfg.state)
@@ -109,7 +123,10 @@ def build_repeated_pd(
         return Config(state=state.model_dump(mode="json"), roles={})
 
     par = Par(
-        {f"pair_{k}": Primitive(pd_round_layer()) for k in range(len(names) // 2)},
+        {
+            f"pair_{k}": Primitive(pd_round_layer(policy, default_move))
+            for k in range(len(names) // 2)
+        },
         DisjointSplitter(split, PDRoundInput),
         DictJoiner(ROUND_DONE, RoundJoin),
         name="round",
