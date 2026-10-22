@@ -3,6 +3,7 @@ import re
 from typing import Any
 
 import numpy as np
+import pytest
 
 from gao_idl.composition import contracts
 from gao_idl.core import events as ev
@@ -10,7 +11,12 @@ from gao_idl.core.ids import AgentId, Port
 from gao_idl.core.paths import Branch, LoopIter
 from gao_idl.core.schemas import Exit
 from gao_idl.runtime.session import Session
-from gao_idl.testing import assert_replay_equivalent
+from gao_idl.testing import (
+    _run,
+    _trace_without_t,
+    assert_arrival_invariant,
+    assert_replay_equivalent,
+)
 from tests.composition import envs
 
 ALICE, BOB = AgentId("alice"), AgentId("bob")
@@ -130,3 +136,29 @@ def test_staggered_answers_with_multi_step_branches_replay_exactly() -> None:
     s.check_determinism()
     order = [e.path[-2:] for e in s.trace if e.kind == "layer_entered"]
     assert order.index([Branch("B"), "second"]) < order.index([Branch("A"), "second"])
+
+
+ACTIONS = {ALICE: {"x": 1}, BOB: {"x": 2}}
+
+
+def test_nested_arrival_projection_invariant() -> None:
+    """Loop(Par(Seq)): each iteration has two stages and the agents answer in either order."""
+    assert_arrival_invariant(envs.LOOP_PAR_SEQ, {"max_iter": 3}, 2, ACTIONS)
+
+
+def test_par_global_trace_follows_submission_order_but_projections_do_not() -> None:
+    a = _run(envs.PAR_PLAYERS, {}, 1, ACTIONS, (ALICE, BOB))
+    b = _run(envs.PAR_PLAYERS, {}, 1, ACTIONS, (BOB, ALICE))
+    assert _trace_without_t(a) != _trace_without_t(b)  # why exact trace equality cannot be asked
+    assert_arrival_invariant(envs.PAR_PLAYERS, {}, 1, ACTIONS)
+
+
+def test_arrival_invariant_detects_order_dependence_outside_branches() -> None:
+    with pytest.raises(AssertionError, match="outside every branch"):
+        assert_arrival_invariant(envs.ORDER_LEAK, {}, 1, ACTIONS)
+
+
+def test_arrival_invariant_detects_order_dependence_inside_a_branch() -> None:
+    acts = {**ACTIONS, AgentId("carol"): {"x": 3}}
+    with pytest.raises(AssertionError, match="under branch root"):
+        assert_arrival_invariant(envs.ORDER_LEAK, {"in_branch": True}, 1, acts)

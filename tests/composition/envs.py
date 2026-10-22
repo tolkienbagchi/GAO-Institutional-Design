@@ -1,14 +1,19 @@
 """Composite environment factories used only by tests (addressable via ``env_ref`` strings)."""
 
+from dataclasses import dataclass
 from typing import Any
+
+from pydantic import BaseModel
 
 from gao_idl.composition.connector import Connector
 from gao_idl.composition.loop import Loop
 from gao_idl.composition.par import DictJoiner, DisjointSplitter, OpenState, Par
 from gao_idl.composition.primitive import Primitive
-from gao_idl.composition.process import Process
+from gao_idl.composition.process import Ctx, Frame, Process, StepResult
 from gao_idl.composition.seq import Seq
-from gao_idl.core.ids import AgentId, Port, RoleId
+from gao_idl.core import events as ev
+from gao_idl.core.ids import AgentId, DecisionId, Port, RoleId
+from gao_idl.core.layer import Contract
 from gao_idl.core.schemas import Config
 from tests.composition.layers import (
     Agents,
@@ -39,6 +44,7 @@ PAR_SHARED_STORE = "tests.composition.envs:par_shared_store"
 SNOOP = "tests.composition.envs:snoop"
 LOOP_PAR_SEQ = "tests.composition.envs:loop_par_seq"
 SEQ_STORE_CONNECTOR = "tests.composition.envs:seq_store_connector"
+ORDER_LEAK = "tests.composition.envs:order_leak"
 
 
 def seq_choice(port: str = "a", payload: int = 5) -> tuple[Process, Config]:
@@ -169,3 +175,58 @@ def loop_par_seq(max_iter: int = 3) -> tuple[Process, Config]:
     again = Connector(lambda rec, ledger, store: Config(state={"agents": agents}, roles={}), Agents)
     loop = Loop(par, {Port("again"): again}, {}, max_iter=max_iter, on_limit="truncate")
     return loop, Config(state={"agents": agents}, roles={})
+
+
+@dataclass(frozen=True, eq=False)
+class OrderLeak:
+    """Deliberately broken wrapper: records the order in which inputs arrive in the trace."""
+
+    inner: Process
+
+    @property
+    def name(self) -> str:
+        return self.inner.name
+
+    @property
+    def entry(self) -> Contract:
+        return self.inner.entry
+
+    @property
+    def exits(self) -> dict[Port, type[BaseModel]]:
+        return self.inner.exits
+
+    def start(self, cfg: Config, ctx: Ctx) -> Frame:
+        return self.inner.start(cfg, ctx)
+
+    def validate(
+        self, frame: Frame, decision_id: DecisionId, agent_id: AgentId, action: dict[str, Any]
+    ) -> BaseModel:
+        return self.inner.validate(frame, decision_id, agent_id, action)
+
+    def step(
+        self, frame: Frame, inputs: list[ev.Submitted | ev.TimedOut], ctx: Ctx
+    ) -> tuple[Frame, StepResult]:
+        for inp in inputs:
+            ctx.trace.emit(
+                ev.StoreAccess(
+                    t=ctx.clock.tick(), path=list(ctx.path), key=inp.decision_id, mode="read"
+                )
+            )
+        return self.inner.step(frame, inputs, ctx)
+
+
+def order_leak(in_branch: bool = False) -> tuple[Process, Config]:
+    """alice and bob decide in a layer that leaks arrival order (inside branch A if ``in_branch``).
+
+    With ``in_branch`` the environment is a Par: branch A is the leaky layer (alice, bob), branch B
+    an honest one (carol).
+    """
+    if not in_branch:
+        roles = {RoleId("player:0"): AgentId("alice"), RoleId("player:1"): AgentId("bob")}
+        return OrderLeak(Primitive(decision_layer("d"))), Config(state={"start": 0}, roles=roles)
+    par = Par(
+        {"A": OrderLeak(Primitive(decision_layer("A"))), "B": Primitive(decision_layer("B"))},
+        DisjointSplitter(split_agents, Agents),
+        DictJoiner(Port("done"), OpenState),
+    )
+    return par, Config(state={"agents": {"A": ["alice", "bob"], "B": ["carol"]}}, roles={})

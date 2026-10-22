@@ -228,9 +228,9 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   a `DeterminismError`. Still true per call: the input is routed to its branch and every live branch is
   stepped once, in sorted-name order.
 - Consequence: for `Par`, traces are NOT independent of submission order (they cannot be: if A completes
-  before B has answered, A's events are already in the trace). `assert_arrival_invariant`, which compares
-  exact traces across submission permutations, therefore does not apply to Par environments; it is only used
-  on Seq/Primitive environments in M1.
+  before B has answered, A's events are already in the trace). Exact trace equality across submission
+  permutations therefore cannot be asked of Par environments. (Superseded by the M1 fix-up, task 2 below:
+  `assert_arrival_invariant` now checks projections and does apply to Par environments.)
 - `Par.step` returns `Continue` when a branch returned `Continue`, when the backlog is non-empty, or when all
   branches have exited (the join runs on the *next* call, "one thing per call"); otherwise `Pending` with the
   requests of every pending branch in sorted branch order. A failing branch stops the call (later branches
@@ -392,3 +392,29 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - Assumption this relies on: stepping a quiescent subtree with no inputs is idempotent (emits nothing and
   returns the same `Pending`). True for `Primitive`, `Seq`, `Loop` and `Par` as built here; a custom
   `Process` must satisfy it too.
+
+## 2026-10-22 — M1 fix-up task 1: PyPI still unreachable (skipped)
+
+- `pip download hypothesis` fails again ("No matching distribution"), tried once, not retried. So
+  `pip install -e ".[dev]"`, `pytest -q` (the 3 hypothesis tests) and `python -m build` were NOT run; they stay
+  unverified, exactly as in M0/M1. The gate runs with the standalone ruff/mypy/pytest and
+  `PYTHONPATH=src:.:/usr/local/lib/python3.13/dist-packages`.
+
+## 2026-10-22 — M1 fix-up task 2: arrival invariance is projection invariance
+
+- `assert_arrival_invariant` now drives each submission order to completion (every round: all pending
+  decisions of each agent, in that order, then `advance()`), so multi-round environments such as the nested
+  `Loop(Par(Seq))` fixture are covered. The first round still insists that every agent in `actions` has a
+  pending decision; later rounds skip agents with none, and a stuck session raises.
+- Per order it compares against the first run: (1) `ledger.information(agent)` exactly; (2) `ledger.snapshot()`;
+  (3) per branch root, the events under that root, modulo `t`; (4) the events with no `Branch` in their path,
+  modulo `t`. An event belongs to the root = its path up to its *last* `Branch` element, so with nested Pars an
+  outer branch's events outside any inner branch form their own group (the brief's wording only covers
+  roots with no Branch below them; this is the same thing there and also checks the outer events).
+- Deviation on (2): increments in the snapshot carry `t` from the global logical clock, which interleaves by
+  submission order when there is a Par (verified: the *only* difference between the two orders of the nested
+  fixture is `t` on utility increments). The snapshot is therefore compared exactly when the trace has no
+  event under a `Branch`, and with `t` dropped from increments when it has. Information items carry no `t`.
+- Negative controls (tests): `OrderLeak` (a wrapper that traces arrival order) fails outside any branch and
+  inside one; `test_par_global_trace_follows_submission_order_but_projections_do_not` shows exact trace
+  equality really does differ for a Par while the projections agree.

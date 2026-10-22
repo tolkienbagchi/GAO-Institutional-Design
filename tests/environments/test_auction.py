@@ -5,6 +5,8 @@ import numpy as np
 import pytest
 
 from gao_idl.composition.contracts import describe
+from gao_idl.composition.par import DictJoiner, DisjointSplitter, OpenState, Par
+from gao_idl.composition.process import Process
 from gao_idl.core import events as ev
 from gao_idl.core.errors import (
     ContractError,
@@ -14,8 +16,8 @@ from gao_idl.core.errors import (
     UnknownDecision,
     WrongAgent,
 )
-from gao_idl.core.ids import AgentId, DecisionId
-from gao_idl.core.schemas import DecisionRequest, Exit, ParticipantReport
+from gao_idl.core.ids import AgentId, DecisionId, Port
+from gao_idl.core.schemas import Config, DecisionRequest, Exit, ParticipantReport
 from gao_idl.environments.auction import build_auction
 from gao_idl.environments.auction.bidding import BidReceipt
 from gao_idl.environments.auction.settlement import SettlementReport
@@ -677,6 +679,37 @@ def test_arrival_invariance_full() -> None:
             AgentId("c"): {"amount": 2.0},
         },
     )
+
+
+PAR_AUCTIONS = "tests.environments.test_auction:par_auctions"
+
+
+def par_auctions(auctions: dict[str, dict[str, float]], **kw: Any) -> tuple[Process, Config]:
+    """One full auction per branch (disjoint bidders), joined when all have settled."""
+
+    def split(cfg: Config) -> dict[str, Config]:
+        return {b: build_auction(vals, **kw)[1] for b, vals in cfg.state["auctions"].items()}
+
+    branches = {b: build_auction(vals, **kw)[0] for b, vals in auctions.items()}
+    par = Par(branches, DisjointSplitter(split, OpenState), DictJoiner(Port("done"), OpenState))
+    return par, Config(state={"auctions": auctions}, roles={})
+
+
+def test_parallel_auctions_arrival_projection_invariant() -> None:
+    params = {"auctions": {"A": {"alice": 9.0, "bob": 7.0}, "B": {"carol": 5.0, "dave": 8.0}}}
+    actions = {
+        ALICE: {"amount": 8.0},
+        BOB: {"amount": 6.0},
+        AgentId("carol"): {"amount": 4.0},
+        AgentId("dave"): {"amount": 7.0},
+    }
+    for rule in ("first_price", "second_price"):
+        assert_arrival_invariant(PAR_AUCTIONS, {**params, "rule": rule}, 5, actions)
+    s = Session.start(PAR_AUCTIONS, params, 5)
+    s.advance()
+    assert {r.decision_id for r in s.pending()} == {
+        f"par/branch[{b}]/bidding#bidder:{i}" for b in "AB" for i in (0, 1)
+    }
 
 
 def test_truthful_second_price_on_grid() -> None:

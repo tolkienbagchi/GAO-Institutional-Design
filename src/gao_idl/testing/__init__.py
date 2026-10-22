@@ -7,6 +7,7 @@ wants to give the same action to each of its decisions; the runtime itself has n
 """
 
 import itertools
+import json
 from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from typing import Any
@@ -18,6 +19,7 @@ from gao_idl.core.schemas import Config
 from gao_idl.runtime.session import Session
 
 MAX_PERMUTED_AGENTS = 5
+MAX_ROUNDS = 1000
 
 
 def assert_replay_equivalent(session: Session) -> None:
@@ -49,16 +51,32 @@ def _run(
     actions: dict[AgentId, dict[str, Any]],
     order: Sequence[AgentId],
 ) -> Session:
+    """Run to completion; in every round each agent in ``order`` answers all its pending decisions.
+
+    All answers of a round are submitted before the next ``advance()``. In the first round every
+    agent in ``order`` must have a pending decision; in later rounds agents without one are skipped.
+    """
     session = Session.start(env_ref, params, seed)
-    session.advance()
-    for agent in order:
-        pending = session.pending_for(agent)
-        if not pending:
-            raise AssertionError(f"agent {agent!r} has no pending decision to act on")
-        for request in pending:
-            session.submit(agent, request.decision_id, actions[agent])
-    session.advance()
-    return session
+    for round_ in range(MAX_ROUNDS):
+        session.advance()
+        if session.finished:
+            return session
+        submitted = False
+        for agent in order:
+            pending = session.pending_for(agent)
+            if not pending:
+                if round_ == 0:
+                    raise AssertionError(f"agent {agent!r} has no pending decision to act on")
+                continue
+            for request in pending:
+                session.submit(agent, request.decision_id, actions[agent])
+            submitted = True
+        if not submitted:
+            waiting = sorted({r.agent_id for r in session.pending()})
+            raise AssertionError(
+                f"session is not finished and no agent in actions can act: {waiting}"
+            )
+    raise AssertionError(f"session did not finish within {MAX_ROUNDS} rounds")
 
 
 def _trace_without_t(session: Session) -> list[dict[str, Any]]:
@@ -75,22 +93,81 @@ def _information(session: Session, agent: AgentId) -> list[dict[str, Any]]:
     return [x.model_dump(mode="json") for x in session.ledger.information(agent)]
 
 
+def _branch_root(path: list[Any]) -> str | None:
+    """JSON key of the prefix ending in the path's last ``Branch`` element (None: no Branch)."""
+    last = None
+    for i, elem in enumerate(path):
+        if isinstance(elem, dict) and set(elem) == {"branch"}:
+            last = i
+    return None if last is None else json.dumps(path[: last + 1])
+
+
+def _projections(session: Session) -> dict[str | None, list[dict[str, Any]]]:
+    """Trace events (modulo ``t``) grouped by branch root; key None holds the Branch-free events.
+
+    Every event belongs to exactly one group, so an event under nested Pars is grouped by its
+    innermost branch and events of an outer branch outside any inner one form that branch's group.
+    Within a group the relative order is preserved.
+    """
+    groups: dict[str | None, list[dict[str, Any]]] = {None: []}
+    for d in _trace_without_t(session):
+        groups.setdefault(_branch_root(d["path"]), []).append(d)
+    return groups
+
+
+def _snapshot(session: Session, *, drop_t: bool) -> dict[str, Any]:
+    """The ledger snapshot; ``drop_t`` removes the logical time of utility increments."""
+    snap = session.ledger.snapshot()
+    if drop_t:
+        for incs in snap["increments"].values():
+            for inc in incs:
+                inc.pop("t", None)
+    return snap
+
+
 def assert_arrival_invariant(
     env_ref: str, params: dict[str, Any], seed: int, actions: dict[AgentId, dict[str, Any]]
 ) -> None:
-    """Traces (modulo ``t``) and information streams must not depend on submission order."""
+    """Outcomes must not depend on the order in which agents submit (projection invariance).
+
+    The environment is run to completion once per submission order (all permutations of the agents
+    in ``actions`` up to five agents, otherwise the sorted order, its reverse and every rotation);
+    within a round every agent answers all its pending decisions in that order. Against the first
+    run, every other run must have
+
+    1. identical ``ledger.information(agent)`` for every agent (exact: these carry no ``t``);
+    2. an identical ``ledger.snapshot()`` (exact, except that when the trace has events under a
+       ``Branch`` the ``t`` of utility increments is ignored: it is the global logical clock);
+    3. for every branch root (the path prefix ending in an event's last ``Branch`` element), an
+       identical subsequence of trace events under that root, modulo ``t``;
+    4. an identical subsequence of the events whose path contains no ``Branch``, modulo ``t``.
+
+    Whole-trace equality is deliberately not required: a ``Par`` applies inputs in log order, so the
+    interleaving of events of different branches legitimately follows the submission order, while
+    each branch (and everything outside the Pars) must not. For an environment without ``Par``
+    check 3 is vacuous and check 4 is the whole trace. ``t`` is dropped from trace events because
+    the logical clock is global.
+    """
     agents = sorted(actions)
     reference: Session | None = None
+    ref_proj: dict[str | None, list[dict[str, Any]]] = {}
+    has_branches = False
     for order in _orders(agents):
         session = _run(env_ref, params, seed, actions, order)
+        proj = _projections(session)
         if reference is None:
-            reference = session
+            reference, ref_proj = session, proj
+            has_branches = len(proj) > 1  # some event sits under a Branch: the clock interleaves
             continue
-        if _trace_without_t(session) != _trace_without_t(reference):
-            raise AssertionError(f"trace depends on arrival order; differing order: {order}")
-        for agent in agents:
+        for agent in sorted(set(_agents_in(session)) | set(_agents_in(reference))):
             if _information(session, agent) != _information(reference, agent):
                 raise AssertionError(f"information for {agent!r} depends on order {order}")
+        if _snapshot(session, drop_t=has_branches) != _snapshot(reference, drop_t=has_branches):
+            raise AssertionError(f"ledger snapshot depends on order {order}")
+        for root in sorted(set(proj) | set(ref_proj), key=lambda r: (r is not None, r or "")):
+            if proj.get(root, []) != ref_proj.get(root, []):
+                where = "outside every branch" if root is None else f"under branch root {root}"
+                raise AssertionError(f"trace events {where} depend on arrival order {order}")
 
 
 def assert_noninterference(
@@ -135,9 +212,6 @@ def _registered(process: Process, cfg: Config) -> Iterator[tuple[str, dict[str, 
         yield "gao_idl.testing:_adhoc_factory", {"key": key}
     finally:
         del _ADHOC[key]
-
-
-MAX_ROUNDS = 1000
 
 
 def _drive(session: Session, actions: dict[AgentId, dict[str, Any]]) -> None:
