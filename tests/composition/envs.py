@@ -1,5 +1,6 @@
 """Composite environment factories used only by tests (addressable via ``env_ref`` strings)."""
 
+from gao_idl.composition.loop import Loop
 from gao_idl.composition.par import DictJoiner, DisjointSplitter, OpenState, Par
 from gao_idl.composition.primitive import Primitive
 from gao_idl.composition.process import Process
@@ -8,8 +9,11 @@ from gao_idl.core.ids import AgentId, Port, RoleId
 from gao_idl.core.schemas import Config
 from tests.composition.layers import (
     Agents,
+    accumulate_layer,
     choice_layer,
+    counter_layer,
     decision_layer,
+    n_feedback,
     rec_to_seed,
     split_agents,
     step_layer,
@@ -19,6 +23,8 @@ from tests.composition.layers import (
 SEQ_CHOICE = "tests.composition.envs:seq_choice"
 SEQ_DECISIONS = "tests.composition.envs:seq_decisions"
 PAR_PLAYERS = "tests.composition.envs:par_players"
+LOOP_COUNTER = "tests.composition.envs:loop_counter"
+LOOP_DECISIONS = "tests.composition.envs:loop_decisions"
 
 
 def seq_choice(port: str = "a", payload: int = 5) -> tuple[Process, Config]:
@@ -53,3 +59,30 @@ def par_players(
         DictJoiner(Port("done"), OpenState),
     )
     return par, Config(state={"agents": agents}, roles={})
+
+
+def loop_counter(
+    max_iter: int = 10, on_limit: str = "truncate", limit: int = 3
+) -> tuple[Process, Config]:
+    """Automatic counter: feeds ``again`` back until n hits ``limit``, then exits ``finished``."""
+    assert on_limit in ("truncate", "fail")
+    loop = Loop(
+        Primitive(counter_layer(limit=limit)),
+        feedback={Port("again"): n_feedback()},
+        until={Port("stop"): Port("finished")},
+        max_iter=max_iter,
+        on_limit=on_limit,  # type: ignore[arg-type]
+    )
+    return loop, Config(state={"n": 0}, roles={})
+
+
+def loop_decisions(threshold: int = 10, max_iter: int = 10) -> tuple[Process, Config]:
+    """alice adds her action to a running total each iteration until it reaches ``threshold``."""
+    loop = Loop(
+        Primitive(accumulate_layer(threshold=threshold)),
+        feedback={Port("again"): rec_to_seed({"player": "alice"})},
+        until={Port("stop"): Port("finished")},
+        max_iter=max_iter,
+        on_limit="truncate",
+    )
+    return loop, Config(state={"start": 0}, roles={RoleId("player"): AgentId("alice")})

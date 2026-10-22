@@ -1,5 +1,6 @@
 """Small layers and connectors used to build composite test environments."""
 
+from dataclasses import replace
 from typing import Any
 
 from numpy.random import Generator
@@ -136,3 +137,41 @@ def split_agents(cfg: Config) -> dict[str, Config]:
         }
         out[branch] = Config(state={"start": 0}, roles=roles)
     return out
+
+
+def counter_layer(name: str = "count", limit: int = 3) -> SimpleLayer:
+    """Automatic layer: ``N(n)`` -> ``N(n+1)``; exits ``again`` while n+1 < limit, else ``stop``."""
+
+    def export(cfg: Config, outcome: BaseModel) -> Exit:
+        n = N.model_validate(outcome.model_dump()).n
+        return Exit(port=Port("again" if n < limit else "stop"), record={"n": n})
+
+    return SimpleLayer(
+        name=name,
+        entry=Contract(state_schema=N),
+        exits={Port("again"): N, Port("stop"): N},
+        outcome=lambda cfg, actions, rng, store: N(n=N.model_validate(cfg.state).n + 1),
+        export=export,
+    )
+
+
+def n_feedback() -> Connector:
+    """``N`` record -> ``N`` state (the loop-back connector for ``counter_layer``)."""
+
+    def fn(rec: dict[str, Any], ledger: Any, store: StoreView) -> Config:
+        return Config(state={"n": rec["n"]}, roles={})
+
+    return Connector(fn, N)
+
+
+def accumulate_layer(name: str = "acc", threshold: int = 10) -> SimpleLayer:
+    """``decision_layer`` with exits ``again`` / ``stop`` (stop once the payload >= threshold)."""
+
+    def export(cfg: Config, out: BaseModel) -> Exit:
+        rec = Rec.model_validate(out.model_dump())
+        port = "stop" if rec.payload >= threshold else "again"
+        return Exit(port=Port(port), record=rec.model_dump())
+
+    return replace(
+        decision_layer(name), exits={Port("again"): Rec, Port("stop"): Rec}, export=export
+    )

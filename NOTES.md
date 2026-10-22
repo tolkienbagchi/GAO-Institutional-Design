@@ -245,3 +245,23 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   for roles: `branch_10` runs before `branch_2`. Deterministic, only affects trace order.
 - Branches share the session `Store` (see task 6 for the hazard and tests). Par emits no events of its own.
 - Added `ParFrame.backlog` and `ParFrame.failed` to the brief's fields; children are `SerializeAsAny`.
+
+## 2026-10-21 — M1 task 4: Loop
+- Iteration `i` (0-based) runs at `child(ctx.path, LoopIter(i))`; the body's own name is *not* added, so a
+  `Primitive` body issues ids like `loop/loop[2]#player` and a `Par` body gets `loop/loop[2]/branch[x]#…`.
+- **Limit semantics (my reading of "if `i == max_iter` is reached and the body would feed back again"):**
+  after iteration `k` exits through a feedback port, feeding back would start iteration `k+1`; if
+  `k+1 >= max_iter` the limit applies. So `max_iter=2` runs iterations 0 and 1, and `iterations` in the
+  truncated record equals `max_iter`. A body that exits through an `until` port on its last allowed
+  iteration terminates normally (no `Truncated`). **The feedback connector is not run at the limit** (it would
+  build a config for an iteration that never starts, and could write the store). `last_exit` is the body's
+  exit *record* only, as briefed; the port it exited through is not included.
+- `on_limit` is a required argument (the brief lists no default), `name` is an optional keyword (`"loop"`).
+  `on_limit="fail"` emits one `Failed` event at the loop's path and returns `FailedResult`; the reserved
+  `"truncated"` port is in `Loop.exits` in both modes.
+- Wiring errors (`ContractError`): port in both maps; port in neither (every body exit port must be routed);
+  a map key that is not a body exit; `"truncated"` as an `until` target; feedback connector `output_schema`
+  not identical to the body's entry `state_schema`; `max_iter` not an int >= 1 (bools rejected); bad
+  `on_limit`; two `until` ports mapping to one target with different record schemas.
+- `LoopFrame` has extra fields `exited_port`, `exited_record`, `result`, `failed` (see Seq/Par notes);
+  once `result` or `failed` is set, stepping again returns it without re-emitting anything.
