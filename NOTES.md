@@ -306,3 +306,36 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   order follows the input-log order (see the Par note), which is deterministic given the log but is the
   agents' choice, so environments should not rely on cross-branch store dependencies.
 - Ordering of writes before reads is not checked statically (the brief says to skip it).
+
+## 2026-10-21 — M1 task 7: settlement layer and the full auction
+- `build_auction` returns `Seq(bidding, {"settle": (connector, settlement)}, name="auction")`; the brief's
+  sketch had no `name`, I added `name="auction"` so the root path is `auction` and ids read
+  `auction/bidding#bidder:0`. `build_bidding_only` now shares a small `_bidders` helper with it (behaviour
+  unchanged; its state dict and roles are identical).
+- **Reserve semantics (ambiguous; I took the literal reading — please confirm).** "Bids below reserve are
+  ignored" is implemented as a pure filter (`bid >= reserve` is eligible, so a bid equal to the reserve
+  clears), after which the normal rules apply. Consequence: under second price, a *single* eligible bidder
+  pays 0 even though a reserve exists. The textbook Vickrey auction with reserve charges
+  `max(reserve, highest losing bid)`; that is a one-line change in `settlement.py` (`price = max(price,
+  reserve)`) and a flip of one assertion in `test_reserve_ignores_low_bids_and_clears_at_equality`.
+  First price is unaffected.
+- The reserve lives in `settlement_layer(reserve)` (the environment), not in `SettlementState`, whose fields
+  are exactly the brief's four. The `unsold` port is declared only when a reserve is given. `UnsoldOutcome`
+  is `{reserve, payments, utilities}` with zero entries for every bidder; its `utilities` are credited as 0.0
+  increments like any outcome's. **No participant report is delivered when the item goes unsold**
+  (`SettlementReport` requires a winner and the brief defines no other report), so bidders see only their
+  `BidReceipt`. Open question for the next milestone: should there be an `UnsoldReport`?
+- `SettlementReport` omits `all_bids` from its JSON entirely (custom wrap serializer) unless `reveal_bids`,
+  rather than serialising `null`, so "lacks `all_bids`" is literally true of the delivered payload.
+  `winning_payment` is the price the winner pays; `own_*` fields are the recipient's.
+- Settlement errors are `ContractError` (they escape `advance()`): unknown `rule`, a bidder missing from
+  `values`, or no bids at all without a reserve. (An unknown rule is normally caught earlier by the bidding
+  layer's `Literal` schema.)
+- Ties: highest bid wins, smallest agent id (plain string order) among equal bids; the second price is the
+  highest *other* eligible bid, so with a tie it equals the winning bid.
+- The M0 bidding tests were moved with `git mv` from `tests/runtime/test_session_bidding.py` to
+  `tests/environments/test_auction.py` (history kept) and the new tests appended. They still import the
+  bidding-only factories from `tests/runtime/envs.py`. That file is mostly generic Session behaviour exercised
+  through the bidding layer, so a later milestone may want to split it again.
+- `assert_noninterference` / `assert_arrival_invariant` drive one decision round (they submit once per agent
+  and advance), which is exactly what the two-layer auction needs because settlement is automatic.
