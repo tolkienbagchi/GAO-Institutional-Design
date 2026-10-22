@@ -943,3 +943,20 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - `Session.replay` is unchanged: it calls `advance()` before each `ExternalResponse` (it is not a submission), which differs from the
   live batching but cannot change the trace (Par applies inputs one at a time; amendment M1-1) — confirmed by the `Par` test.
 - Mutation check (reverted): not draining/recording in the runner fails 7 tests.
+
+## 2026-10-22 — M4 task 6: environment codecs (`environments/auction/llm.py`, `environments/pd/llm.py`)
+- `AuctionCodec`, `AuctionReportRenderer`, `PDCodec`, `PDReportRenderer`. They subclass `DefaultCodec` / `DefaultReportRenderer` and only
+  override the prompt text; they import nothing but `gao_idl.core.schemas`, `gao_idl.llm.*` and `json` (tested), and are not imported
+  by the environments' `__init__`, so the environments stay usable without the `llm` package.
+- **The prompts state only what the observation says.** The auction observation has the value, the rule name, the bidder list, a
+  tie-break tag and a disclosure tag; the prompt turns those tags into sentences (a lookup table in the codec, a reader's gloss on the
+  tag, not new information) and does **not** state a payoff or utility rule or a reserve, because the observation omits them. The PD
+  prompt does not give a payoff table (the observation has none); the player learns its own payoff from the report after each round.
+  A model therefore plays the PD without knowing the payoffs. That follows the brief ("do not reveal the payoff matrix if the
+  observation omits it") but makes the PD prompt weak; whether the PD observation should carry the payoffs is a game-design question for you.
+- The source-grep test checks the lowercase source for `ledger`, `store`, `session`, `outcome` (docstrings and comments included), which
+  is why the module docstrings avoid those words. Sentinel test: bob's prompts never contain alice's value `7777.5`; a control against
+  `tests.runtime.envs:bidding_leaky` shows the check does find a leak.
+- Round-robin PD: the observation is already per pair, so a prompt shows history only against the current opponent (empty for a new
+  one). Opponent names appear in no PD prompt (the observation does not carry them); the auction prompt names the other bidders because
+  the observation's `bidders` list does.
