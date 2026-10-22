@@ -65,11 +65,16 @@ class AnthropicBackend:
         schema_transform: bool = True,
         max_retries: int = 3,
         backoff_s: float = 0.5,
+        send_temperature: bool = False,
         sleep: Sleep = asyncio.sleep,
         transport: Transport = httpx_transport,
     ) -> None:
         self._url = base_url.rstrip("/") + "/v1/messages"
         self._model = model
+        # Current models reject the ``temperature`` parameter ("deprecated for this model",
+        # HTTP 400). It is omitted unless ``send_temperature=True`` (older models only); the
+        # agent's ``temperature`` argument is then recorded in ``Response.raw`` but not sent.
+        self._send_temperature = send_temperature
         self._credential = credential
         self._api_version = api_version
         self._extra = dict(extra_headers or {})
@@ -96,9 +101,10 @@ class AnthropicBackend:
         body: dict[str, Any] = {
             "model": self._model,
             "max_tokens": max_tokens,
-            "temperature": temperature,
             "messages": turns,
         }
+        if self._send_temperature:
+            body["temperature"] = temperature
         if system:
             body["system"] = system
         if response_schema is not None:

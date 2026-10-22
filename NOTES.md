@@ -1604,3 +1604,11 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - **Tutorial 10/designing/design skill**: slow external simulator = role + `ExternalRecorder` adapter; automatic layer calling a slow
   function is not recorded. `llms.md` was touched only for the `build_vcm` parameter row (defaults changed, `market_form` added).
 - Example 11 in `GAO_EXAMPLE_FAST=1` mode trains fewer episodes, so step 6 numbers differ slightly from the tutorial's (full mode).
+
+## 2026-10-22 — live demo finding: current models reject `temperature` (reviewer change)
+- The first live Anthropic run (claude-haiku-5-5) failed with HTTP 400 "`temperature` is deprecated for this model".
+  `AnthropicBackend` no longer sends `temperature` unless constructed with `send_temperature=True` (older models). The
+  `LLMAgent.temperature` argument is unchanged and still passed to backends; the OpenAI-compatible backend still sends
+  it. Tests: `test_request_shape` asserts the key is absent; `test_temperature_is_sent_only_on_request` covers the opt-in.
+- Also from the live run: a key not scoped to a workspace needs an `anthropic-workspace-id` header (pass via
+  `extra_headers`); a workspace-scoped key needs nothing. The demo script reads `GAO_ANTHROPIC_WORKSPACE_ID` for this.

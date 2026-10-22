@@ -53,6 +53,13 @@ def complete(b: Any, messages: list[Message], schema: dict[str, Any] | None = No
 USER = [Message(role="user", content="u")]
 
 
+def test_temperature_is_sent_only_on_request() -> None:
+    """``send_temperature=True`` restores the parameter for models that still accept it."""
+    b, transport, _ = make([msg('{"amount": 1}')], send_temperature=True)
+    run_test(b.complete(USER, None, temperature=0.3, max_tokens=8, timeout_s=3.0))
+    assert transport.requests[-1][2]["temperature"] == 0.3
+
+
 def test_request_shape() -> None:
     b, transport, _ = make([msg('{"amount": 5}')], extra_headers={"anthropic-beta": "x-1"})
     messages = [
@@ -78,7 +85,8 @@ def test_request_shape() -> None:
         {"role": "assistant", "content": "a1"},
         {"role": "user", "content": "u3"},
     ]
-    assert (body["model"], body["temperature"], body["max_tokens"]) == ("claude-x", 0.0, 16)
+    assert (body["model"], body["max_tokens"]) == ("claude-x", 16)
+    assert "temperature" not in body  # current models reject it; opt in with send_temperature
     fmt = body["output_config"]["format"]
     assert fmt == {"type": "json_schema", "schema": to_anthropic_schema(SCHEMA)}
     assert '"minimum"' not in json.dumps(fmt["schema"]) and fmt["schema"] != SCHEMA
