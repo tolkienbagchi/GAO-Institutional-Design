@@ -18,6 +18,15 @@ DISCLOSURE = {
     "all_bids_after_settlement": "every bidder's bid is revealed once the auction is settled",
     "winning_price_only": "only the winner and the price paid are revealed once it is settled",
 }
+
+
+def reserve_sentence(reserve: object) -> str:
+    """The reserve price as one sentence; ``None`` means there is none."""
+    if reserve is None:
+        return "There is no reserve price."
+    return f"Reserve price {reserve}: bids below {reserve} are ignored."
+
+
 TIE_BREAKS = {"lowest_agent_id": "ties go to the bidder whose name sorts first"}
 
 
@@ -42,6 +51,7 @@ class AuctionCodec(DefaultCodec):
                 f"Your private value for the item is {obs['value']}.",
                 f"Auction rule ({rule}): {RULES.get(rule, 'see the rule name')}.",
                 f"Other bidders: {', '.join(others) if others else 'none'}.",
+                reserve_sentence(obs.get("reserve")),
                 f"Tie-break: {TIE_BREAKS.get(str(obs['tie_break']), str(obs['tie_break']))}.",
                 "After the auction: "
                 f"{DISCLOSURE.get(str(obs['bid_disclosure']), str(obs['bid_disclosure']))}.",

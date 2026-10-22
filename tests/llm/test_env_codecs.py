@@ -91,7 +91,7 @@ def test_auction_prompt_contents() -> None:
     assert "Other bidders: bob" in task
     assert "only the winner and the price paid" in task
     assert '{"amount": number}' in task and "JSON only" in task
-    assert "reserve" not in task  # not in the observation, so not in the prompt
+    assert "There is no reserve price." in task
     assert "utility" not in task and "payoff" not in task  # no invented payoff rule
 
 
@@ -230,3 +230,21 @@ def test_pd_prompt_has_no_digit_from_the_table_when_not_disclosed() -> None:
     assert "Payoffs (" not in prompt
     stripped = "\n".join(ln for ln in prompt.splitlines() if not ln.startswith("This is round"))
     assert not any(d in stripped for d in "0135"), stripped
+
+
+@pytest.mark.parametrize("reserve", [None, 6.5])
+def test_every_bidders_observation_and_prompt_carry_the_reserve(reserve: float | None) -> None:
+    params: dict[str, Any] = {"values": {"alice": 9.5, "bob": 4.0, "carol": 7.0}}
+    if reserve is not None:
+        params["reserve"] = reserve
+    session = Session.start(AUCTION, params, 0)
+    session.advance()
+    for agent in ("alice", "bob", "carol"):
+        (request,) = session.pending_for(AgentId(agent))
+        assert "reserve" in request.observation  # present for everyone, None when absent
+        assert request.observation["reserve"] == reserve
+        task = AuctionCodec().render(request, [], [])[-1].content
+        if reserve is None:
+            assert "There is no reserve price." in task
+        else:
+            assert "bids below 6.5 are ignored" in task

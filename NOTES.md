@@ -991,3 +991,18 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   import check from the gate runs as a step; the nightly slow job also installs `llm`. This is the gate of the brief and no more.
 - Mutation checks (all reverted): runner not logging externals -> 7 tests fail; runner not emitting `agent_failed` -> 5 fail;
   agent not noticing a re-dispatch -> the infeasible test fails; validator accepting numeric strings -> 2 fail.
+
+## M4 fix-up tasks 1-2: payoffs and reserve are observable (2026-10-22)
+
+- **PD** (`build_repeated_pd(disclose_payoffs=True)`): `PDState.disclose_payoffs` carries the flag to the layer; `PDObs.payoffs` is the
+  state's table. When the flag is false the key is *absent* from the dumped observation (a wrap serializer drops a `None`, the same
+  device as `all_bids` in the auction report), not `None`. `PDCodec` renders "Payoffs (your move, their move: your payoff, their
+  payoff)" with four rows only when the key is there. The flag must be a bool (`ContractError` otherwise). It is a plain JSON param, so
+  session `env_ref` params stay replayable. Default is `True`, so default PD runs now show payoffs to their players; the M4 prompt test
+  that asserted no table now runs with `disclose_payoffs=False`.
+- **Auction**: `BiddingState.reserve` and `BidObs.reserve: float | None` (here the key is always present, `None` meaning no reserve, as the
+  brief says). `build_auction` feeds the same `reserve` to the bidding state and to `settlement_layer`, so the two cannot disagree;
+  `build_bidding_only` has no settlement and no reserve. `bid_disclosure` strings are unchanged. `AuctionCodec` says "Reserve price R:
+  bids below R are ignored." or "There is no reserve price.".
+- Reading: the brief says "no digit from the table" for the undisclosed PD prompt. The round index and history legitimately
+  contain digits, so the test checks the round-0 prompt with its "This is round N" line removed.
