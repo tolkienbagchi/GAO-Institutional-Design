@@ -117,3 +117,22 @@ def rec_to_seed(roles: dict[str, str]) -> Connector:
         return Config(state={"start": rec["payload"]}, roles=dict(assignment))
 
     return Connector(fn, Seed)
+
+
+class Agents(BaseModel):
+    """Entry state of the test Par: branch name -> agents holding roles in that branch."""
+
+    agents: dict[str, list[str]]
+
+
+def split_agents(cfg: Config) -> dict[str, Config]:
+    """One ``Seed`` config per branch; role ``player`` (or ``player:i`` for several agents)."""
+    state = Agents.model_validate(cfg.state)
+    out: dict[str, Config] = {}
+    for branch, agents in state.agents.items():
+        roles = {
+            RoleId("player" if len(agents) == 1 else f"player:{i}"): AgentId(a)
+            for i, a in enumerate(agents)
+        }
+        out[branch] = Config(state={"start": 0}, roles=roles)
+    return out

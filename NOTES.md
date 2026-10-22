@@ -214,3 +214,34 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   Continuations may share a name with each other (only one runs).
 - `Seq.entry` is `first`'s entry with the store scope widened to the union over everything in the Seq
   (informational; scopes are still enforced per layer/connector at runtime).
+
+## 2026-10-21 — M1 task 3: Par (one deviation from the brief, made to satisfy invariant 3)
+- **Deviation: `Par.step` applies at most ONE input per call** (the rest wait in `ParFrame.backlog`, and the
+  call returns `Continue` while the backlog is non-empty). The brief says "route each input … then step every
+  not-yet-exited branch once". Taken literally, the trace depends on how the log was batched into `advance()`
+  calls: if bob (branch `B`) answers in one `advance()` and alice (`A`) in the next, the original trace has
+  B's events first; `Session.replay` (which batches consecutive submissions into one `advance()`) steps
+  branches in sorted order and puts A's first, so `check_determinism` / `restore` would disagree with the
+  original (invariant 3: "replaying produces an identical trace"; shared context wins over the brief).
+  With one input per call the trace is a function of the input-log *order* only. Verified by mutation:
+  applying all inputs in one step makes `test_trace_depends_on_log_order_not_on_advance_boundaries` fail with
+  a `DeterminismError`. Still true per call: the input is routed to its branch and every live branch is
+  stepped once, in sorted-name order.
+- Consequence: for `Par`, traces are NOT independent of submission order (they cannot be: if A completes
+  before B has answered, A's events are already in the trace). `assert_arrival_invariant`, which compares
+  exact traces across submission permutations, therefore does not apply to Par environments; it is only used
+  on Seq/Primitive environments in M1.
+- `Par.step` returns `Continue` when a branch returned `Continue`, when the backlog is non-empty, or when all
+  branches have exited (the join runs on the *next* call, "one thing per call"); otherwise `Pending` with the
+  requests of every pending branch in sorted branch order. A failing branch stops the call (later branches
+  are not stepped) and the Par returns `FailedResult("branch 'A': …")`; `Failed` is not re-emitted by the Par.
+- `Par.validate` has no path to match, so it asks each live branch in sorted order and takes the first that
+  does not raise `UnknownDecision` (other errors propagate). Input routing in `step` uses `routing.owns`.
+- `Splitter` / `Joiner` are Protocols. The brief gives `DisjointSplitter(fn)` but the Par's entry contract
+  needs a `state_schema`, so `DisjointSplitter(fn, input_schema=OpenState)` takes an optional schema
+  (`OpenState` accepts any fields). `Par.start` validates the entry state against it and checks that the
+  splitter returned exactly the branch names (`ContractError`). `Par.entry.roles` is empty (dynamic).
+- Branches are sorted with plain `sorted()` (lexicographic, as the brief says), not the natural sort used
+  for roles: `branch_10` runs before `branch_2`. Deterministic, only affects trace order.
+- Branches share the session `Store` (see task 6 for the hazard and tests). Par emits no events of its own.
+- Added `ParFrame.backlog` and `ParFrame.failed` to the brief's fields; children are `SerializeAsAny`.
