@@ -582,7 +582,33 @@ def test_reserve_unsold_port() -> None:
         },
     )
     assert all(s.ledger.utility(AgentId(a)) == 0.0 for a in ("alice", "bob"))
-    assert [r.payload for r in s.reports_for(ALICE)] == [{"status": "bid accepted", "own_bid": 8.0}]
+    assert [r.payload for r in s.reports_for(ALICE)] == [
+        {"status": "bid accepted", "own_bid": 8.0},
+        {"status": "unsold", "reserve": 10.0, "own_bid": 8.0},
+    ]
+
+
+def test_unsold_items_are_reported_to_every_bidder() -> None:
+    s = play(
+        auction_params({"alice": 9.0, "bob": 7.0, "carol": 5.0}, reserve=10.0),
+        {"alice": 8.0, "bob": 6.0, "carol": 1.0},
+    )
+    assert s.result is not None and s.result.port == "unsold"
+    for agent, bid in (("alice", 8.0), ("bob", 6.0), ("carol", 1.0)):
+        settlement = [r for r in s.reports_for(AgentId(agent)) if r.layer == "settlement"]
+        assert len(settlement) == 1  # exactly one, from the settlement layer
+        assert settlement[0].payload == {"status": "unsold", "reserve": 10.0, "own_bid": bid}
+    everything = json.dumps(
+        [
+            x.model_dump(mode="json")
+            for a in ("alice", "bob", "carol")
+            for x in s.ledger.information(AgentId(a))
+        ]
+    )
+    assert "winner" not in everything  # nothing in any bidder's information names a winner
+    sold = play(auction_params(reserve=1.0), {"alice": 8.0, "bob": 6.0})
+    (sold_report,) = [r for r in sold.reports_for(ALICE) if r.layer == "settlement"]
+    assert "winner" in sold_report.payload and "status" not in sold_report.payload
 
 
 def test_reserve_ignores_low_bids_and_clears_at_equality() -> None:

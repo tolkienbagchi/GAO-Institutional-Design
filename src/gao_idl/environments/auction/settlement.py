@@ -1,7 +1,7 @@
 """Settlement layer: resolves sealed bids into a winner, a price and utilities (no roles)."""
 
 import math
-from typing import Any
+from typing import Any, Literal
 
 from numpy.random import Generator
 from pydantic import BaseModel, model_serializer
@@ -65,6 +65,14 @@ class SettlementReport(BaseModel):
         return data
 
 
+class UnsoldReport(BaseModel):
+    """What one bidder learns when nobody cleared the reserve: the reserve and their own bid."""
+
+    status: Literal["unsold"]
+    reserve: float
+    own_bid: float
+
+
 def _state(cfg: Config) -> SettlementState:
     state = SettlementState.model_validate(cfg.state)
     if state.rule not in RULES:
@@ -121,11 +129,13 @@ def settlement_layer(reserve: float | None = None) -> SimpleLayer:
         return set(_state(cfg).bids)
 
     def report(cfg: Config, out: BaseModel, recipient: AgentId, rng: Generator) -> BaseModel | None:
-        if not isinstance(out, SettlementOutcome):
-            return None  # unsold: no winner to report (see NOTES)
         state = _state(cfg)
         if recipient not in state.bids:
             return None
+        if isinstance(out, UnsoldOutcome):
+            return UnsoldReport(status="unsold", reserve=out.reserve, own_bid=state.bids[recipient])
+        if not isinstance(out, SettlementOutcome):
+            raise TypeError(f"unexpected settlement outcome {type(out).__name__}")
         return SettlementReport(
             winner=out.winner,
             winning_payment=out.payments[out.winner],

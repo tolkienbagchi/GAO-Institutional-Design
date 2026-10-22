@@ -427,3 +427,13 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   in the M1 entry for task 7: the literal pure-filter reading is no longer what the code does.
 - Flipped the assertion in `test_reserve_ignores_low_bids_and_clears_at_equality` (alice now pays 7.0);
   added `test_reserve_binds_second_price`. Mutation check: reverting the price line fails exactly those two.
+
+## 2026-10-22 — M1 fix-up task 4: unsold items are reported
+
+- `UnsoldReport(status: Literal["unsold"], reserve, own_bid)` is delivered to every bidder when the settlement
+  layer exits through `unsold`; the `return None` special case is gone. It has no `winner` field, and nothing
+  in any bidder's information stream names a winner in that case. This answers the open question in the M1
+  entry for task 7 (no participant report on unsold).
+- Consequence for an existing test: `test_reserve_unsold_port` now sees two reports for alice (the bid receipt
+  and the unsold report) instead of one. New test `test_unsold_items_are_reported_to_every_bidder`. Mutation
+  check: restoring `return None` fails both.
