@@ -834,3 +834,28 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   already set the flag explicitly in both cases (via `_truncated_episode(bootstrap)`); it gained the assertion that the default
   is `False`. `test_qconfig_validation` (which pins the full default dump) was updated to `False`. No other test relied on the old
   default.
+
+## 2026-10-22 — M4 task 1: backends (`llm/backend.py`, `llm/openai_compat.py`, `llm/mock.py`)
+- **`httpx` is not installed here, so the real HTTP call is never executed.** To keep everything else testable the client is split:
+  `OpenAICompatBackend` holds all behaviour (request shape, `response_format` fallback, retries, backoff, scrubbing, response
+  parsing) and talks through an injectable `transport(url, headers, body, timeout_s) -> HttpReply`. The default transport,
+  `httpx_transport` (~8 lines, `httpx.AsyncClient.post`, `httpx.TransportError` -> `TransportFailure`), is the only code that touches
+  httpx; it imports it **inside the function**, so `import gao_idl.llm` never needs httpx (tested in a subprocess). That function is
+  type-checked only (`[[tool.mypy.overrides]] module = "httpx"` with `ignore_missing_imports`, so mypy is happy both with and without
+  httpx installed) and was never run. Everything else is tested through a fake transport. Extra constructor keywords beyond the brief
+  (all keyword-only): `max_retries=3`, `backoff_s=0.5`, `sleep`, `transport`.
+- **Reading of "Transport retries: 3":** three *retries*, i.e. up to 4 requests, with delays 0.5, 1.0, 2.0 s (`backoff_s * 2**k`). Retried:
+  429, 5xx, timeouts and any transport exception. Other 4xx fail at once. The `response_format` fallback is not a transport retry.
+- The 400 fallback fires when the body contains `response_format` and the request had one; it is not remembered (every call tries
+  the structured form first). `Response.parsed` is set only when the server accepted `response_format` and the content parses to a
+  JSON object; otherwise `None`.
+- **Credentials:** the callable is invoked for each request (retries included); the value lives in a local and the request header. It,
+  and the values of extra headers whose name contains `auth`/`key`/`token`/`secret`, are redacted from every error message; the
+  `Authorization`/`x-api-key` header pattern and `Bearer <token>` are redacted by `scrub()` in any case, and `BackendError.__init__`
+  applies `scrub()` itself, so no code path can build a `BackendError` that prints a bearer token. `Response.raw` is the server's JSON
+  with all strings scrubbed (shape unchanged). `repr(backend)` shows only the URL and model.
+- `content: null` becomes empty text (the codec then fails to parse it and the agent repairs); non-string content (parts lists) is a `BackendError`.
+- `llm.backend.current_decision` (a `ContextVar`) is set by `LLMAgent` around each backend call. `LLMBackend.complete` has no
+  decision argument and `ReplayBackend` must serve "per `decision_id`"; this is how it learns which decision is asked about. The mock
+  records it in `MockCall.decision_id`.
+- `MockBackend` raises `MockExhausted` (not a `BackendError`) when the script runs out, so a test bug is not silently retried as a transport error.
