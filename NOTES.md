@@ -1413,3 +1413,8 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - `build-system.requires` is now `hatchling>=1.27` (first release with PEP 639 `license-files`/SPDX support, as far as I know; I did not verify the version number against hatchling's changelog, no network). Lower it only if you've checked.
 - `CITATION.cff`: the brief asks for an empty DOI field. `doi: ""` (or a bare `doi:`) fails CFF schema validation, so the field is a comment line instead; add the DOI after the first release. Also added `type: software`, `license` and a `message`, which the format expects.
 - Not verified here (no PyPI, no hatchling): that the wheel ships `py.typed` (`unzip -l dist/*.whl | grep py.typed`; hatchling includes non-Python files in `packages` by default, so I expect it) and that `twine check` still passes with the SPDX field (it needs twine ≥ 6.1 for PEP 639 metadata, I believe; an old twine may warn about `License-Expression`).
+
+## M6 fix-up task 6: tag preparation
+- Added `docs/releasing.md` (checklist, release gate, tag and upload commands; in the mkdocs nav, which `tests/test_docs.py` requires) and `CHANGELOG.md` with a `0.1.0` section, one line per milestone plus one paragraph for the fix-up. No tag was created.
+- The changelog section is headed `Unreleased`, since the date is the maintainer's to set when tagging; the releasing checklist says to replace it. The brief did not give a date.
+- The release gate in `docs/releasing.md` does `rm -rf dist` explicitly before `python -m build`, because `clean_install.sh` deliberately does not (task 3). Version consistency also covers `CITATION.cff`, which no test checks; I left that as a checklist item rather than adding a test (outside the brief).

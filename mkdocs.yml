@@ -52,3 +52,4 @@ nav:
   - Design:
       - Decisions: design/decisions.md
   - Acceptance: ACCEPTANCE.md
+  - Releasing: releasing.md
