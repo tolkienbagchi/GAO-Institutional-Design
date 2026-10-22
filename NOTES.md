@@ -1042,3 +1042,19 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   `httpx` (checked by the existing subprocess test).
 - Live smoke test `tests/llm/test_live_anthropic.py` (`GAO_ANTHROPIC_API_KEY`, optional `GAO_ANTHROPIC_MODEL`, default
   `claude-haiku-5-5`, and `GAO_ANTHROPIC_BASE_URL`): skipped here; left for the maintainer.
+
+## 2026-10-22 — M5 task 0: brief mismatch, no numbered tasks, PyPI still unreachable
+- **The request names `M5_llm_agents.md`; the attached brief is `M5_participatory_budgeting.md`** (M4 was the LLM milestone, and the
+  M5 attachment is the PB institution). I treated the attached PB brief as the M5 brief. If a different M5 brief was intended, none
+  of this work is from it.
+- **The PB brief has no numbered tasks and no "task 0".** The user's instruction asks for "task 0" first and one commit per task, so I
+  defined the tasks myself, in the brief's own order: task 0 = this note (inherited/environment items, no code); task 1 = schemas and
+  the four pure funding rules with their tests; task 2 = the four layers (nomination, eligibility, voting, funding factory);
+  task 3 = the `build_pb` composite; task 4 = the institution tests; the report is the last commit. Each commit message is the title.
+- `pip download hypothesis` fails ("No matching distribution"), tried once, not retried. So `pip install -e ".[dev,llm]"`, the
+  hypothesis tests (the 3 inherited ones and the 2 new ones in `tests/environments/test_pb_rules_property.py`), `pytest-timeout`,
+  `python -m build`, Python 3.11 and CI were NOT run. **`httpx` is not installed either**, so the OpenAI-compatible and Anthropic
+  HTTP transports can only be type-checked, and the two `httpx.MockTransport` tests stay skipped. Gate substitute as in M4:
+  `PYTHONPATH=src:.:/usr/local/lib/python3.13/dist-packages` with `--ignore=tests/core/test_paths_property.py` and
+  `--ignore=tests/environments/test_pb_rules_property.py`. Baseline before M5: 553 passed, 4 skipped, 1 deselected (not slow).
+- No new dependency is added in M5 (`fractions` and numpy only).
