@@ -186,12 +186,23 @@ def test_knapsack_guards() -> None:
         knapsack(many, ballots(v=[p.id for p in many]), 100)
     sixty = projects(*([1] * 60))
     assert len(knapsack(sixty, ballots(v=[p.id for p in sixty]), 60)) == 60
-    with pytest.raises(ValueError, match="whole number of cents"):
-        knapsack(projects(1.005), ballots(v=["p0"]), 5)
     assert knapsack(projects(1.25, 2.5), ballots(v=["p0", "p1"]), 3.75) == ["p0", "p1"]
-    # a budget that is not a whole number of cents is floored, which is exact for whole-cent costs
+    # a budget that is not a whole number of cents is floored
     assert knapsack(projects(1.25), ballots(v=["p0"]), 1.2599) == ["p0"]
     assert knapsack(projects(1.25), ballots(v=["p0"]), 1.2499) == []
+
+
+def test_knapsack_rounds_sub_cent_costs() -> None:
+    """Costs are rounded to the nearest cent: 1.004 counts as 1.00 and 1.006 as 1.01."""
+    both = ballots(v=["p0", "p1"])
+    assert knapsack(projects(1.004, 1.004), both, 2.0) == ["p0", "p1"]  # 1.00 + 1.00 <= 2.00
+    assert knapsack(projects(1.006, 1.006), both, 2.0) == ["p0"]  # 1.01 + 1.01 > 2.00
+    assert knapsack(projects(1.004, 1.006), both, 2.0) == ["p0"]  # 1.00 + 1.01 > 2.00
+    assert knapsack(projects(1.004, 1.006), both, 2.01) == ["p0", "p1"]
+    one = ballots(v=["p0"])
+    # a project whose exact cost exceeds the budget is never a candidate, rounding or not
+    assert knapsack(projects(1.004), one, 1.0) == []
+    assert knapsack(projects(0.996), one, 1.0) == ["p0"]  # counted as 1.00
 
 
 # ------------------------------------------------------------------ Method of Equal Shares

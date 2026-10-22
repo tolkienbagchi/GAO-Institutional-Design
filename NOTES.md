@@ -1391,3 +1391,8 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   entry point in `pyproject.toml`, and a missing subcommand exits 2. Not run here: the installed `gao-idl` executable (needs a real install).
 - Docs updated: `docs/runs.md`, `docs/ACCEPTANCE.md`, `README.md` (new "Command line" section). The module is tier *internal*; the CLI is
   its supported interface.
+
+## M6 fix-up task 2: `knapsack` rounds costs to cents
+- `knapsack` now rounds each cost to the nearest cent (`round(Fraction(repr(x)) * 100)`, halves to even) instead of raising on sub-cent costs; the budget is still floored to whole cents. Documented in the function and module docstrings. The strict xfail in `tests/environments/test_pb.py` is gone (the knapsack case passes), `test_knapsack_rounds_sub_cent_costs` added, `examples/configs/pb.json` uses `knapsack` again (the demo is the random-agent case that used to fail), docs notes updated.
+- Choice: the candidate filter in `_prepare` still uses exact costs, so a project whose exact cost exceeds the budget (1.004 vs budget 1.0) is never funded, even though it would round to 1.00. Conservative reading; the brief did not say. Documented in the docstring and pinned by a test.
+- Residual risk: a set that fits the rounded costs can exceed the budget by under half a cent per project in exact arithmetic (docstring says so). I swept seeds 0-150 on the knapsack PB config through `gao_idl.cli run`; none raised a ContractError. That is evidence, not a proof. The hypothesis property test (`test_pb_rules_property.py`) can't run here; I did not check it for whole-cent assumptions beyond reading it, so the maintainer's run is the real check.

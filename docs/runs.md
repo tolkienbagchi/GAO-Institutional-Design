@@ -47,6 +47,6 @@ The snapshot can also be restored in your own code with `Session.restore(record[
 and continued, as in [tutorial 4](tutorials/04_pause_resume.md).
 
 !!! note "Knapsack"
-    The `knapsack` funding rule needs whole-cent costs and refuses the float costs that
-    `RandomAgent` invents, so a participatory-budgeting config with random proposers should use
-    `greedy`, `mes` or `phragmen`.
+    The `knapsack` funding rule works at cent resolution: it rounds each project cost to the
+    nearest cent, so the float costs that `RandomAgent` invents are fine. The other rules use
+    exact costs.

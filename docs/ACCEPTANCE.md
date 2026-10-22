@@ -290,9 +290,7 @@ name is found in the API reference (`docs/api/index.md` lists every public name 
 - The worked answer is in `examples/acceptance/` (`my_env.py`, `train_table.py`, `run_mixed.py`)
   and is exercised by `tests/test_acceptance.py`, so the three steps it covers are known to be
   possible. It plays a rating layer after the prisoner's dilemma.
-- Known limits you may see, none of which fail the exercise: the `knapsack` funding rule rejects the
-  float costs that random agents invent (use `greedy`, `mes` or `phragmen` with random proposers);
-  the helpers in `gao_idl.testing`
+- Known limits you may see, none of which fail the exercise: the helpers in `gao_idl.testing`
   answer every decision of an agent with the same action.
 - If the participant's layer is more ambitious than the hour allows, stop at step 5 and record how
   far they got.

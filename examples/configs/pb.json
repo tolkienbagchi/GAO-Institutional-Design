@@ -15,7 +15,7 @@
     ],
     "budget": 10,
     "max_cost": 8,
-    "rule": "greedy",
+    "rule": "knapsack",
     "private_values": {
       "alice": {
         "p0": 3,

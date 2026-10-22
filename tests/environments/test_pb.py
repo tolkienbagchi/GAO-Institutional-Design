@@ -280,16 +280,7 @@ class NominatingRandom:
         await self._random.episode_end(end)
 
 
-KNAPSACK_CENTS = pytest.mark.xfail(
-    raises=ValueError,
-    strict=True,
-    reason="knapsack needs whole-cent costs and a random float cost is not (NOTES.md, M6 task 0)",
-)
-
-
-@pytest.mark.parametrize(
-    "rule", [pytest.param(r, marks=KNAPSACK_CENTS) if r == "knapsack" else r for r in RULES]
-)
+@pytest.mark.parametrize("rule", RULES)
 def test_plain_random_agents_run_pb_end_to_end(rule: str) -> None:
     """Nominations are samplable now (strings, exclusive bounds): no PB-specific adapter needed."""
     people = ["alice", "bob", "carol", "dan", "erin"]
