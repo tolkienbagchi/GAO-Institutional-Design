@@ -455,3 +455,18 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   `..._in_a_connector_propagates`, `..._in_a_feedback_connector_propagates`, and a class-hierarchy test.
   Mutation check: switching each of the three catch sites back to bare `KeyError, PermissionError` fails
   exactly its propagation test (the Primitive one also fails the Par hazard test).
+
+## 2026-10-22 — M1 fix-up task 6: tests split back
+
+- 25 of the 48 tests in `tests/environments/test_auction.py` moved, unchanged and under their own names, to
+  the new `tests/runtime/test_session.py` (the small `fresh` / `kinds` / `dumped` helpers are duplicated there;
+  no test imports from another test module). The set of test names across the two files is identical to
+  before (checked mechanically); count unchanged.
+- Rule used: a test moves if it is about Session or testing-helper mechanics with the bidding environment as a
+  mere vehicle (pending/barrier, rejection protocol, timeouts, replay/snapshot/restore, determinism checks,
+  advance semantics, decision ordering, helper negative controls, randomized interleavings). It stays if it is
+  about bids, values, receipts or settlement. Judgement calls, easy to flip: `test_rejections` moved whole even
+  though it also exercises the bid schema; `test_arrival_invariance` / `_three_bidders` and
+  `test_noninterference_of_other_value` / `_own_value_does_matter` stayed (they state auction properties),
+  while `test_arrival_invariance_many_bidders_uses_rotations` and
+  `test_noninterference_helper_detects_a_leak` moved (they exercise the helpers).
