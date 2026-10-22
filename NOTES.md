@@ -635,3 +635,11 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - Verified with the reviewer's mutation (reports broadcast to every adapter, so `ScriptedAgent.observe` raises): the full
   suite under `timeout 120` now ends in 14 s with 19 failed / 274 passed instead of hanging (the runner cleanup of
   task 1 plus the bounded waits). Mutation reverted.
+
+## 2026-10-21 — M2 fix-up task 3: RandomAgent arrays
+- `type: "array"` is supported when `items` is a finite set: `enum`, `const`, or an `anyOf` of consts / one-value enums
+  (nested `anyOf` is not flattened). The sample is a subset without replacement, in random order, with size uniform in
+  `[minItems or 0, min(maxItems or n, n)]`; `minItems` above the number of choices is a `ValueError` (the schema is
+  unsatisfiable), not `NotImplementedError`. Arrays of anything else (`$ref`, `integer`, mixed `anyOf`, missing `items`)
+  raise `NotImplementedError` naming the whole array fragment. `uniqueItems` is ignored (the result is always unique).
+  Tests: a ballot-shaped schema over 200 samples (valid, duplicate-free, sizes 0-3 all occur), bounds, const-shaped items.

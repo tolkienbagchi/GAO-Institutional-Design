@@ -222,3 +222,52 @@ def test_report_dedup_in_human_transport() -> None:
             await agent.observe(report(0, agent="bob"))
 
     run_test(run())
+
+
+BALLOT: dict[str, Any] = {
+    "type": "object",
+    "required": ["approve"],
+    "properties": {"approve": {"type": "array", "items": {"enum": ["p0", "p1", "p2"]}}},
+}
+
+
+def test_random_agent_samples_duplicate_free_ballots() -> None:
+    rng = np.random.default_rng(0)
+    sizes = set()
+    seen_orders = set()
+    for _ in range(200):
+        ballot = sample_schema(BALLOT, rng)["approve"]
+        assert len(ballot) == len(set(ballot)) and set(ballot) <= {"p0", "p1", "p2"}
+        sizes.add(len(ballot))
+        seen_orders.add(tuple(ballot))
+    assert sizes == {0, 1, 2, 3}  # the whole range of sizes shows up
+    assert len(seen_orders) > 8
+
+
+def test_array_bounds_and_const_shaped_items() -> None:
+    rng = np.random.default_rng(1)
+    bounded = {"type": "array", "minItems": 2, "maxItems": 2, "items": {"enum": list("abcd")}}
+    assert all(len(sample_schema(bounded, rng)) == 2 for _ in range(50))
+    any_of = {"type": "array", "items": {"anyOf": [{"const": 1}, {"const": 2}, {"enum": [3]}]}}
+    drawn = {tuple(sorted(sample_schema(any_of, rng))) for _ in range(200)}
+    assert all(set(d) <= {1, 2, 3} for d in drawn) and () in drawn and (1, 2, 3) in drawn
+    capped = {"type": "array", "maxItems": 9, "items": {"const": "x"}}
+    assert {len(sample_schema(capped, rng)) for _ in range(50)} == {0, 1}  # clamped to len(values)
+    with pytest.raises(ValueError):
+        sample_schema({"type": "array", "minItems": 4, "items": {"enum": [1, 2]}}, rng)
+
+
+@pytest.mark.parametrize(
+    "items",
+    [{"type": "integer"}, {"$ref": "#/$defs/P"}, {"anyOf": [{"type": "string"}, {"const": 1}]}, {}],
+)
+def test_arrays_of_non_enum_items_still_raise(items: dict[str, Any]) -> None:
+    fragment = {"type": "array", "items": items}
+    with pytest.raises(NotImplementedError) as info:
+        sample_schema(fragment, np.random.default_rng(0))
+    assert repr(fragment) in str(info.value)
+
+
+def test_random_agent_acts_on_a_ballot_request() -> None:
+    action = run_test(RandomAgent(3).act(request(BALLOT)))
+    assert set(action) == {"approve"} and isinstance(action["approve"], list)
