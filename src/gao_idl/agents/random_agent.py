@@ -1,4 +1,8 @@
-"""RandomAgent: samples a valid action straight from the JSON Schema in the request."""
+"""RandomAgent: samples a valid action straight from the JSON Schema in the request.
+
+Stability: ``RandomAgent`` is public (re-exported by ``gao_idl``); the rest of this module is
+supporting.
+"""
 
 import math
 from typing import Any

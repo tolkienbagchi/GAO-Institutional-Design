@@ -2,6 +2,9 @@
 
 It sees only the ``DecisionRequest`` and ``ParticipantReport`` objects addressed to its agent (and
 its own memory); it never gets a session, ledger, store, config or outcome (invariant 1).
+
+Stability: ``CallRecord``, ``LLMAgent``, ``RepairPolicy`` are public (exported by
+``gao_idl.llm``); the rest of this module is internal.
 """
 
 import copy

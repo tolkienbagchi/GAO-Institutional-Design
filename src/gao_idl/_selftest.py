@@ -28,7 +28,7 @@ def selftest() -> None:
     any failure. Needs only the core dependencies (no ``llm`` extra). Call it from plain
     scripts: it uses ``asyncio.run``, so not from inside a running event loop.
     """
-    from gao_idl import __version__
+    from gao_idl._version import __version__
     from gao_idl.agents import RandomAgent, ScriptedAgent
     from gao_idl.agents.base import AgentAdapter
     from gao_idl.core.ids import AgentId

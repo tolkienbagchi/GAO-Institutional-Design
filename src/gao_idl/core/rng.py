@@ -1,4 +1,8 @@
-"""Deterministic, order-independent random streams keyed by (seed, path, purpose)."""
+"""Deterministic, order-independent random streams keyed by (seed, path, purpose).
+
+Stability: internal; it may change without notice. Use the names exported by ``gao_idl`` where
+there is one.
+"""
 
 import hashlib
 

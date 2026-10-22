@@ -4,6 +4,9 @@ Everything here is built from the ``DecisionRequest`` observation and from repor
 nothing else. The payoff table is stated only when the observation carries one
 (``build_repeated_pd(disclose_payoffs=True)``); otherwise the prompt says nothing about payoffs
 beyond the player learning its own after each round.
+
+Stability: supporting API: documented in the API reference, but not re-exported by
+``gao_idl``; it may change in a minor release before 1.0 (see NOTES.md).
 """
 
 from gao_idl.core.schemas import DecisionRequest, ParticipantReport

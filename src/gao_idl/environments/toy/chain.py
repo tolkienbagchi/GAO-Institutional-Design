@@ -6,6 +6,9 @@ down, both clamped to [0, 2]. The reward is 1 exactly on the transition state 1 
 return within 3 steps is 1. The observation is the state index. After every step the player is
 told the step's reward (report field ``own_reward``). The horizon is a ``Loop`` whose body leaves
 through ``done`` on the last step; the loop limit is never reached.
+
+Stability: supporting API: documented in the API reference, but not re-exported by
+``gao_idl``; it may change in a minor release before 1.0 (see NOTES.md).
 """
 
 from typing import Any, Literal

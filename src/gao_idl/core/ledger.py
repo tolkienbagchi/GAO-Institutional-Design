@@ -1,4 +1,8 @@
-"""Per-agent utility increments and the ordered stream of information delivered to each agent."""
+"""Per-agent utility increments and the ordered stream of information delivered to each agent.
+
+Stability: supporting API: documented in the API reference, but not re-exported by
+``gao_idl``; it may change in a minor release before 1.0 (see NOTES.md).
+"""
 
 import math
 from typing import Any

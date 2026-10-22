@@ -1,4 +1,8 @@
-"""ScriptedAgent: a plain function from (request, reports so far) to an action."""
+"""ScriptedAgent: a plain function from (request, reports so far) to an action.
+
+Stability: ``ScriptedAgent`` is public (re-exported by ``gao_idl``); the rest of this module is
+internal.
+"""
 
 from collections.abc import Callable
 from typing import Any

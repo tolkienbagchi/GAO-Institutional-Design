@@ -2,6 +2,9 @@
 
 Contents are only ever the agent's own request prompts, its own emitted actions and the reports
 addressed to it, appended by ``LLMAgent``. A memory never sees anything else.
+
+Stability: ``FullTranscript``, ``Memory``, ``NoMemory``, ``Window`` are public (exported by
+``gao_idl.llm``); the rest of this module is internal.
 """
 
 from typing import Protocol

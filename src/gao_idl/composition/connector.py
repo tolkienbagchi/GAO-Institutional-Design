@@ -1,4 +1,8 @@
-"""Connectors: pure functions from a process's exit record to the next process's entry Config."""
+"""Connectors: pure functions from a process's exit record to the next process's entry Config.
+
+Stability: ``Connector`` is public (re-exported by ``gao_idl``); the rest of this module is
+internal.
+"""
 
 import copy
 from collections.abc import Callable

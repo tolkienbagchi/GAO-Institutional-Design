@@ -1,4 +1,8 @@
-"""The four PB layers: nomination, eligibility, approval voting, and the funding factory."""
+"""The four PB layers: nomination, eligibility, approval voting, and the funding factory.
+
+Stability: internal; it may change without notice. Use the names exported by ``gao_idl`` where
+there is one.
+"""
 
 import math
 from collections import Counter

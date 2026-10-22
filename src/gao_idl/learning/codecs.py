@@ -3,6 +3,9 @@
 A codec only ever sees ``DecisionRequest`` / ``ParticipantReport`` objects addressed to the learner
 (invariant 1). Keys are nested tuples of JSON scalars, so a Q-table can be written to JSON and read
 back (``to_jsonable`` / ``from_jsonable``).
+
+Stability: supporting API: documented in the API reference, but not re-exported by
+``gao_idl``; it may change in a minor release before 1.0 (see NOTES.md).
 """
 
 import itertools

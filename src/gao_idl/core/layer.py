@@ -1,4 +1,8 @@
-"""The Layer protocol (one simultaneous decision round), its contract, and SimpleLayer."""
+"""The Layer protocol (one simultaneous decision round), its contract, and SimpleLayer.
+
+Stability: ``Contract``, ``SimpleLayer`` are public (re-exported by ``gao_idl``); the rest of
+this module is supporting.
+"""
 
 from collections.abc import Callable
 from dataclasses import dataclass, field

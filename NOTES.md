@@ -1258,3 +1258,32 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - README refreshed (install section; the one tested Python example is untouched: `tests/test_readme_example.py` still requires exactly
   one `python` block of at most 22 lines). `tests/test_packaging.py`: import hygiene in a fresh interpreter, `gao_idl.llm` imports
   without httpx, `selftest` output and determinism.
+
+## 2026-10-22 — M6 task 2: public API surface (`gao_idl/__init__.py`, `gao_idl.llm`, `tests/test_public_api.py`)
+- `gao_idl.__all__` is exactly the 23 names of the brief, in the brief's order; `tests/test_public_api.py` pins the set, the count, the
+  `from gao_idl import *` namespace and the non-module attributes of the package. **`selftest` is the one other public attribute**
+  (task 1 requires `gao_idl.selftest()`; task 2 says "exactly"); it is not in `__all__` and the test names it explicitly. Reading, not
+  a decision: if you want it exported, add it to the list in the test.
+- **`__version__` moved to `gao_idl/_version.py`** (re-exported as `gao_idl.__version__`). Reason: `learning/qlearning.py` did
+  `from gao_idl import __version__`; now that `gao_idl/__init__` imports `TableAgent`, that would be an import cycle. No semantic
+  change (the checkpoint's `created_by` string is `gao_idl 0.1.0`).
+- **LLM symbols are exported from `gao_idl.llm` only — and `gao_idl.llm.__all__` grew** from the two Anthropic names to the 24 public
+  LLM names (agent, repair policy, call record, backends, mock, replay, codecs, memories, `Message`/`Response`/`BackendError`). The
+  brief says LLM symbols come from `gao_idl.llm`; before, only `AnthropicBackend`/`to_anthropic_schema` did, so a tutorial would have had
+  to import `gao_idl.llm.agent` and `gao_idl.llm.mock`. Additive, no rename, `httpx` is still imported lazily (tests: `import gao_idl.llm`
+  without httpx; `import gao_idl` does not import `gao_idl.llm` at all). The list is pinned in the test. Environment-specific codecs
+  (`PDCodec`, `AuctionCodec`) stay in their environment modules.
+- **"Documented as internal":** no module or symbol was renamed with a `_` (the brief forbids renames, and a module rename would break
+  `env_ref` strings and every import in 700 tests); instead **every module under `src/gao_idl` now ends its docstring with a
+  "Stability:" paragraph** (63 files stamped by a one-off script, not committed). Three levels: *public* (the 23 names, or the names in
+  `gao_idl.llm.__all__`; the module's docstring names exactly them); *supporting* (documented in the API reference, not re-exported, may
+  change in a minor release before 1.0: `core.{ids,errors,events,paths,store,ledger}`, the rest of `core.schemas`/`core.layer`,
+  `agents.*` rest, `learning`, `environments` factories and their LLM codecs, `testing`, `composition.contracts`); *internal*
+  (everything else). `test_every_module_declares_its_stability` fails for a new module without the paragraph, and
+  `test_stability_notes_name_exactly_the_exported_symbols` keeps the paragraphs and the export lists in agreement (mutation-checked:
+  a wrong name, a missing paragraph, an extra top-level import and an undocumented `Session` property each fail exactly their test).
+  The classification is my judgement; the tutorials of task 3 import only public and supporting modules (a test will pin that).
+- Every exported symbol, and every public method/property defined in an exported class, has its own docstring (checked by
+  `test_every_public_symbol_is_documented`; nothing needed adding). `SimpleLayer`'s hooks are dataclass fields, documented in its
+  class docstring, not individually.
+- `import gao_idl` takes about 0.4 s here (it imports the runtime, composition, agents and learning packages, numpy and pydantic).

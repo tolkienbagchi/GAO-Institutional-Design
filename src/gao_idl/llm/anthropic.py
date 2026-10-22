@@ -10,6 +10,9 @@ Structured output uses ``output_config.format`` (``json_schema``), the one mecha
 backend: no tool use, no deprecated ``output_format``, no ``structured-outputs-*`` beta header. The
 request schema is passed through :func:`~gao_idl.llm.schema_transform.to_anthropic_schema` (the API
 supports a subset of JSON Schema); the agent still validates replies against the original schema.
+
+Stability: ``AnthropicBackend`` is public (exported by ``gao_idl.llm``); the rest of this module
+is internal.
 """
 
 import asyncio

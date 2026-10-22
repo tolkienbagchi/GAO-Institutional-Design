@@ -4,6 +4,9 @@ substitution, branch independence).
 These helpers raise ``AssertionError`` and have no pytest dependency, so milestones can reuse them.
 They submit ``actions[agent]`` to every pending decision of that agent (so they assume an agent
 wants to give the same action to each of its decisions; the runtime itself has no such limit).
+
+Stability: supporting API: documented in the API reference, but not re-exported by
+``gao_idl``; it may change in a minor release before 1.0 (see NOTES.md).
 """
 
 import itertools

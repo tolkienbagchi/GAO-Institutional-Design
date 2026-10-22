@@ -1,4 +1,8 @@
-"""HumanTransportAgent: an in-process stand-in for a UI; actions arrive via ``provide``."""
+"""HumanTransportAgent: an in-process stand-in for a UI; actions arrive via ``provide``.
+
+Stability: ``HumanTransportAgent`` is public (re-exported by ``gao_idl``); the rest of this
+module is internal.
+"""
 
 import asyncio
 from typing import Any

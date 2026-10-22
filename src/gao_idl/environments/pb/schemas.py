@@ -1,4 +1,8 @@
-"""Data models of the participatory-budgeting pipeline and the generated ballot schema."""
+"""Data models of the participatory-budgeting pipeline and the generated ballot schema.
+
+Stability: internal; it may change without notice. Use the names exported by ``gao_idl`` where
+there is one.
+"""
 
 import math
 from functools import lru_cache

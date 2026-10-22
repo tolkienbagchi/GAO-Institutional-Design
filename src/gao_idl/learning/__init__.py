@@ -1,4 +1,8 @@
-"""Tabular learning: codecs, an ε-greedy Q-learning adapter, and a trainer/evaluator."""
+"""Tabular learning: codecs, an ε-greedy Q-learning adapter, and a trainer/evaluator.
+
+Stability: supporting API: documented in the API reference, but not re-exported by
+``gao_idl``; it may change in a minor release before 1.0 (see NOTES.md).
+"""
 
 from gao_idl.learning.codecs import ActCodec, FieldObsCodec, ObsCodec, SchemaActCodec
 from gao_idl.learning.opponents import OpponentFactory, default_opponent_factory

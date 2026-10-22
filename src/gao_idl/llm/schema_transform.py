@@ -9,6 +9,9 @@ reads it.
 This is a transform of the *request* only. The agent's local validator keeps checking replies
 against the original schema (``llm/validate.py``), so whatever the API lets through that the
 original schema forbids is still rejected and repaired.
+
+Stability: ``to_anthropic_schema`` is public (exported by ``gao_idl.llm``); the rest of this
+module is internal.
 """
 
 import copy

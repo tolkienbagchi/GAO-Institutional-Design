@@ -1,4 +1,7 @@
-"""Loop: re-run a body process, feeding selected exit ports back, until an ``until`` port fires."""
+"""Loop: re-run a body process, feeding selected exit ports back, until an ``until`` port fires.
+
+Stability: ``Loop`` is public (re-exported by ``gao_idl``); the rest of this module is internal.
+"""
 
 from dataclasses import dataclass, field
 from typing import Any, Literal

@@ -1,4 +1,8 @@
-"""Serving recorded model replies from a session's input log: replay without any inference."""
+"""Serving recorded model replies from a session's input log: replay without any inference.
+
+Stability: ``ReplayBackend``, ``ReplayExhausted`` are public (exported by ``gao_idl.llm``); the
+rest of this module is internal.
+"""
 
 from collections import deque
 from typing import Any

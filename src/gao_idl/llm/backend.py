@@ -1,6 +1,9 @@
 """LLM backend protocol, wire types and the error type shared by all backends.
 
 Nothing here knows about sessions, ledgers or stores: a backend maps messages to a response.
+
+Stability: ``BackendError``, ``LLMBackend``, ``Message``, ``Response`` are public (exported by
+``gao_idl.llm``); the rest of this module is internal.
 """
 
 import re

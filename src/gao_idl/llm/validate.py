@@ -7,6 +7,8 @@ exclusive forms), ``required``, ``properties``, ``additionalProperties`` (``fals
 Other keywords are ignored, so this is a pre-check, never the authority: the layer still validates.
 
 It never coerces. ``"5"`` is not a number, ``5.0`` is not an integer, and a bool is neither.
+
+Stability: internal; the public LLM names are exported by ``gao_idl.llm``.
 """
 
 import math

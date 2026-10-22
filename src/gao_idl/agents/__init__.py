@@ -1,4 +1,8 @@
-"""Agent adapters: the only things that supply actions to a session run."""
+"""Agent adapters: the only things that supply actions to a session run.
+
+Stability: supporting API: documented in the API reference, but not re-exported by
+``gao_idl``; it may change in a minor release before 1.0 (see NOTES.md).
+"""
 
 from gao_idl.agents.base import AgentAdapter, EpisodeContext, EpisodeEnd, ExternalRecorder
 from gao_idl.agents.human import HumanTransportAgent

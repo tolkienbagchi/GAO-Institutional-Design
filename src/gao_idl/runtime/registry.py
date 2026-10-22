@@ -1,4 +1,8 @@
-"""Resolve ``"module.path:factory_name"`` references to environment factories."""
+"""Resolve ``"module.path:factory_name"`` references to environment factories.
+
+Stability: internal; it may change without notice. Use the names exported by ``gao_idl`` where
+there is one.
+"""
 
 import importlib
 from collections.abc import Callable

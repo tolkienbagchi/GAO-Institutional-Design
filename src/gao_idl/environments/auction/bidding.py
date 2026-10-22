@@ -1,4 +1,8 @@
-"""Sealed-bid bidding layer: every bidder submits one bid simultaneously."""
+"""Sealed-bid bidding layer: every bidder submits one bid simultaneously.
+
+Stability: internal; it may change without notice. Use the names exported by ``gao_idl`` where
+there is one.
+"""
 
 from typing import Any, Literal
 

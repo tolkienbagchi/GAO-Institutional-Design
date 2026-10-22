@@ -7,6 +7,10 @@ There is no way to hand it a session, a ledger, an outcome or another agent's da
 Render contract: the returned list is ``[system messages..., *memory, turn messages...]``. The
 agent stores ``render(request, [], [])`` minus its leading system messages as the "turn" in its
 memory, so a codec must render the same turn for the same request.
+
+Stability: ``CodecParseError``, ``DecisionCodec``, ``DefaultCodec``, ``DefaultReportRenderer``,
+``ReportRenderer`` are public (exported by ``gao_idl.llm``); the rest of this module is
+internal.
 """
 
 import json

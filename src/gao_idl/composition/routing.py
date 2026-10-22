@@ -1,4 +1,8 @@
-"""Helpers shared by the composites: decision-id ownership and name validation."""
+"""Helpers shared by the composites: decision-id ownership and name validation.
+
+Stability: internal; it may change without notice. Use the names exported by ``gao_idl`` where
+there is one.
+"""
 
 from gao_idl.core.errors import ContractError
 from gao_idl.core.ids import DecisionId

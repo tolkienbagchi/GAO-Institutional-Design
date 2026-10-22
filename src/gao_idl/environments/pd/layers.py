@@ -1,4 +1,8 @@
-"""The two layers of the repeated PD: one pair's round, and the automatic round counter."""
+"""The two layers of the repeated PD: one pair's round, and the automatic round counter.
+
+Stability: internal; it may change without notice. Use the names exported by ``gao_idl`` where
+there is one.
+"""
 
 from typing import Literal
 

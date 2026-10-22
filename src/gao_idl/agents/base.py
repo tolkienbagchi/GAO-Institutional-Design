@@ -1,4 +1,8 @@
-"""The adapter protocol and the episode objects. Adapters see requests and reports, nothing else."""
+"""The adapter protocol and the episode objects. Adapters see requests and reports, nothing else.
+
+Stability: ``AgentAdapter``, ``EpisodeContext`` are public (re-exported by ``gao_idl``); the
+rest of this module is supporting.
+"""
 
 from typing import Any, Literal, Protocol, runtime_checkable
 

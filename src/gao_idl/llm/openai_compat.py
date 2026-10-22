@@ -4,6 +4,9 @@ One HTTP shape only; no provider SDKs. ``httpx`` (the ``llm`` extra) is imported
 default transport, so importing this module never needs it. The credential is fetched per request
 from a callable and only ever lives in a local variable and the request header: it is scrubbed
 from every error message, and never stored on the backend or copied into ``Response.raw``.
+
+Stability: ``OpenAICompatBackend`` is public (exported by ``gao_idl.llm``); the rest of this
+module is internal.
 """
 
 import asyncio

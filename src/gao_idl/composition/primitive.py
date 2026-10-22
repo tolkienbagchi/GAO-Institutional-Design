@@ -1,4 +1,8 @@
-"""Primitive: runs a single Layer as a Process (one simultaneous decision round)."""
+"""Primitive: runs a single Layer as a Process (one simultaneous decision round).
+
+Stability: ``Primitive`` is public (re-exported by ``gao_idl``); the rest of this module is
+internal.
+"""
 
 from typing import Any, Literal
 

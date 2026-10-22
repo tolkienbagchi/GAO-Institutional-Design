@@ -11,6 +11,9 @@ funded project ids in ascending id order (natural order: ``p2`` before ``p10``),
   Unapproved projects are never funded, so no rule spends money on projects nobody wants.
 * All ties are broken by project id ascending (natural order). Costs and budgets are compared as
   exact decimal fractions (``Fraction(repr(x))``), so ``0.1 + 0.2 <= 0.3`` holds.
+
+Stability: internal; it may change without notice. Use the names exported by ``gao_idl`` where
+there is one.
 """
 
 import math

@@ -2,6 +2,9 @@
 
 The reward is disclosed to the player in the settlement report as ``own_reward`` (and credited to
 the ledger as the same amount). Horizon 1: one pull per session.
+
+Stability: supporting API: documented in the API reference, but not re-exported by
+``gao_idl``; it may change in a minor release before 1.0 (see NOTES.md).
 """
 
 import math

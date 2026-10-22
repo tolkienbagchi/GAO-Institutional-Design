@@ -1,4 +1,8 @@
-"""Settlement layer: resolves sealed bids into a winner, a price and utilities (no roles)."""
+"""Settlement layer: resolves sealed bids into a winner, a price and utilities (no roles).
+
+Stability: internal; it may change without notice. Use the names exported by ``gao_idl`` where
+there is one.
+"""
 
 import math
 from typing import Any, Literal

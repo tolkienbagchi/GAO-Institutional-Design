@@ -1,4 +1,8 @@
-"""Deterministic scripted backend for tests."""
+"""Deterministic scripted backend for tests.
+
+Stability: ``MockBackend``, ``MockCall``, ``MockExhausted`` are public (exported by
+``gao_idl.llm``); the rest of this module is internal.
+"""
 
 import json
 from collections.abc import Callable

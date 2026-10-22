@@ -1,4 +1,8 @@
-"""Repeated prisoner's dilemma: ``Loop(Seq(Par(pair rounds), round counter))``."""
+"""Repeated prisoner's dilemma: ``Loop(Seq(Par(pair rounds), round counter))``.
+
+Stability: supporting API: documented in the API reference, but not re-exported by
+``gao_idl``; it may change in a minor release before 1.0 (see NOTES.md).
+"""
 
 from collections.abc import Mapping, Sequence
 from typing import Any, Literal

@@ -1,4 +1,8 @@
-"""Input-log events (source of truth) and trace events (derived record), with JSON dump/load."""
+"""Input-log events (source of truth) and trace events (derived record), with JSON dump/load.
+
+Stability: supporting API: documented in the API reference, but not re-exported by
+``gao_idl``; it may change in a minor release before 1.0 (see NOTES.md).
+"""
 
 from collections.abc import Iterable
 from typing import Annotated, Any, Literal

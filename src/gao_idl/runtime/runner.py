@@ -4,6 +4,9 @@ Everything that touches the session (``advance``, ``submit``, ``timeout``) happe
 coroutine ``run``; adapters run as tasks that only return an action. Adapters are handed deep
 copies of ``DecisionRequest`` / ``ParticipantReport`` objects addressed to their own agent, plus the
 episode start/end notices, and nothing else (invariant 1).
+
+Stability: ``RunnerPolicy``, ``run``, ``run_sync`` are public (re-exported by ``gao_idl``); the
+rest of this module is internal.
 """
 
 import asyncio

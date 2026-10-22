@@ -2,6 +2,9 @@
 
 Everything here is built from the ``DecisionRequest`` observation and from report payloads, and
 nothing else; a test greps this file's source to keep it that way.
+
+Stability: supporting API: documented in the API reference, but not re-exported by
+``gao_idl``; it may change in a minor release before 1.0 (see NOTES.md).
 """
 
 import json

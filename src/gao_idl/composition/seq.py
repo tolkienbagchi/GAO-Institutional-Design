@@ -1,4 +1,7 @@
-"""Seq: run ``first``, then route its exit port to a continuation through a connector."""
+"""Seq: run ``first``, then route its exit port to a continuation through a connector.
+
+Stability: ``Seq`` is public (re-exported by ``gao_idl``); the rest of this module is internal.
+"""
 
 from dataclasses import dataclass, field
 from typing import Any

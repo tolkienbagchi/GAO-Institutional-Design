@@ -1,4 +1,8 @@
-"""Frozen pydantic data objects shared by layers, sessions and traces."""
+"""Frozen pydantic data objects shared by layers, sessions and traces.
+
+Stability: ``Config`` is public (re-exported by ``gao_idl``); the rest of this module is
+supporting.
+"""
 
 from typing import Annotated, Any
 

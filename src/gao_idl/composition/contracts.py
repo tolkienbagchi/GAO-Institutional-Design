@@ -3,6 +3,9 @@
 ``check`` validates wiring only (port routing, schema identity across connectors, names, exit-port
 conflicts). Store keys are *not* ordered statically: scopes are enforced per layer / connector at
 runtime (see NOTES.md, M1 task 6).
+
+Stability: supporting API: documented in the API reference, but not re-exported by
+``gao_idl``; it may change in a minor release before 1.0 (see NOTES.md).
 """
 
 from typing import Any

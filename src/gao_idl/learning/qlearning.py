@@ -30,6 +30,9 @@ decision). That is biased whenever the truncated game would have moved on from `
 
 Checkpoints are plain JSON-able dicts. Table keys are nested tuples of JSON scalars, written as
 nested lists (``codecs.to_jsonable``) and read back as tuples (``codecs.from_jsonable``).
+
+Stability: ``TableAgent`` is public (re-exported by ``gao_idl``); the rest of this module is
+supporting.
 """
 
 import copy
@@ -42,7 +45,7 @@ from typing import Any, Literal
 import numpy as np
 from pydantic import Field, model_validator
 
-from gao_idl import __version__
+from gao_idl._version import __version__
 from gao_idl.agents.base import AgentAdapter, EpisodeContext, EpisodeEnd
 from gao_idl.core.ids import AgentId, ReportId
 from gao_idl.core.schemas import DecisionRequest, FrozenModel, ParticipantReport

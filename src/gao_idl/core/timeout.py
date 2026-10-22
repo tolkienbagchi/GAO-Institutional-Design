@@ -1,4 +1,7 @@
-"""Timeout policies a layer declares for decisions that are not answered in time."""
+"""Timeout policies a layer declares for decisions that are not answered in time.
+
+Stability: public; ``DefaultAction``, ``DropRole``, ``Fail`` are re-exported by ``gao_idl``.
+"""
 
 from typing import Literal
 

@@ -1,4 +1,8 @@
-"""The Process protocol: a resumable unit of execution, with step results and runtime context."""
+"""The Process protocol: a resumable unit of execution, with step results and runtime context.
+
+Stability: internal; it may change without notice. Use the names exported by ``gao_idl`` where
+there is one.
+"""
 
 from dataclasses import dataclass, replace
 from typing import Any, Protocol

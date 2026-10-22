@@ -4,6 +4,9 @@ Returns are the learner's *true* total utility, read from the session ledger by 
 each episode. The learner never sees this number (the runner does not disclose final utility); it
 learns only from disclosed report fields. Training and evaluation never share a ``TableAgent``:
 ``evaluate`` takes a checkpoint dict and builds a new frozen agent from it.
+
+Stability: supporting API: documented in the API reference, but not re-exported by
+``gao_idl``; it may change in a minor release before 1.0 (see NOTES.md).
 """
 
 import asyncio

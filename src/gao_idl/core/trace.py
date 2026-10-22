@@ -1,4 +1,8 @@
-"""Trace sink protocol and logical clock (kept in core so the store can emit trace events)."""
+"""Trace sink protocol and logical clock (kept in core so the store can emit trace events).
+
+Stability: internal; it may change without notice. Use the names exported by ``gao_idl`` where
+there is one.
+"""
 
 from typing import Protocol
 

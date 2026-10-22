@@ -3,6 +3,9 @@
 ``Seq(nomination) -> Seq(eligibility) -> Seq(voting) -> funding``. The ballot schema of the voting
 layer is generated from the eligible projects; the funding layer is one of four interchangeable
 automatic layers (:data:`FUNDING`), so swapping the rule is a one-line change.
+
+Stability: supporting API: documented in the API reference, but not re-exported by
+``gao_idl``; it may change in a minor release before 1.0 (see NOTES.md).
 """
 
 import math

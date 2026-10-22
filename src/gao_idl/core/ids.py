@@ -1,4 +1,8 @@
-"""Opaque identifier types and ordering helpers."""
+"""Opaque identifier types and ordering helpers.
+
+Stability: supporting API: documented in the API reference, but not re-exported by
+``gao_idl``; it may change in a minor release before 1.0 (see NOTES.md).
+"""
 
 import re
 from typing import NewType

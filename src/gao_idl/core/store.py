@@ -1,4 +1,8 @@
-"""Scoped JSON key-value store shared between layers; every access is traced."""
+"""Scoped JSON key-value store shared between layers; every access is traced.
+
+Stability: supporting API: documented in the API reference, but not re-exported by
+``gao_idl``; it may change in a minor release before 1.0 (see NOTES.md).
+"""
 
 import copy
 import json

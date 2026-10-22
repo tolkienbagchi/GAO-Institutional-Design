@@ -1,4 +1,8 @@
-"""Who plays whom: fixed pairs or round-robin rematching (circle method)."""
+"""Who plays whom: fixed pairs or round-robin rematching (circle method).
+
+Stability: internal; it may change without notice. Use the names exported by ``gao_idl`` where
+there is one.
+"""
 
 from collections.abc import Sequence
 

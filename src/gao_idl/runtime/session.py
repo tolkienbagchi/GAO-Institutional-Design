@@ -2,6 +2,9 @@
 
 The input log is the only source of truth. Everything else (frame, pending set, trace, ledger) is a
 fold of the log and is rebuilt exactly by ``Session.replay``.
+
+Stability: ``Session`` is public (re-exported by ``gao_idl``); the rest of this module is
+internal.
 """
 
 import copy

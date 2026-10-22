@@ -1,4 +1,8 @@
-"""Par: independent parallel branches over disjoint agents, joined when all have exited."""
+"""Par: independent parallel branches over disjoint agents, joined when all have exited.
+
+Stability: ``DictJoiner``, ``DisjointSplitter``, ``Par`` are public (re-exported by
+``gao_idl``); the rest of this module is internal.
+"""
 
 from collections.abc import Callable
 from dataclasses import dataclass, field

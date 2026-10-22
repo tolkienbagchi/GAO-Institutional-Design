@@ -1,4 +1,8 @@
-"""Hierarchical instance paths and the identifiers derived from them."""
+"""Hierarchical instance paths and the identifiers derived from them.
+
+Stability: supporting API: documented in the API reference, but not re-exported by
+``gao_idl``; it may change in a minor release before 1.0 (see NOTES.md).
+"""
 
 from dataclasses import dataclass
 
