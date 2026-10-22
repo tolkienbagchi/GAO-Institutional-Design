@@ -282,7 +282,7 @@ institutions, not models of any real market or city.
 | `gao_idl.environments.pd:build_repeated_pd` | `agents`, `rounds`, `matching="fixed"\|"round_robin"`, `payoffs`, `timeout=Fail()`, `default_move=None`, `disclose_payoffs=True` |
 | `gao_idl.environments.pb:build_pb` | `proposers`, `voters`, `budget`, `max_cost`, `rule="greedy"\|"knapsack"\|"mes"\|"phragmen"`, `private_values=None`, `reveal_ballots=False`, `timeout_nomination=DropRole()` |
 | `gao_idl.environments.congestion:build_congestion` | `n_commuters=6`, `periods=10`, `toll_policy=None`, `report_regime="hotspot"\|"pop_weighted"\|"both"`, `equity_metric=None`, `ev_share=0.0`, `public_report=False`, `k=3`, `population_seed=0`, `city=None`, `commuters=None`, `timeout=Fail()`, `default_toll=None` |
-| `gao_idl.environments.vcm:build_vcm` | `n_sellers=4`, `n_buyers=3`, `n_verifiers=2`, `rounds=5`, `fee=1.0`, `penalty=5.0`, `tol=0.1`, `p_audit=0.5`, `settle_on="reported"\|"true"`, `reputation_visible=False`, `price_cap=50.0`, `population_seed=0`, `bias=None`, `sigma=0.03`, `sellers/buyers/verifiers=None`, `timeout=Fail()` |
+| `gao_idl.environments.vcm:build_vcm` | `market_form="per_project"\|"pooled"`, `n_sellers=None`, `n_buyers=None`, `n_verifiers=None` (all `None`: the stylized lemons fixture; any given: a drawn population with defaults 4/3/2), `rounds=5`, `fee=1.0`, `penalty=5.0`, `tol=0.1`, `p_audit=0.5`, `settle_on="reported"\|"true"`, `reputation_visible=False`, `price_cap=50.0`, `population_seed=None` (0 when drawing), `bias=None`, `sigma=0.03`, `sellers/buyers/verifiers=None`, `timeout=Fail()` |
 | `gao_idl.environments.toy.bandit:build_bandit`, `...toy.chain:build_chain` | small sanity environments for learners |
 
 Layouts:

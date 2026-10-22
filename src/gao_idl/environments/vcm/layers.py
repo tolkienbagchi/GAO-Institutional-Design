@@ -13,7 +13,7 @@ from typing import Literal
 
 import numpy as np
 from numpy.random import Generator
-from pydantic import BaseModel, Field, create_model
+from pydantic import BaseModel, ConfigDict, Field, create_model
 
 from gao_idl.core.errors import ContractError
 from gao_idl.core.ids import AgentId, Port, RoleId
@@ -29,6 +29,8 @@ from gao_idl.environments.vcm.schemas import (
     ClearingRecord,
     ClearingReport,
     Order,
+    ProjectClearing,
+    ProjectResult,
     ProjectView,
     RepStat,
     Revelation,
@@ -42,6 +44,7 @@ DONE = Port("done")
 AGAIN, FINISHED = Port("again"), Port("finished")
 STORE_WRITES = frozenset({"rep:*", "last:*"})
 SettleOn = Literal["reported", "true"]
+MarketForm = Literal["per_project", "pooled"]
 
 
 def verifier_role(k: int) -> RoleId:
@@ -154,6 +157,7 @@ def market_layer(
     *,
     price_cap: float,
     timeout: TimeoutPolicy = Fail(),  # noqa: B008 (frozen model)
+    form: MarketForm = "per_project",
 ) -> SimpleLayer:
     """Simultaneous sealed orders by ``seller:j`` and ``buyer:i``, prices per credit.
 
@@ -161,6 +165,10 @@ def market_layer(
     sees the verified projects (quantity, verifier, reported quality) and, if the state carries
     it, the verifiers' track records. Nobody sees another side's or another seller's order.
     ``DefaultAction`` and ``DropRole`` both mean the neutral thing, an order for zero credits.
+
+    ``per_project``: a buyer's action is a generated schema with one optional ``(price, qty)``
+    per project id (omitted or ``qty = 0`` means no order); the total over projects must not
+    exceed its demand (``feasible``). ``pooled``: one ``(price, qty)`` for the whole pool.
     """
     sellers = {seller_role(j): s for j, s in enumerate(pop.sellers)}
     buyers = {buyer_role(i): b for i, b in enumerate(pop.buyers)}
@@ -170,14 +178,15 @@ def market_layer(
         state = _state(cfg)
         if role in sellers:
             s = sellers[role]
+            last = state.last_projects.get(s.agent) if state.last_projects else None
             return SellerObs(
                 round=state.round,
                 project=s.agent,
                 quantity=s.quantity,
                 cost=s.cost,
                 verified_quality=state.reports[s.agent].report,
-                last_price=state.last_price,
-                last_volume=state.last_volume,
+                last_price=last.price if last else state.last_price,
+                last_volume=last.volume if last else state.last_volume,
             )
         b = buyers[role]
         track = None
@@ -200,6 +209,12 @@ def market_layer(
                     verifier=state.reports[s.agent].verifier,
                     quantity=s.quantity,
                     verified_quality=state.reports[s.agent].report,
+                    last_price=(
+                        state.last_projects[s.agent].price if state.last_projects else None
+                    ),
+                    last_volume=(
+                        state.last_projects[s.agent].volume if state.last_projects else None
+                    ),
                 )
                 for s in pop.sellers
             ],
@@ -211,25 +226,55 @@ def market_layer(
     def limit(role: RoleId) -> int:
         return sellers[role].quantity if role in sellers else buyers[role].demand
 
-    def action_schema(cfg: Config, role: RoleId) -> type[BaseModel]:
-        name = "SellerOrder" if role in sellers else "BuyerOrder"
+    def order_model(name: str, qty_limit: int) -> type[BaseModel]:
         return create_model(
             name,
             price=(float, Field(ge=0.0, le=price_cap)),
-            qty=(int, Field(ge=0, le=limit(role))),
+            qty=(int, Field(ge=0, le=qty_limit)),
         )
 
+    def action_schema(cfg: Config, role: RoleId) -> type[BaseModel]:
+        if role in sellers:
+            return order_model("SellerOrder", limit(role))
+        if form == "pooled":
+            return order_model("BuyerOrder", limit(role))
+        # one optional order per project, bounded by that project's quantity; `extra=forbid`
+        # makes a name that is not a listed project an error
+        fields = {
+            s.agent: (order_model(f"Order_{s.agent}", s.quantity) | None, Field(default=None))
+            for s in pop.sellers
+        }
+        return create_model(  # type: ignore[call-overload,no-any-return]
+            "BuyerOrders", __config__=ConfigDict(extra="forbid"), **fields
+        )
+
+    def feasible(cfg: Config, role: RoleId, action: BaseModel) -> bool:
+        if role in sellers or form == "pooled":
+            return True
+        total = sum(o["qty"] for o in action.model_dump().values() if o is not None)
+        return bool(total <= buyers[role].demand)
+
     def default_action(cfg: Config, role: RoleId) -> BaseModel:
+        if role not in sellers and form == "per_project":
+            return action_schema(cfg, role)()
         return action_schema(cfg, role)(price=0.0, qty=0)
 
     def outcome(
         cfg: Config, actions: dict[RoleId, BaseModel], rng: Generator, store: StoreView
     ) -> BaseModel:
         orders: dict[str, Order] = {}
+        bids: dict[str, dict[str, Order]] = {}
         for role, action in actions.items():
             d = action.model_dump()
-            orders[cfg.roles[role]] = Order(price=float(d["price"]), qty=int(d["qty"]))
-        return _state(cfg).model_copy(update={"orders": orders})
+            if role not in sellers and form == "per_project":
+                bids[cfg.roles[role]] = {
+                    p: Order(price=float(o["price"]), qty=int(o["qty"]))
+                    for p, o in sorted(d.items())
+                    if o is not None and o["qty"] > 0
+                }
+            else:
+                orders[cfg.roles[role]] = Order(price=float(d["price"]), qty=int(d["qty"]))
+        return _state(cfg).model_copy(update={"orders": orders, "bids": bids})
 
     return SimpleLayer(
         name="market",
@@ -238,6 +283,7 @@ def market_layer(
         timeout=timeout,
         observe=observe,
         action_schema=action_schema,
+        feasible=feasible,
         default_action=default_action,
         outcome=outcome,
         export=_carry,
@@ -247,11 +293,15 @@ def market_layer(
 # ------------------------------------------------------------------ clearing
 
 
-def clearing_layer(pop: Population) -> SimpleLayer:
-    """Automatic: the uniform-price call auction over the orders, then money for the trades.
+def clearing_layer(pop: Population, form: MarketForm = "per_project") -> SimpleLayer:
+    """Automatic: the uniform-price call auction(s) over the orders, then money for the trades.
 
-    Sellers are credited ``fill * (price - cost)``, buyers ``-fill * price``. Everyone is told
-    the price and volume; buyers and sellers also their own fill and money.
+    ``pooled``: one auction for all credits. ``per_project``: one independent auction per
+    project, each with the same rule (``clear_call_auction``) over the bids on that project and
+    its seller's ask; a buyer's basket is exactly what it bid for. Sellers are credited
+    ``fill * (price - cost)`` at their project's price, buyers ``-fill * price`` summed over
+    projects. Everyone is told the price and volume (per project in the second form); buyers and
+    sellers also their own fills and money.
     """
     sellers = {s.agent: s for s in pop.sellers}
     buyers = {b.agent for b in pop.buyers}
@@ -261,18 +311,48 @@ def clearing_layer(pop: Population) -> SimpleLayer:
         cfg: Config, actions: dict[RoleId, BaseModel], rng: Generator, store: StoreView
     ) -> BaseModel:
         state = _state(cfg)
-        bids = [(a, o.price, o.qty) for a, o in sorted(state.orders.items()) if a in buyers]
         asks = [(a, o.price, o.qty) for a, o in sorted(state.orders.items()) if a in sellers]
-        result = clear_call_auction(bids, asks)
-        fills = {**result.bid_fills, **result.ask_fills}
-        record = ClearingRecord(price=result.price, volume=result.volume, fills=fills)
+        if form == "pooled":
+            bids = [(a, o.price, o.qty) for a, o in sorted(state.orders.items()) if a in buyers]
+            result = clear_call_auction(bids, asks)
+            fills = {**result.bid_fills, **result.ask_fills}
+            record = ClearingRecord(price=result.price, volume=result.volume, fills=fills)
+            return state.model_copy(update={"clearing": record})
+        per: dict[str, ProjectClearing] = {}
+        totals: dict[str, float] = {b: 0.0 for b in sorted(state.bids)}
+        for project in sorted(sellers):
+            bids = [
+                (b, o.price, o.qty)
+                for b, orders in sorted(state.bids.items())
+                if (o := orders.get(project)) is not None
+            ]
+            result = clear_call_auction(bids, [a for a in asks if a[0] == project])
+            fills = {**result.bid_fills, **result.ask_fills}
+            per[project] = ProjectClearing(price=result.price, volume=result.volume, fills=fills)
+            for agent, fill in fills.items():
+                totals[agent] = totals.get(agent, 0.0) + fill
+        record = ClearingRecord(
+            price=None,
+            volume=sum(c.volume for c in per.values()),
+            fills=totals,
+            projects=per,
+        )
         return state.model_copy(update={"clearing": record})
 
     def utilities(cfg: Config, outcome: BaseModel) -> dict[AgentId, float]:
         record = _clearing(outcome)
+        pay: dict[AgentId, float] = {}
+        if record.projects is not None:
+            for project, c in record.projects.items():
+                if c.price is not None:
+                    fill = c.fills.get(project, 0.0)
+                    pay[AgentId(project)] = fill * (c.price - sellers[project].cost)
+            for agent in record.fills:
+                if agent in buyers and (paid := record.paid(agent)):
+                    pay[AgentId(agent)] = -paid
+            return pay
         if record.price is None:
             return {}
-        pay: dict[AgentId, float] = {}
         for agent, fill in record.fills.items():
             if agent in sellers:
                 pay[AgentId(agent)] = fill * (record.price - sellers[agent].cost)
@@ -285,6 +365,31 @@ def clearing_layer(pop: Population) -> SimpleLayer:
     ) -> BaseModel | None:
         record = _clearing(outcome)
         state = _outcome_state(outcome)
+        if record.projects is not None:
+            shown = {
+                p: ProjectResult(price=c.price, volume=c.volume) for p, c in record.projects.items()
+            }
+            own_fills = own_payment = own_revenue = own_fill = None
+            if recipient in buyers and recipient in record.fills:
+                own_fills = {
+                    p: c.fills[recipient]
+                    for p, c in record.projects.items()
+                    if recipient in c.fills
+                }
+                own_payment = record.paid(recipient)
+            elif recipient in sellers:
+                mine = record.projects[recipient]
+                own_fill = mine.fills.get(recipient, 0.0)
+                own_revenue = own_fill * mine.price if mine.price is not None else None
+            return ClearingReport(
+                round=state.round,
+                volume=record.volume,
+                projects=shown,
+                own_fill=own_fill,
+                own_fills=own_fills,
+                own_payment=own_payment,
+                own_revenue=own_revenue,
+            )
         own = record.fills.get(recipient)
         price = record.price
         return ClearingReport(
@@ -344,6 +449,7 @@ def audit_layer(
     p_audit: float,
     settle_on: SettleOn,
     reputation_visible: bool,
+    form: MarketForm = "per_project",
 ) -> SimpleLayer:
     """Automatic: audit traded projects at random, penalize, settle buyers, update reputation.
 
@@ -351,7 +457,8 @@ def audit_layer(
     stream does not depend on what happened in the market. A traded project is audited when its
     draw is below ``p_audit``; its true quality is then public. A verifier whose audited report is
     off by more than ``tol`` pays ``penalty``. A buyer's credits come from the sold projects in
-    proportion to their fills; it is credited ``value`` times the quality it holds: the revealed
+    proportion to their fills (``pooled``; in ``per_project`` from exactly the projects it
+    bid on); it is credited ``value`` times the quality it holds: the revealed
     one if audited (or always, if ``settle_on == "true"``), else the reported one. The buyer's
     *report* states the value at the quality it knows, never more. Audit results go into the
     verifiers' stored history (``rep:<verifier>``), the public price into ``last:clearing``.
@@ -389,8 +496,13 @@ def audit_layer(
             fill = record.fills.get(agent, 0.0)
             k = s_ = 0.0
             if fill > 0 and volume > 0:
-                for project, sold in traded.items():
-                    share = fill * sold / volume
+                if record.projects is not None:
+                    held = {p: c.fills.get(agent, 0.0) for p, c in record.projects.items()}
+                else:
+                    held = {p: fill * sold / volume for p, sold in traded.items()}
+                for project, share in held.items():
+                    if share <= 0:
+                        continue
                     reported = state.reports[project].report
                     revealed = audited.get(project)
                     known_q = revealed.true_quality if revealed else reported
@@ -408,7 +520,18 @@ def audit_layer(
                 sum_error=stat.sum_error + sum(r.report - r.true_quality for r in mine),
             )
             store.set(f"rep:{v}", stat.model_dump(mode="json"))
-        store.set("last:clearing", {"price": record.price, "volume": record.volume})
+        store.set(
+            "last:clearing",
+            {
+                "price": record.price,
+                "volume": record.volume,
+                "projects": None
+                if record.projects is None
+                else {
+                    p: {"price": c.price, "volume": c.volume} for p, c in record.projects.items()
+                },
+            },
+        )
         return AuditResult(
             state=state,
             audited=audited,
@@ -435,12 +558,10 @@ def audit_layer(
         cfg: Config, outcome: BaseModel, recipient: AgentId, rng: Generator
     ) -> BaseModel | None:
         r = result(outcome)
-        fills = _clearing(r.state).fills
-        price = _clearing(r.state).price
         own_value = own_net = fees = penalties = None
         if recipient in buyers:
             own_value = r.known_value[recipient]
-            own_net = own_value - fills.get(recipient, 0.0) * (price or 0.0)
+            own_net = own_value - _clearing(r.state).paid(recipient)
         elif recipient in verifiers:
             fees = fee * len(next(v for v in pop.verifiers if v.agent == recipient).projects)
             penalties = r.penalties[recipient]
@@ -486,10 +607,20 @@ def read_reputation(store: StoreView, verifiers: Sequence[str]) -> dict[str, Rep
     return {v: _read_rep(store, v) for v in verifiers}
 
 
-def read_last_clearing(store: StoreView) -> tuple[float | None, int]:
-    """The previous round's public ``(price, volume)``; ``(None, 0)`` before the first."""
+def read_last_clearing(
+    store: StoreView,
+) -> tuple[float | None, int, dict[str, ProjectResult] | None]:
+    """The previous round's public ``(price, volume, per-project results)``.
+
+    ``(None, 0, None)`` before the first round; the third entry is ``None`` in the pooled form.
+    """
     try:
         d = store.get("last:clearing")
     except KeyError:
-        return None, 0
-    return d["price"], int(d["volume"])
+        return None, 0, None
+    projects = d.get("projects")
+    return (
+        d["price"],
+        int(d["volume"]),
+        None if projects is None else {p: ProjectResult(**r) for p, r in projects.items()},
+    )

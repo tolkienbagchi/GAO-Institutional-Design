@@ -82,6 +82,51 @@ class BuyerCodec(DefaultCodec):
         return "\n".join(lines)
 
 
+class ProjectBuyerCodec(BuyerCodec):
+    """Per-project form: the listed projects with last prices; ask for an order per project."""
+
+    def system_prompt(self, request: DecisionRequest) -> str:
+        """Who the model is and the reply format."""
+        return (
+            f"You are {request.agent_id}, a buyer of carbon credits. Each project has its own "
+            "sealed-bid call auction with one uniform price per project. You value each credit "
+            "at your value times its true quality, which you can only estimate from verifiers' "
+            "reports. You may bid on any projects, for at most your demand in total. "
+            "Reply with a JSON object only."
+        )
+
+    def task_prompt(self, request: DecisionRequest) -> str:
+        """The round, own demand and value, the listed projects (with last prices) and history."""
+        obs = request.observation
+        lines = [
+            f"Round {obs['round']}. You want up to {obs['demand']} credits in total; your value "
+            f"per unit of quality is {obs['value']:g}.",
+            "Listed projects (credits for sale, verifier, reported quality, last price):",
+        ]
+        for p in obs["projects"]:
+            last = (
+                f", last cleared {p['last_volume']} at {p['last_price']:g}"
+                if p.get("last_price") is not None
+                else ""
+            )
+            lines.append(
+                f"  {p['project']}: {p['quantity']} credits, {p['verifier']}, "
+                f"{p['verified_quality']:.3f}{last}"
+            )
+        if obs.get("reputation"):
+            lines.append("Verifiers' audit history (audited, wrong, mean report minus truth):")
+            for v, rec in obs["reputation"].items():
+                err = "n/a" if not rec["audited"] else f"{rec['mean_error']:+.2f}"
+                lines.append(f"  {v}: {rec['audited']:g}, {rec['wrong']:g}, {err}")
+        example = {p["project"]: {"price": 0.0, "qty": 0} for p in obs["projects"][:2]}
+        lines += [
+            "",
+            "Reply with an order per project you want, e.g. " + json.dumps(example) + "; "
+            "leave out projects you do not want. JSON only.",
+        ]
+        return "\n".join(lines)
+
+
 class VCMReportRenderer(DefaultReportRenderer):
     """A report as one line of its own fields; nothing is added."""
 

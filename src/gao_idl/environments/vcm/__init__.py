@@ -67,13 +67,34 @@ def _population(
     sellers: list[dict[str, Any]] | None,
     buyers: list[dict[str, Any]] | None,
     verifiers: list[dict[str, Any]] | None,
-    n: tuple[int, int, int],
-    seed: int,
+    n: tuple[int | None, int | None, int | None],
+    seed: int | None,
     bias: list[float] | None,
     sigma: float,
 ) -> Population:
     if sellers is None and buyers is None and verifiers is None:
-        return draw_population(n[0], n[1], n[2], seed, bias, sigma)
+        if all(x is None for x in (*n, seed)):
+            base = lemons_population()
+            if bias is not None and len(bias) != len(base.verifiers):
+                raise ContractError(f"bias needs one entry per verifier ({len(base.verifiers)})")
+            return Population(
+                sellers=base.sellers,
+                buyers=base.buyers,
+                verifiers=[
+                    v.model_copy(
+                        update={"sigma": sigma, "bias": v.bias if bias is None else bias[k]}
+                    )
+                    for k, v in enumerate(base.verifiers)
+                ],
+            ).check()
+        return draw_population(
+            4 if n[0] is None else n[0],
+            3 if n[1] is None else n[1],
+            2 if n[2] is None else n[2],
+            0 if seed is None else seed,
+            bias,
+            sigma,
+        )
     if sellers is None or buyers is None or verifiers is None:
         raise ContractError("give sellers, buyers and verifiers together, or none of them")
     try:
@@ -87,9 +108,9 @@ def _population(
 
 
 def build_vcm(
-    n_sellers: int = 4,
-    n_buyers: int = 3,
-    n_verifiers: int = 2,
+    n_sellers: int | None = None,
+    n_buyers: int | None = None,
+    n_verifiers: int | None = None,
     rounds: int = 5,
     fee: float = 1.0,
     penalty: float = 5.0,
@@ -97,8 +118,9 @@ def build_vcm(
     p_audit: float = 0.5,
     settle_on: Literal["reported", "true"] = "reported",
     reputation_visible: bool = False,
+    market_form: Literal["per_project", "pooled"] = "per_project",
     price_cap: float = 50.0,
-    population_seed: int = 0,
+    population_seed: int | None = None,
     bias: list[float] | None = None,
     sigma: float = 0.03,
     sellers: list[dict[str, Any]] | None = None,
@@ -110,16 +132,24 @@ def build_vcm(
 
     Each round is ``Seq(verification, market, clearing, audit)``; ``audit`` exits ``again`` or,
     after the last round, ``finished`` (normal termination through the round count, as in the
-    PD). The population is drawn from ``population_seed`` (``n_*``, ``bias`` per verifier,
-    ``sigma``) unless ``sellers``, ``buyers`` and ``verifiers`` are all given as lists of dicts
-    (see ``model``); every project has exactly one verifier.
+    PD). The population is, in order of precedence: the lists ``sellers``, ``buyers`` and
+    ``verifiers`` if all are given (dicts, see ``model``); a population drawn from
+    ``population_seed`` (default 0) with ``n_sellers`` / ``n_buyers`` / ``n_verifiers`` (default
+    4 / 3 / 2) if any of those is given; otherwise the default fixture ``lemons_population()``:
+    two high-quality, expensive projects verified by an honest verifier and two low-quality, cheap
+    ones verified by a verifier that measures 0.3 too high, three buyers (see the tutorial).
+    ``bias`` (one per verifier) and ``sigma`` apply to the drawn and the default populations.
+    Every project has exactly one verifier.
 
     ``fee`` is paid per report; ``penalty`` is charged when a traded project is audited and the
     report is off by more than ``tol``; ``p_audit`` is the per-project, per-round audit
     probability. ``settle_on`` is the quality buyers are credited for when a project is not
     audited: ``"reported"`` (what they believed) or ``"true"`` (ground truth, for accounting
     only: buyers are never told). ``reputation_visible`` puts each verifier's audit history in
-    the buyers' observations. ``timeout`` is the market layer's policy (``Fail``,
+    the buyers' observations. ``market_form`` is ``"per_project"`` (default: buyers send one
+    optional order per project and each project clears in its own uniform-price auction, so a
+    basket is what was bid for) or ``"pooled"`` (one order per buyer, one auction, credits
+    pooled across sellers pro rata). ``timeout`` is the market layer's policy (``Fail``,
     ``DefaultAction`` or ``DropRole``; both of the latter mean an order for zero credits);
     verification always fails on a missing report, since no report is neutral.
     """
@@ -138,6 +168,8 @@ def build_vcm(
         raise ContractError(f"p_audit must be in [0, 1], got {p_audit!r}")
     if settle_on not in ("reported", "true"):
         raise ContractError(f'settle_on must be "reported" or "true", got {settle_on!r}')
+    if market_form not in ("per_project", "pooled"):
+        raise ContractError(f'market_form must be "per_project" or "pooled", got {market_form!r}')
     if not isinstance(reputation_visible, bool):
         raise ContractError(f"reputation_visible must be a bool, got {reputation_visible!r}")
     try:
@@ -149,8 +181,8 @@ def build_vcm(
     )
 
     verification = verification_layer(pop, fee=fee, penalty=penalty, tol=tol, p_audit=p_audit)
-    market = market_layer(pop, price_cap=price_cap, timeout=policy)
-    clearing = clearing_layer(pop)
+    market = market_layer(pop, price_cap=price_cap, timeout=policy, form=market_form)
+    clearing = clearing_layer(pop, market_form)
     audit = audit_layer(
         pop,
         fee=fee,
@@ -159,6 +191,7 @@ def build_vcm(
         p_audit=p_audit,
         settle_on=settle_on,
         reputation_visible=reputation_visible,
+        form=market_form,
     )
     verifier_roles: dict[RoleId, AgentId] = {
         verifier_role(k): AgentId(v.agent) for k, v in enumerate(pop.verifiers)
@@ -178,7 +211,7 @@ def build_vcm(
 
     def next_round(rec: dict[str, Any], ledger: LedgerReadOnly, store: StoreView) -> Config:
         done = RoundState.model_validate(rec)
-        price, volume = read_last_clearing(store)
+        price, volume, per_project = read_last_clearing(store)
         state = RoundState(
             round=done.round + 1,
             rounds=done.rounds,
@@ -189,6 +222,7 @@ def build_vcm(
             ),
             last_price=price,
             last_volume=volume,
+            last_projects=per_project,
         )
         return Config(state=state.model_dump(mode="json"), roles=dict(verifier_roles))
 

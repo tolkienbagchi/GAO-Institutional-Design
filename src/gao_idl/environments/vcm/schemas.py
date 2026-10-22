@@ -39,12 +39,45 @@ class RepStat(FrozenModel):
     sum_error: float = 0.0
 
 
-class ClearingRecord(FrozenModel):
-    """The auction's result as the next layers need it."""
+class ProjectResult(FrozenModel):
+    """Public result of one project's auction (``per_project`` form): price (if any) and volume."""
+
+    price: float | None = None
+    volume: int = 0
+
+    @model_serializer(mode="wrap")
+    def _omit_absent(self, handler: Any) -> dict[str, Any]:
+        return drop_none(handler, self)
+
+
+class ProjectClearing(FrozenModel):
+    """One project's auction in full: its result and everybody's fill in it."""
 
     price: float | None
     volume: int
     fills: dict[str, float]
+
+
+class ClearingRecord(FrozenModel):
+    """The auction's result as the next layers need it.
+
+    ``pooled``: one auction, ``price`` / ``volume`` / ``fills`` as cleared. ``per_project``: one
+    auction per project in ``projects``; ``price`` is ``None``, ``volume`` the total over
+    projects and ``fills`` each agent's total fill (a seller's is its own project's).
+    """
+
+    price: float | None
+    volume: int
+    fills: dict[str, float]
+    projects: dict[str, ProjectClearing] | None = None
+
+    def paid(self, buyer: str) -> float:
+        """What ``buyer`` pays in total for its fills."""
+        if self.projects is None:
+            return self.fills.get(buyer, 0.0) * (self.price or 0.0)
+        return sum(
+            c.fills.get(buyer, 0.0) * c.price for c in self.projects.values() if c.price is not None
+        )
 
 
 class RoundState(FrozenModel):
@@ -52,7 +85,9 @@ class RoundState(FrozenModel):
 
     ``reputation`` is ``None`` unless the factory shows it to buyers. ``last_price`` /
     ``last_volume`` are the previous round's public clearing (copied out of the store by the
-    feedback connector because ``Layer.observe`` has no store access).
+    feedback connector because ``Layer.observe`` has no store access); ``last_projects`` is the
+    same per project (``per_project`` form). ``orders`` holds the sellers' asks (and, in the
+    ``pooled`` form, the buyers' bids); ``bids`` the buyers' per-project orders.
     """
 
     round: int = 0
@@ -62,7 +97,9 @@ class RoundState(FrozenModel):
     last_volume: int = 0
     reports: dict[str, VerifiedProject] = {}
     orders: dict[str, Order] = {}
+    bids: dict[str, dict[str, Order]] = {}
     clearing: ClearingRecord | None = None
+    last_projects: dict[str, ProjectResult] | None = None
 
 
 # ------------------------------------------------------------------ observations
@@ -102,6 +139,12 @@ class ProjectView(FrozenModel):
     verifier: str
     quantity: int
     verified_quality: float
+    last_price: float | None = None
+    last_volume: int | None = None
+
+    @model_serializer(mode="wrap")
+    def _omit_absent(self, handler: Any) -> dict[str, Any]:
+        return drop_none(handler, self)
 
 
 class BuyerObs(FrozenModel):
@@ -124,12 +167,15 @@ class BuyerObs(FrozenModel):
 
 
 class ClearingReport(FrozenModel):
-    """Public: price and volume. Private: the recipient's own fill, payment or receipts."""
+    """Public: price and volume (per project in the ``per_project`` form). Private: the
+    recipient's own fill (a buyer's per project), payment or receipts."""
 
     round: int
     price: float | None = None
     volume: int
+    projects: dict[str, ProjectResult] | None = None
     own_fill: float | None = None
+    own_fills: dict[str, float] | None = None
     own_payment: float | None = None
     own_revenue: float | None = None
 
