@@ -5,6 +5,10 @@
 #
 #   python -m build && bash scripts/clean_install.sh
 #
+# The wheel installed is exactly dist/gao_idl-<version>-*.whl, where <version> is read from
+# pyproject.toml; other wheels in dist/ (say, a stale 0.0.1) are ignored, and the script fails if
+# the matching one is missing. It does NOT clear dist/: old artifacts are left alone on purpose.
+#
 # Environment knobs (for machines without PyPI access; the defaults are the real check):
 #   PYTHON                          interpreter used to create the venv (default: python3)
 #   CLEAN_INSTALL_PIP_ARGS          extra pip arguments, e.g. "--no-index --no-deps"
@@ -15,13 +19,19 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-python3}"
 
+version="$("$PYTHON" -c '
+import sys, tomllib
+with open(sys.argv[1], "rb") as f:
+    print(tomllib.load(f)["project"]["version"])' "$ROOT/pyproject.toml")"
+
 shopt -s nullglob
-wheels=("$ROOT"/dist/*.whl)
+wheels=("$ROOT"/dist/gao_idl-"$version"-*.whl)
 if (( ${#wheels[@]} != 1 )); then
-    echo "clean_install: expected exactly one wheel in $ROOT/dist, found ${#wheels[@]} (run: python -m build)" >&2
+    echo "clean_install: expected exactly one dist/gao_idl-$version-*.whl (version from pyproject.toml), found ${#wheels[@]} (run: python -m build)" >&2
     exit 2
 fi
 wheel="${wheels[0]}"
+echo "== wheel under test: $wheel"
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
