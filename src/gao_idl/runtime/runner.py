@@ -17,7 +17,7 @@ from typing import Any, Literal
 
 from gao_idl.agents.base import AgentAdapter, EpisodeContext, EpisodeEnd
 from gao_idl.core import events as ev
-from gao_idl.core.errors import Infeasible, SchemaError
+from gao_idl.core.errors import AgentFailed, Infeasible, SchemaError
 from gao_idl.core.ids import AgentId, DecisionId, ReportId
 from gao_idl.core.schemas import DecisionRequest, FrozenModel, ParticipantReport
 from gao_idl.runtime.session import Session
@@ -65,7 +65,8 @@ async def run(
     2. Until finished: ``advance``, deliver new reports, dispatch ``act`` for each newly pending
        request, wait for the first completion or the earliest deadline, then ``submit`` (retry once
        on ``SchemaError`` / ``Infeasible``, then ``timeout``), ``timeout`` on any other adapter
-       exception, and ``timeout`` (after cancelling the task) on an expired deadline. A session
+       exception (preceded by an ``agent_failed`` trace event if it is ``AgentFailed``), and
+       ``timeout`` (after cancelling the task) on an expired deadline. A session
        that is neither finished nor waiting on any task raises ``RuntimeError("stalled")``.
     3. ``episode_end`` for every adapter (``terminal="failed"`` if the run dies of an exception or
        is cancelled, after the in-flight tasks are cancelled and awaited; the original exception or
@@ -190,6 +191,8 @@ def _settle(
             request.decision_id,
             e,
         )
+        if isinstance(e, AgentFailed):  # the adapter gave up: say why, then let the policy decide
+            session.record_agent_failure(request.decision_id, request.agent_id, e.reasons)
         session.timeout(request.decision_id)
         return
     try:

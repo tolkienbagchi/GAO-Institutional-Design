@@ -35,6 +35,7 @@ from gao_idl.core.trace import LogicalClock
 from gao_idl.runtime.registry import resolve
 
 MAX_CONSECUTIVE_CONTINUES = 10_000
+_NOT_REPLAYABLE = frozenset({"action_rejected", "agent_failed"})
 
 
 class _TraceList:
@@ -202,6 +203,28 @@ class Session:
         self._inbox.append(timed_out)
         del self._pending[decision_id]
 
+    def record_agent_failure(
+        self, decision_id: DecisionId, agent_id: AgentId, reasons: list[str]
+    ) -> None:
+        """Trace that ``agent_id`` gave up on a pending decision (not logged; replay cannot see it).
+
+        Emitted at the current logical time without ticking the clock, like ``ActionRejected``;
+        call it before ``timeout`` so the trace reads ``agent_failed`` then the timeout policy's
+        resolution. Raises ``UnknownDecision`` if the decision is not pending.
+        """
+        request = self._pending.get(decision_id)
+        if request is None:
+            raise UnknownDecision(decision_id)
+        self._sink.emit(
+            ev.AgentFailedEvent(
+                t=self._clock.now,
+                path=list(request.path),
+                decision_id=decision_id,
+                agent_id=agent_id,
+                reasons=list(reasons),
+            )
+        )
+
     def record_external(self, decision_id: DecisionId, payload: dict[str, Any]) -> None:
         """Record an external response in the input log; no other effect in M0."""
         self._log.append(
@@ -277,15 +300,15 @@ class Session:
     def check_determinism(self) -> None:
         """Replay the input log and require an identical trace and ledger, else DeterminismError.
 
-        ``action_rejected`` events are excluded: rejections are not in the input log, so replay
-        cannot reproduce them. Raises ValueError if inputs are queued but not yet advanced, since
-        the replay (which always advances) would then legitimately differ.
+        ``action_rejected`` and ``agent_failed`` events are excluded: neither is in the input log,
+        so replay cannot reproduce them. Raises ValueError if inputs are queued but not yet
+        advanced, since the replay (which always advances) would then legitimately differ.
         """
         if self._inbox:
             raise ValueError("call advance() before check_determinism()")
         other = Session.replay(self._env_ref, self._params, self._seed, self.input_log)
-        mine = [d for d in ev.dump(self._sink.events) if d["kind"] != "action_rejected"]
-        theirs = [d for d in ev.dump(other._sink.events) if d["kind"] != "action_rejected"]
+        mine = [d for d in ev.dump(self._sink.events) if d["kind"] not in _NOT_REPLAYABLE]
+        theirs = [d for d in ev.dump(other._sink.events) if d["kind"] not in _NOT_REPLAYABLE]
         for i, (a, b) in enumerate(zip(mine, theirs, strict=False)):
             if a != b:
                 raise DeterminismError(f"trace differs from replay at index {i}: {a} != {b}")

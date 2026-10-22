@@ -880,3 +880,41 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   two agents never share a conversation.
 - `Window(k)` stores only the last `k` messages and accepts `k = 0` (remembers nothing); `k` must be an int >= 0 (`ValueError`).
 - What gets appended (turn prompt, own action, reports addressed to the agent) is decided in `LLMAgent`, see task 4.
+
+## 2026-10-22 — M4 task 4: `LLMAgent`, local validator, `AgentFailed` / `agent_failed`
+- **`AgentFailed` lives in `core/errors.py`, not in `llm/`.** The brief has the runner recognise it, but nothing in `core`,
+  `composition` or `runtime` may import `gao_idl.llm`. It is a `GaoError` with `.reasons: list[str]`.
+- **`AgentFailedEvent` (trace kind `agent_failed`: `decision_id`, `agent_id`, `reasons`)** is added to `core/events.py` and to the trace
+  union. It is a trace-only event: `Session.record_agent_failure(decision_id, agent_id, reasons)` (new, called by the runner just before
+  `session.timeout`) emits it at `t = clock.now` **without ticking the clock** and never logs it, exactly like `ActionRejected`
+  (amendment 2). So replay/restore cannot reproduce it, and `check_determinism` now excludes `agent_failed` as well as
+  `action_rejected`. Consequence for invariant 4 worth knowing: the *effect* of a failure (`TimedOut` -> the layer's policy) is in the
+  log and replays; the *reasons* are only in the live trace (the failed attempts' raw replies are in the log, task 5, which is
+  what a replay-with-agents regenerates them from). The order in the trace is `agent_failed` first, then `action_defaulted` /
+  `role_dropped` at settle (amendment 1).
+- Runner change is only in `_settle`: for `AgentFailed` it calls `record_agent_failure` before `timeout`. A `SchemaError`/`Infeasible`
+  from `submit` still goes through the existing one-retry rule.
+- **Redispatch detection.** The brief says to keep `last_decision_id`; one agent can hold several pending decisions at once (invariant 8)
+  and the runner runs them as concurrent tasks, so a single "last" id cannot tell a re-dispatch from an interleaving. The agent keeps a
+  set of the decisions it answered this episode (`_acted`, cleared at `episode_start`) and also exposes `last_decision_id`. A decision
+  seen again gets the rejection reason `"previous action was rejected as infeasible"` (verbatim from the brief). The runner cannot say
+  whether the session refused for schema or feasibility, so a (should-not-happen) `SchemaError` re-dispatch gets the same wording.
+- **Memory rules.** After a successful `act` the turn (the prompt without system messages, from `render(request, [], [])`) and the agent's
+  action as compact JSON are held *provisionally*; they are committed to memory when the next report arrives, the next different
+  decision is asked, or the episode ends. A re-dispatch of the same decision drops its provisional turn first, so a rejected action is
+  not remembered and the prompt is not duplicated. Rejected replies never enter memory; only the final accepted action does. Corner
+  case: if another decision starts between an answer and its re-dispatch, the first answer was already committed and the turn is
+  remembered twice (the runner re-dispatches within the same step, so this needs unusual scheduling).
+- `episode_start` clears the dedupe set, the acted set and (unless `EpisodeContext.keep_conversation`) the memory; `CallRecord`s are
+  cumulative across episodes. A fresh agent attached to a restored session only learns the earlier *reports* (runner catch-up), not its
+  own earlier actions (those are not reports), like `TableAgent`.
+- `CallRecord` fields: `decision_id, attempt, latency_s, usage, model, repair_reason, failure, prompt, response`. The brief names
+  `repair_reason`; I read it as "why this call was a repair" (previous attempt's problem, or the infeasible note) and added `failure`
+  ("why this call's own result was rejected") so both readings are available. `prompt`/`response` only with `record_text=True`.
+- A `BackendError` counts as a failed attempt (the model is **not** told about it: transport problems are not rejection reasons) and
+  the retry uses the same prompt. Any other exception from the backend (including `MockExhausted`) propagates, so the runner turns it
+  into a timeout and a warning, with no `agent_failed` event.
+- **Local validator (`llm/validate.py`)** — `against_json_schema(value, schema) -> list[str]` (empty = valid) covers the briefed
+  keywords plus local `$ref` into `$defs`; everything else is ignored (a pre-check, the layer is the authority). Strict, no coercion:
+  `"5"` is not a number, `5.0` is **not** an integer (stricter than JSON Schema, matching pydantic strict mode), a bool is neither,
+  `True` does not equal `1` in `enum`/`const`, and `NaN`/`inf` are not numbers.

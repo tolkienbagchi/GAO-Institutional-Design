@@ -102,6 +102,19 @@ class ActionRejected(TraceBase):
     reason: str
 
 
+class AgentFailedEvent(TraceBase):
+    """An agent adapter gave up on a decision (``AgentFailed``); the timeout policy resolves it.
+
+    Like ``ActionRejected`` it is emitted by the runner side, at the current logical time without
+    ticking the clock, and never enters the input log, so replay cannot reproduce it.
+    """
+
+    kind: Literal["agent_failed"] = "agent_failed"
+    decision_id: DecisionId
+    agent_id: AgentId
+    reasons: list[str]
+
+
 class ActionDefaulted(TraceBase):
     """A timed-out decision was resolved with the layer's default action."""
 
@@ -175,6 +188,7 @@ _TraceUnion = (
     | DecisionRequested
     | ActionAccepted
     | ActionRejected
+    | AgentFailedEvent
     | ActionDefaulted
     | RoleDropped
     | LayerCompleted
