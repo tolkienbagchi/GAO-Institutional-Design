@@ -183,3 +183,34 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   `MAX_CONSECUTIVE_CONTINUES = 10_000` consecutive `Continue` results (the 10 000th raises; 9 999 is fine).
   The frame is left as the last step produced it and the session is not marked finished. Tests:
   `tests/runtime/test_session_guard.py` with a `ContinueN` stub in `tests/runtime/envs.py`.
+
+## 2026-10-21 — M1 tasks 1-2: Connector and Seq
+- `Connector` is `Connector(fn, output_schema, store_reads=frozenset(), store_writes=frozenset())` (positional
+  order matches the brief's example). Added two things the brief did not name: `Connector.apply(record, ctx)`
+  (deep-copies the record, builds the scoped `StoreView` at `ctx.path`, validates the returned state against
+  `output_schema`, `ContractError` otherwise; used by Seq and later Loop) and `ReadOnlyLedger`, a wrapper that
+  exposes only `utility` / `increments` / `information`, so a connector cannot call `add_increment` /
+  `record_information` even by accident. Connectors get no trace sink, so they cannot emit participant info.
+- Composites are `@dataclass(frozen=True, eq=False)` (identity equality; frozen dicts are not hashable) with a
+  keyword `name` that defaults to `"seq"`. The brief's `Seq(first, routes)` has no name but `Process.name` is
+  needed for the root path and for `Seq(Seq(a, b), Seq(c, d))`-style trees; give siblings distinct names.
+- **Paths:** `Seq` runs children at `child(ctx.path, child.name)`. Composites emit no `LayerEntered` / `Exited`
+  events of their own (only `Primitive` does), so `Seq(Seq(a, b), c)` and `Seq(a, Seq(b, c))` have the same
+  trace modulo paths and `t`. Consequence worth knowing: RNG streams are keyed by path, so a layer that
+  *draws randomness* is not substitution-equivalent across restructurings (its path changes). Only
+  deterministic layers are.
+- `SeqFrame` has extra fields beyond the brief's four: `exited_port`+`exited_record` (the child's exit is
+  *parked* in the frame and handled on the next call, which is what "one thing per step" requires), `route`
+  (the port of `first` that selected the continuation, because frames must not hold Process objects), and
+  `failed`. `Frame` children are `SerializeAsAny[BaseModel]`, so frames **dump** to JSON including nested
+  children, but cannot be *validated back* (the child type is not recorded); state is rebuilt by replaying
+  the input log (invariant 4), never by loading frames.
+- Ownership of inputs uses `routing.owns(path, decision_id)`: it compares the path part of the id (before the
+  first `#`) and respects the boundary, so `seq/a` does not claim `seq/ab#r`. The check is defence in depth;
+  `Primitive` would also raise `UnknownDecision` for an id it does not know.
+- Construction-time checks beyond the brief (all `ContractError`): a route for a port `first` never exits
+  through; a continuation with the same name as `first` (decision ids would collide across stages);
+  names containing the identifier-reserved characters `/ # @ [ ]` (M0 noted the code did not enforce them).
+  Continuations may share a name with each other (only one runs).
+- `Seq.entry` is `first`'s entry with the store scope widened to the union over everything in the Seq
+  (informational; scopes are still enforced per layer/connector at runtime).
