@@ -700,3 +700,43 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   than `MAX_ACTIONS = 10_000` (my choice of "small"). `grid` keys that match no number field are ignored (one codec may serve
   several layers). Order is property order, first property slowest; this order decides greedy tie-breaks.
 - Added `codec_spec(codec)` = `{"type": class name, "args": codec.config()}` for checkpoints; both codecs have `config()`.
+
+## 2026-10-22 — M3 task 2: `TableAgent` (`learning/qlearning.py`)
+- **Issue in the brief (kept as written): truncation bootstraps from `max_a Q(s_K, a)`, the value of the *last decision's own
+  state*.** The agent never sees a state after its last decision, so `s_K` is the only available proxy for `s_{K+1}`; it
+  treats the continuation as "stay where you were", which is biased whenever the truncated game would have moved elsewhere.
+  Implemented literally (`max` over the action keys of request `K`, using `Q` before this update); a better estimate would
+  need the environment to disclose a post-horizon state. `"normal"` is always terminal; the two settings are tested numerically.
+- **Updates are online; "failed episodes are discarded from learning" is done with an undo log.** Each table write is
+  logged as `(key, old value or missing)` and a `"failed"` end rolls the table back exactly (then drops the episode's recorded
+  transitions, does not decay ε, does not count the episode in `episodes_seen`, and counts it in `failed_episodes`).
+  The RNG is not rolled back. An `episode_start` that finds an unfinished episode (a runner that died without `episode_end`,
+  e.g. cancelled before this M3's task 0) treats it the same way and counts it as failed.
+- `episodes_seen` and the ε decay (`max(epsilon_min, eps * decay)`, once per episode) only happen when `learning=True`; a frozen
+  agent changes nothing, and its `act` uses ε = 0 whatever `cfg.epsilon` says.
+- `episode_start` clears `since_last`, the open transition and the dedupe set unconditionally (the brief), so
+  `EpisodeContext.keep_episode_memory` has no effect on a `TableAgent`. `keep_parameters=False` clears `q` only (not ε or the
+  counters).
+- **Reward before the first decision** has no transition to attach to; it is added to the public counter `dropped_reward`
+  (reported, not silently lost). Consequence: attaching a fresh `TableAgent` to a *restored mid-episode* session (the runner's
+  catch-up delivers old reports first) cannot learn the earlier transitions; learning across a snapshot/restore is unsupported.
+- `elapsed` = number of reports (rewarded or not) received between the two decisions. With `discount_by_elapsed=True` the factor
+  is `gamma ** elapsed`, so two decisions with no report between them (elapsed 0, e.g. two roles of one agent in a `Par`) are
+  not discounted at all. Kept literal ("keep it simple"). Several pending requests of one agent are handled in the order the
+  runner dispatches `act`, as consecutive decision points.
+- Tie-break: the **first** action in the codec's order (`values.index(max(values))`), so greedy play never depends on the RNG
+  (needed for the checkpoint equality test). Every `act` draws one uniform from the agent's generator and, if exploring, one
+  `integers(n)`; this stream is part of the checkpoint.
+- Reports are checked against the agent id (`ValueError`, like the other adapters) and deduplicated by `report_id`. A reward field
+  that is present but not a finite number (bool, string, NaN) is a `ValueError`; absent fields count 0.
+- Checkpoint keys beyond the brief's list, needed because `from_checkpoint(d, obs_codec, act_codec)` has no other source for
+  them: `format` (`"gao_idl.table_agent/1"`), `agent_id`, `reward`, `epsilon`, `failed_episodes`. `q` is a list of
+  `[state, action, value]` sorted by the JSON text of `[state, action]`. `from_checkpoint` also takes keyword-only `learning`
+  (default True, like the constructor) and `record_transitions`, refuses mismatching codec identifiers (`ValueError`), and builds
+  fresh objects (never aliases `d`). `rng_state` holds 128-bit integers: fine for Python `json`, lossy in parsers that use doubles.
+- Additions to the briefed API: `Transition` (frozen dataclass), `TableAgent.record_transitions` / `.transitions` (needed by the
+  brief's tests), `.greedy_action(request, since_last=None)` (pure, for tests and inspection), counters `failed_episodes`,
+  `dropped_reward`. `QConfig` is validated (alpha in (0,1], gamma/epsilon in [0,1], `epsilon_min <= epsilon`).
+- Static guard test: `learning/codecs.py` and `learning/qlearning.py` import nothing from `runtime`, `core.ledger`, `core.store`
+  or `composition` (invariant 1). Mutation checks (all reverted): no truncation bootstrap, no rollback, reward not accumulated,
+  failed episodes decaying ε each make the corresponding tests fail.
