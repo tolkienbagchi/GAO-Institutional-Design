@@ -14,7 +14,7 @@ from gao_idl.core.errors import (
     UnknownDecision,
     WrongAgent,
 )
-from gao_idl.core.ids import AgentId, DecisionId, Port, RoleId
+from gao_idl.core.ids import AgentId, DecisionId, Port, RoleId, role_sort_key
 from gao_idl.core.layer import Contract, Layer, validate_entry
 from gao_idl.core.paths import decision_id as make_decision_id
 from gao_idl.core.paths import report_id as make_report_id
@@ -126,7 +126,7 @@ class Primitive:
         if not cfg.roles:
             return self._settle(f.model_copy(update={"cfg": cfg}), ctx)
         requests: dict[DecisionId, DecisionRequest] = {}
-        for role in sorted(cfg.roles):
+        for role in sorted(cfg.roles, key=role_sort_key):
             agent = cfg.roles[role]
             obs = layer.observe(cfg, role, stream(ctx.root_seed, ctx.path, f"observe:{role}"))
             req = DecisionRequest(
@@ -196,7 +196,7 @@ class Primitive:
         path = list(ctx.path)
         # Resolutions are emitted here, in role order, so the trace is a function of the set of
         # resolved actions only (independent of arrival order and of where advance() was called).
-        for role in sorted(cfg.roles):
+        for role in sorted(cfg.roles, key=role_sort_key):
             did = make_decision_id(ctx.path, role)
             t = ctx.clock.tick()
             if role in f.dropped:
@@ -217,7 +217,7 @@ class Primitive:
                 )
         parsed: dict[RoleId, BaseModel] = {
             role: layer.action_schema(cfg, role).model_validate(f.actions[role])
-            for role in sorted(f.actions)
+            for role in sorted(f.actions, key=role_sort_key)
         }
         view = ctx.store.view(
             layer.entry.store_reads, layer.entry.store_writes, ctx.trace, ctx.path
@@ -228,7 +228,9 @@ class Primitive:
                 t=ctx.clock.tick(),
                 path=path,
                 layer=layer.name,
-                actions={str(role): f.actions[role] for role in sorted(f.actions)},
+                actions={
+                    str(role): f.actions[role] for role in sorted(f.actions, key=role_sort_key)
+                },
                 outcome=outcome.model_dump(mode="json"),
             )
         )

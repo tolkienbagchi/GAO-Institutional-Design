@@ -6,7 +6,7 @@ from numpy.random import Generator
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from gao_idl.core.errors import ContractError
-from gao_idl.core.ids import AgentId, Port, RoleId
+from gao_idl.core.ids import AgentId, Port, RoleId, role_sort_key
 from gao_idl.core.layer import Contract, SimpleLayer
 from gao_idl.core.schemas import Config, Exit
 from gao_idl.core.store import StoreView
@@ -87,7 +87,7 @@ def _outcome(
 ) -> BaseModel:
     state = BiddingState.model_validate(cfg.state)
     bids: dict[AgentId, float] = {}
-    for role in sorted(actions):
+    for role in sorted(actions, key=role_sort_key):
         bid = actions[role]
         if not isinstance(bid, Bid):
             raise TypeError(f"expected Bid for role {role!r}, got {type(bid).__name__}")

@@ -8,7 +8,15 @@ import copy
 import json
 from typing import Any
 
-from gao_idl.composition.process import Ctx, Exited, FailedResult, Frame, Pending, Process
+from gao_idl.composition.process import (
+    Continue,
+    Ctx,
+    Exited,
+    FailedResult,
+    Frame,
+    Pending,
+    Process,
+)
 from gao_idl.core import events as ev
 from gao_idl.core.errors import (
     DeterminismError,
@@ -123,9 +131,14 @@ class Session:
         if self._finished:
             return []
         start = len(self._sink.events)
-        frame, result = self._process.step(self._frame, list(self._inbox), self._ctx)
-        self._frame = frame
-        self._inbox.clear()
+        inputs = list(self._inbox)
+        while True:
+            frame, result = self._process.step(self._frame, inputs, self._ctx)
+            self._frame = frame
+            self._inbox.clear()  # consumed by the first step; later steps get no inputs
+            inputs = []
+            if not isinstance(result, Continue):
+                break
         if isinstance(result, Pending):
             self._pending = {r.decision_id: r for r in result.requests}
         elif isinstance(result, Exited):
@@ -259,9 +272,11 @@ class Session:
         """Replay the input log and require an identical trace and ledger, else DeterminismError.
 
         ``action_rejected`` events are excluded: rejections are not in the input log, so replay
-        cannot reproduce them. If this session has queued inputs it has not yet advanced past, the
-        replay (which always advances) may be longer; the shared prefix must still match.
+        cannot reproduce them. Raises ValueError if inputs are queued but not yet advanced, since
+        the replay (which always advances) would then legitimately differ.
         """
+        if self._inbox:
+            raise ValueError("call advance() before check_determinism()")
         other = Session.replay(self._env_ref, self._params, self._seed, self.input_log)
         mine = [d for d in ev.dump(self._sink.events) if d["kind"] != "action_rejected"]
         theirs = [d for d in ev.dump(other._sink.events) if d["kind"] != "action_rejected"]
@@ -269,8 +284,6 @@ class Session:
             if a != b:
                 raise DeterminismError(f"trace differs from replay at index {i}: {a} != {b}")
         if len(mine) != len(theirs):
-            if self._inbox and len(mine) < len(theirs):
-                return
             raise DeterminismError(
                 f"trace length {len(mine)} != replay length {len(theirs)}; "
                 f"first differing index {min(len(mine), len(theirs))}"

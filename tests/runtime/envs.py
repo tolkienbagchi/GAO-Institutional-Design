@@ -7,10 +7,12 @@ from numpy.random import Generator
 from pydantic import BaseModel
 
 from gao_idl.composition.primitive import Primitive
-from gao_idl.composition.process import Process
+from gao_idl.composition.process import Continue, Ctx, Exited, Frame, Process, StepResult
+from gao_idl.core import events as ev
+from gao_idl.core.errors import UnknownDecision
 from gao_idl.core.ids import AgentId, Port, RoleId
 from gao_idl.core.layer import Contract, Empty, SimpleLayer
-from gao_idl.core.schemas import Config
+from gao_idl.core.schemas import Config, Exit, FrozenModel
 from gao_idl.core.timeout import DefaultAction, DropRole
 from gao_idl.environments.auction import build_bidding_only
 from gao_idl.environments.auction.bidding import Bid, BiddingState, bidding_layer
@@ -22,6 +24,7 @@ LEAKY = "tests.runtime.envs:bidding_leaky"
 NONDETERMINISTIC = "tests.runtime.envs:bidding_nondeterministic"
 DOUBLE_ROLE = "tests.runtime.envs:bidding_double_role"
 AUTOMATIC = "tests.runtime.envs:automatic_observer"
+CONTINUE_TWICE = "tests.runtime.envs:continue_twice"
 
 
 def bidding_default_timeout(values: dict[str, float]) -> tuple[Process, Config]:
@@ -101,3 +104,37 @@ def automatic_observer() -> tuple[Process, Config]:
 def params(**values: float) -> dict[str, Any]:
     """Shorthand for ``{"values": {...}}``."""
     return {"values": dict(values)}
+
+
+class StubFrame(FrozenModel):
+    n: int = 0
+    inputs_seen: list[int] = []
+
+
+class ContinueTwice:
+    """A stub Process that returns ``Continue`` twice and then exits (no decisions)."""
+
+    name = "stub"
+    entry = Contract(state_schema=Empty)
+    exits: dict[Port, type[BaseModel]] = {Port("done"): Empty}
+
+    def start(self, cfg: Config, ctx: Ctx) -> Frame:
+        return StubFrame()
+
+    def validate(
+        self, frame: Frame, decision_id: Any, agent_id: AgentId, action: dict[str, Any]
+    ) -> BaseModel:
+        raise UnknownDecision(decision_id)
+
+    def step(self, frame: Frame, inputs: list[Any], ctx: Ctx) -> tuple[Frame, StepResult]:
+        assert isinstance(frame, StubFrame)
+        ctx.trace.emit(ev.LayerEntered(t=ctx.clock.tick(), path=list(ctx.path)))
+        nxt = StubFrame(n=frame.n + 1, inputs_seen=[*frame.inputs_seen, len(inputs)])
+        if frame.n < 2:
+            return nxt, Continue()
+        return nxt, Exited(exit=Exit(port=Port("done"), record={"steps": nxt.n}))
+
+
+def continue_twice() -> tuple[Process, Config]:
+    """Environment factory for :class:`ContinueTwice`."""
+    return ContinueTwice(), Config(state={}, roles={})

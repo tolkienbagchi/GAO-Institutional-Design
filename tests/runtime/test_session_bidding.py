@@ -383,11 +383,46 @@ def test_interleaved_advances_give_same_trace_as_batched() -> None:
     stepped.check_determinism()  # replay groups steps differently, still identical
 
 
-def test_check_determinism_with_unadvanced_inbox() -> None:
+def test_check_determinism_requires_advance_first() -> None:
     s = fresh()
     s.submit(ALICE, DA, {"amount": 5})
-    s.submit(BOB, DB, {"amount": 6})  # not advanced: the finish is not in s.trace yet
+    s.submit(BOB, DB, {"amount": 6})  # queued but not advanced
+    with pytest.raises(ValueError, match=r"call advance\(\) before check_determinism\(\)"):
+        s.check_determinism()
+    s.advance()
+    s.check_determinism()  # fine once the inbox has been consumed
+    assert s.finished
+
+
+def test_advance_loops_until_not_continue() -> None:
+    s = Session.start(envs.CONTINUE_TWICE, {}, 0)
+    new = s.advance()  # one call drives three steps: Continue, Continue, Exited
+    assert s.finished and not s.failed
+    assert s.result is not None and s.result.record == {"steps": 3}
+    assert len(new) == 3 and kinds(s) == ["layer_entered"] * 3
     s.check_determinism()
+
+
+def test_continue_steps_receive_no_inputs() -> None:
+    s = Session.start(envs.CONTINUE_TWICE, {}, 0)
+    s.advance()
+    frame = s._frame
+    assert isinstance(frame, envs.StubFrame)
+    assert frame.inputs_seen == [0, 0, 0]
+
+
+def test_twelve_bidders_are_ordered_naturally() -> None:
+    names = [f"p{i:02d}" for i in range(12)]  # agent order == role index order
+    p = envs.params(**{n: float(i + 1) for i, n in enumerate(names)})
+    s = fresh(params=p)
+    want = [f"bidding#bidder:{i}" for i in range(12)]
+    assert [r.decision_id for r in s.pending()] == want  # not bidder:0, bidder:1, bidder:10, ...
+    for n in reversed(names):
+        (req,) = s.pending_for(AgentId(n))
+        s.submit(AgentId(n), req.decision_id, {"amount": 1})
+    s.advance()
+    accepted = [e.decision_id for e in s.trace if isinstance(e, ev.ActionAccepted)]
+    assert accepted == want
 
 
 def test_random_interleavings_match_canonical_run() -> None:

@@ -15,6 +15,7 @@ from gao_idl.core.store import Store
 from gao_idl.core.trace import LogicalClock, TraceSink
 
 __all__ = [
+    "Continue",
     "Ctx",
     "Exited",
     "FailedResult",
@@ -47,7 +48,11 @@ class FailedResult(FrozenModel):
     reason: str
 
 
-StepResult = Pending | Exited | FailedResult
+class Continue(FrozenModel):
+    """Progress was made; step again without new inputs. Primitives never return this."""
+
+
+StepResult = Pending | Continue | Exited | FailedResult
 
 
 @dataclass(frozen=True)
