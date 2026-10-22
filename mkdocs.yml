@@ -39,6 +39,7 @@ nav:
       - 5. Train and evaluate: tutorials/05_train_and_evaluate.md
       - 6. Information tests: tutorials/06_information_tests.md
       - 10. Congestion pricing: tutorials/congestion.md
+      - 11. Carbon market with verifiers: tutorials/vcm.md
   - Reproducible runs: runs.md
   - API reference:
       - Overview: api/index.md

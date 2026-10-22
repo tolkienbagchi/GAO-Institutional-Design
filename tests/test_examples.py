@@ -29,6 +29,7 @@ EXPECTED_OUTPUT = {
     "05_train_and_evaluate": "trained (greedy)",
     "06_information_tests": "ok   test_the_check_has_teeth",
     "10_congestion": "step 7 model calls: 3",
+    "11_vcm": "done: carbon market",
 }
 
 

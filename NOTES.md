@@ -1533,3 +1533,19 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   claim a visible-vs-hidden separation for learners. The reputation effect is shown with scripted naive vs skeptical buyers
   (tutorial step 5). Underdetermined by the brief; conservative reading taken.
 - **Out-of-scope edit.** `vcm/llm.py` added to the import allow-list in `tests/llm/test_integration.py`.
+
+## 2026-10-22 — M7 task 4: tutorial "A carbon market with verifiers"
+- **Files.** `docs/tutorials/vcm.md`, `examples/11_vcm.py`, nav entry, `EXPECTED_OUTPUT["11_vcm"]`. The page-name mapping from
+  task 2 already covers `vcm.md`.
+- **No hand-built miniature.** Unlike tutorial 10, `vcm/layers.py` and `schemas.py` are internal and a faithful miniature would
+  duplicate them, so steps 2–4 switch features of `build_vcm` on (`p_audit`, `rounds`, `reputation_visible`) and inspect the ledger.
+  Step 1 is `clear_call_auction` alone. Underdetermined by the brief ("add verification…"); this is the conservative reading.
+- **Step 2** is the noninterference comparison written directly (complement all `theta`, compare buyers'/sellers' streams) since
+  the helper needs round-one decisions for every listed agent.
+- **Step 5 (experiment)** uses scripted buyers (naive vs skeptical, record hidden vs shown). Biased-verifier volume share is taken
+  from the sellers' own fills (s2, s3 are v1's). Result and its limits (pooled basket drives it) are in the prose.
+- **Step 6 (learning buyers)** shows the tabular buyer staying out of the market (0 vs −90 for the naive buyer) in both
+  conditions: no visible-vs-hidden separation on this fixture; stated in the tutorial, not tuned away.
+- **"Each a one-line parameter or a swappable layer"**: fee, penalty/tol, `p_audit`, `reputation_visible` are parameters; audit
+  targeting and fee-on-correctness are layer swaps. The page says so.
+- Prose numbers are quoted from a run; `mkdocs build --strict` remains unverified (no mkdocstrings).
