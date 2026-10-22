@@ -872,3 +872,11 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   "First" is literal: if that first block is not valid JSON (`"{maybe} then {...}"`), it is a `CodecParseError`, not a search for a
   later one. The dict is returned unvalidated and uncoerced (`{"amount": "5"}` stays a string).
 - `ReportRenderer` and `DefaultReportRenderer` ("Report (<layer>): <payload JSON>") live here; ids and paths are not in the prompt.
+
+## 2026-10-22 — M4 task 3: memory (`llm/memory.py`)
+- `FullTranscript`, `Window(k)` and `NoMemory` (the brief's "`None` (stateless)": `LLMAgent(memory=None)` maps to it) share a small
+  `Memory` protocol: `append(messages)`, `messages()`, `clear()`, `fresh()`. `fresh()` exists because the brief's default
+  `memory=Window(20)` is a shared default argument; `LLMAgent` takes `memory.fresh()`, so the default instance is only a template and
+  two agents never share a conversation.
+- `Window(k)` stores only the last `k` messages and accepts `k = 0` (remembers nothing); `k` must be an int >= 0 (`ValueError`).
+- What gets appended (turn prompt, own action, reports addressed to the agent) is decided in `LLMAgent`, see task 4.
