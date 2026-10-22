@@ -153,6 +153,7 @@ def _truncated_episode(bootstrap: bool) -> TableAgent:
 
 
 def test_truncation_bootstraps_vs_terminal() -> None:
+    assert QConfig().bootstrap_on_truncation is False  # default: truncation is terminal
     boot, terminal = _truncated_episode(True), _truncated_episode(False)
     # Q(s, D) = 4. The reward is 1, gamma 0.9, alpha 0.5, and max_a Q(s, a) = 4 before the update.
     assert boot.q[((0,), D)] == 4.0 + 0.5 * (1.0 + 0.9 * 4.0 - 4.0) == 4.3
@@ -454,7 +455,7 @@ def test_qconfig_validation() -> None:
         "epsilon": 0.1,
         "epsilon_decay": 1.0,
         "epsilon_min": 0.0,
-        "bootstrap_on_truncation": True,
+        "bootstrap_on_truncation": False,
         "discount_by_elapsed": False,
     }
 

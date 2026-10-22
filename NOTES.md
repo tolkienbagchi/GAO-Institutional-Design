@@ -819,3 +819,18 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - Not verified (no PyPI): the three hypothesis tests, `pytest-timeout` (the `timeout = 30` option still prints "Unknown config option"),
   `pip install -e ".[dev]"`, `python -m build`, Python 3.11, and the CI workflow. The literal `pytest -q` fails at collection on
   `tests/core/test_paths_property.py` (`hypothesis` missing), as in M0-M2.
+
+## 2026-10-22 — M4 task 0: PyPI still unreachable (no httpx here); truncation default is terminal
+- `REPORT_M3.md` lists `pip install -e ".[dev,llm]"`, the hypothesis tests, `pytest-timeout` and `python -m build` as
+  unverified, so I tried `pip download hypothesis` once: DNS fails ("Name or service not known"), not retried. Still
+  unverified: `pip install -e ".[dev,llm]"`, the 3 hypothesis tests, `pytest-timeout`, `python -m build`, wheel contents,
+  Python 3.11, CI. **`httpx` is not installed in this sandbox** either, so the real HTTP transport of the OpenAI-compatible
+  backend can only be type-checked here, never executed. Gate substitute as in M3:
+  `PYTHONPATH=src:.:/usr/local/lib/python3.13/dist-packages` with `--ignore=tests/core/test_paths_property.py`.
+  Baseline before M4: 407 passed (not slow), 1 deselected.
+- `QConfig.bootstrap_on_truncation` now defaults to `False` (a truncated episode is terminal). The `True` branch is unchanged;
+  its docstrings (field and module) now say it bootstraps from `max_a Q(s_K, a)`, the agent's *last* state used as a proxy for
+  the unobserved next state, and is biased when the truncated game would have moved on. `test_truncation_bootstraps_vs_terminal`
+  already set the flag explicitly in both cases (via `_truncated_episode(bootstrap)`); it gained the assertion that the default
+  is `False`. `test_qconfig_validation` (which pins the full default dump) was updated to `False`. No other test relied on the old
+  default.
