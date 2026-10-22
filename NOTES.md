@@ -660,3 +660,19 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - `pip download pytest-timeout` fails ("No matching distribution found"), tried once, not retried. So
   `pip install -e ".[dev]"`, the full `pytest -q` (3 hypothesis tests), `python -m build` and the wheel-contents check
   (`gao_idl/agents/`, `gao_idl/environments/pd/`) were NOT run, and `pytest-timeout` itself is unverified.
+
+## 2026-10-22 — M3 task 0: PyPI still unreachable; runner cancellation sends `episode_end("failed")`
+- `REPORT_M2_FIXUP.md` lists `pytest-timeout`, the full `pytest -q` (3 hypothesis tests) and `python -m build` as unverified,
+  so the brief asks to run them if PyPI is reachable. It is not: `pip download hypothesis` fails with DNS
+  "Name or service not known" (tried once, not retried). Still unverified: `pip install -e ".[dev]"`, hypothesis tests,
+  `pytest-timeout`, `python -m build`, wheel contents, Python 3.11, CI. Local gate as in M2:
+  `PYTHONPATH=src:.:/usr/local/lib/python3.13/dist-packages` with `--ignore=tests/core/test_paths_property.py`.
+  Baseline before M3: 303 passed.
+- Runner: the `except Exception` clause is now `except (Exception, asyncio.CancelledError)`, so a cancelled runner cancels
+  and awaits its in-flight tasks, sends `episode_end(terminal="failed", final_utility=None)` to every adapter (an adapter's
+  exception becomes a `warnings.warn`, the others still get theirs) and re-raises the cancellation. The brief says "in the
+  runner's `finally`"; this is the same effect without a flag, and `finally` still does the unconditional `cancel_all()`.
+  This reverses the M2 fix-up call "cancellation sends no `episode_end`". Not covered: a cancellation that arrives while the
+  *normal* `episode_end` phase (after the loop) is running can leave later adapters without a notice.
+- Test: `test_cancelled_runner_sends_failed_episode_end_to_every_adapter` (two humans, one adapter whose `episode_end`
+  raises). Mutation check: restoring `except Exception` fails it.

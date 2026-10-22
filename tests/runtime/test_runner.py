@@ -555,6 +555,48 @@ def test_provide_after_runner_death_raises() -> None:
     run_test(main())
 
 
+class BadEnder(ScriptedAgent):
+    """Plays "D"; its ``episode_end`` records the notice and then raises."""
+
+    def __init__(self) -> None:
+        super().__init__(always("D"))
+        self.ends: list[EpisodeEnd] = []
+
+    async def episode_end(self, end: EpisodeEnd) -> None:
+        self.ends.append(end)
+        raise KeyError("episode_end blew up")
+
+
+def test_cancelled_runner_sends_failed_episode_end_to_every_adapter() -> None:
+    async def main() -> None:
+        session = Session.start(PD, pd_params([str(a) for a in FOUR], 1), 1)
+        human, bad_end = RecordingHuman(), BadEnder()
+        other = RecordingHuman()
+        adapters: dict[AgentId, AgentAdapter] = {
+            ALICE: ScriptedAgent(always("C")),
+            BOB: bad_end,  # its episode_end raises; the others must still be told
+            AgentId("carol"): human,
+            AgentId("dave"): other,
+        }
+        task = asyncio.ensure_future(run(session, adapters))
+        await soon(human.wait_outstanding())
+        await soon(other.wait_outstanding())
+        task.cancel()
+        with (
+            pytest.warns(UserWarning, match="episode_end failed for 'bob'"),
+            pytest.raises(asyncio.CancelledError),
+        ):
+            await soon(task)
+        for h in (human, other):
+            assert [e.terminal for e in h.ends] == ["failed"]
+            assert h.closed
+            assert h.outstanding() == []
+        assert [e.terminal for e in bad_end.ends] == ["failed"]  # tried, despite the exception
+        assert len(asyncio.all_tasks()) == 1
+
+    run_test(main())
+
+
 def test_provide_after_a_normal_finish_also_raises() -> None:
     async def main() -> None:
         session = Session.start(PD, pd_params(["alice", "bob"], 1), 1)

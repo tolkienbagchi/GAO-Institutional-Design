@@ -67,8 +67,9 @@ async def run(
        on ``SchemaError`` / ``Infeasible``, then ``timeout``), ``timeout`` on any other adapter
        exception, and ``timeout`` (after cancelling the task) on an expired deadline. A session
        that is neither finished nor waiting on any task raises ``RuntimeError("stalled")``.
-    3. ``episode_end`` for every adapter (``terminal="failed"`` if the run dies of an exception,
-       after the in-flight tasks are cancelled and awaited; the original exception is re-raised).
+    3. ``episode_end`` for every adapter (``terminal="failed"`` if the run dies of an exception or
+       is cancelled, after the in-flight tasks are cancelled and awaited; the original exception or
+       the cancellation is re-raised).
 
     ``clock`` must run in the same units as real time (it sets the timeout of the wait).
     """
@@ -145,9 +146,10 @@ async def run(
                 for flight in expired:
                     del flights[flight.request.decision_id]
                     session.timeout(flight.request.decision_id)
-    except Exception:
-        # Cancel what is in flight first, then tell every adapter the episode failed; a failing
-        # ``episode_end`` is reported as a warning so the original exception is the one raised.
+    except (Exception, asyncio.CancelledError):
+        # Cancel what is in flight first, then tell every adapter the episode failed (also when the
+        # runner itself is cancelled); a failing ``episode_end`` is reported as a warning so the
+        # original exception, or the cancellation, is the one that propagates.
         await cancel_all()
         for agent in sorted(adapters):
             try:
