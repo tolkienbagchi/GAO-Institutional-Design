@@ -485,3 +485,58 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   `test_dict_joiner_keeps_each_branchs_exit_port` (with a schema for the new shape) and
   `test_par_branches_that_exit_through_different_ports_stay_distinguishable`. Mutation check: reverting the
   record shape fails 6 tests.
+
+## 2026-10-21 — M2 task 0: PyPI still unreachable
+- `pip download pydantic` fails with DNS "Name or service not known" (tried once, not retried). The real gate
+  (`pip install -e ".[dev]"`, the 3 hypothesis tests, `python -m build`, Python 3.11, CI) was NOT run; the gate is
+  run with the standalone ruff/mypy/pytest and `PYTHONPATH=src:.:/usr/local/lib/python3.13/dist-packages`,
+  with `--ignore=tests/core/test_paths_property.py`. Baseline before M2: 220 passed.
+- No new dependencies were added in M2 (asyncio, logging, fnmatch are stdlib).
+
+## 2026-10-21 — M2 part A: glob-style store scopes
+- `StoreView` scopes are now patterns: a key is in scope if it equals a pattern or `fnmatch.fnmatchcase`
+  matches it (`core.store.in_scope`). `fnmatchcase`, not `fnmatch`, so matching does not depend on the OS.
+  `hist:*` therefore covers `hist:alice~bob` (and `hist:`, since `*` matches empty); `histx` is not covered.
+- Consequence to know: a pattern is always a glob, so a *literal* scope key that contains `[` / `?` / `*` is also
+  a pattern (`a[1]` grants `a1` as well as `a[1]`). Exact equality is checked first, so it still matches itself.
+  Nothing in the repo uses such keys. Scopes stay unvalidated strings; the unions computed by composites are
+  unions of patterns (not expanded).
+- Reading an in-scope key that was never set is still a plain `KeyError` (M1 fix-up). The PD handles first
+  meetings with `read_history`, which maps only that case to `[]` and re-raises `StoreReadDenied`
+  (it is a `KeyError` subclass, so the order of the `except` clauses matters).
+
+## 2026-10-21 — M2 part A: repeated PD design calls and deviations from the brief
+- **`Layer.observe(cfg, role, rng)` has no store access in the pinned API, so "observe reads `hist:{pair_id}`" is
+  impossible as worded (shared context wins).** Instead: `pd_round`'s `outcome` reads-appends-writes
+  `hist:{pair_id}` (it has the `StoreView`), and the feedback connector (which has a read view) copies each
+  playing pair's stored history into the next round's entry state, from where the splitter hands it to that pair's
+  branch only. `PDState` therefore has one extra field, `history: list[dict[str, str]]` (each entry maps both agents
+  of the pair to their move, oldest first, so it does not depend on who was `row`); `observe` renders it as
+  `own_history` of `(own, other)`. The store is the source of truth; the state copy is rebuilt from it every round.
+  I did not touch the pinned `Layer` protocol.
+- `PDRoundExit` has one extra field, `round_index`: the counter needs the round number and the joined record carries
+  nothing else from which to get it (the connector between `Par` and the counter has no `ctx`).
+- Layout: `Loop("pd")` > `Seq("round_seq")` > `Par("round")` with branches `pair_0 … pair_{n/2-1}` (one `Primitive`
+  of `pd_round` each), then the automatic `round_counter` layer, as briefed. Decision ids read
+  `pd/loop[2]/round/branch[pair_1]#row` (neither the Seq nor the Primitive adds a path element; M1 behaviour).
+  The counter exits `finished` on the last round and `again` before it, `until={"finished": "done"}`,
+  `max_iter=rounds+1`, `on_limit="fail"`; normal runs never touch the limit. The `done` record is the last round's
+  `RoundSummary` `{round_index, rounds, pairs: {pair_id: {agent: move}}}`.
+- Static settings (agents, matching, payoffs, rounds) are closed over by the splitter and connectors built in
+  `build_repeated_pd`; the per-round entry state `PDRoundInput` carries only `round_index` and the stored histories
+  of the pairs playing (absent = never met). So the `env_ref` params fully determine the process (invariant 3).
+- `RoundJoin` is a `RootModel[dict[str, BranchExit]]` matching `{branch: {"port": ..., "record": ...}}`. The Par->counter
+  connector raises `ContractError` if any branch's port is not `done` or the branches disagree on the round index.
+  Rationale: a `pd_round` branch can only exit through `done` (a failing branch fails the Par before the join), so
+  this is a wiring bug, not a game outcome; connectors cannot emit `Failed`.
+- Pair identity: `pair_id = "~".join(sorted(pair))`; agent ids containing `~` are rejected (`ContractError`) because
+  they would make ids ambiguous. `fixed`: pairs `(agents[2k], agents[2k+1])`, first listed is `row`.
+  `round_robin`: circle method, `agents[0]` fixed, the rest rotate right by `r mod (n-1)`, position `i` plays
+  `n-1-i` (first of the pair is `row`). The schedule repeats after `n-1` rounds, so a pair can meet again and then
+  sees only its own earlier games (tested). Odd or empty populations, duplicates, `rounds < 1` and bad payoff tables
+  raise `ContractError` at construction.
+- `pd_round` timeout policy is `Fail` (the brief names none; `SimpleLayer` default). A runner deadline therefore ends
+  a PD session in failure; a `DefaultAction` variant is a later decision (what is the neutral move?).
+- Tests for noninterference use fixed pairs only: under `round_robin` pair 2's moves legitimately reach alice later
+  through the round-robin disclosure (alice's report in the round she meets carol), so there is no such property.
+- `PDOutcome.moves` is keyed by role and `PDRoundExit.moves` by agent, as briefed.

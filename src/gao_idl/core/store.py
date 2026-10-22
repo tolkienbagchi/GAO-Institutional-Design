@@ -2,6 +2,8 @@
 
 import copy
 import json
+from collections.abc import Iterable
+from fnmatch import fnmatchcase
 from typing import Any
 
 from gao_idl.core import events as ev
@@ -26,8 +28,17 @@ class StoreWriteDenied(StoreScopeError, PermissionError):
     """A write to a key that is not in the view's write scope."""
 
 
+def in_scope(key: str, patterns: Iterable[str]) -> bool:
+    """Whether ``key`` equals one of ``patterns`` or matches it as a case-sensitive glob.
+
+    ``hist:*`` covers ``hist:alice~bob``; a pattern without glob characters is an exact key. Exact
+    equality is checked first so a literal key that contains ``[`` or ``?`` still matches itself.
+    """
+    return any(key == p or fnmatchcase(key, p) for p in patterns)
+
+
 class StoreView:
-    """A layer's view of the store, restricted to declared read and write keys."""
+    """A layer's view of the store, restricted to declared read and write keys (glob patterns)."""
 
     def __init__(
         self,
@@ -50,7 +61,7 @@ class StoreView:
 
         Raises StoreReadDenied if ``key`` is out of scope, a plain KeyError if in scope but unset.
         """
-        if key not in self._reads:
+        if not in_scope(key, self._reads):
             raise StoreReadDenied(f"store key {key!r} is not in this view's read scope")
         value = copy.deepcopy(self._data[key])
         self._trace.emit(
@@ -60,7 +71,7 @@ class StoreView:
 
     def set(self, key: str, value: Any) -> None:
         """Store a deep copy of the JSON-able ``value``; StoreWriteDenied if out of scope."""
-        if key not in self._writes:
+        if not in_scope(key, self._writes):
             raise StoreWriteDenied(f"store key {key!r} is not in this view's write scope")
         try:
             json.dumps(value, allow_nan=False)

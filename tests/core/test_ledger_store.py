@@ -138,3 +138,38 @@ def test_clock() -> None:
     assert clock.tick() == 1
     assert clock.tick() == 2
     assert clock.now == 2
+
+
+def test_glob_scopes_match_keys() -> None:
+    store = Store(LogicalClock())
+    view = store.view(frozenset({"hist:*"}), frozenset({"hist:*", "log"}), ListSink(), PATH)
+    view.set("hist:alice~bob", [1])
+    view.set("hist:", [])  # `*` matches the empty string
+    assert view.get("hist:alice~bob") == [1]
+    with pytest.raises(StoreReadDenied):
+        view.get("other:alice~bob")
+    with pytest.raises(StoreWriteDenied):
+        view.set("histx", 1)  # the prefix is not enough: `hist:` includes the colon
+    with pytest.raises(StoreReadDenied):
+        view.get("log")  # a write-only key is not readable
+
+
+def test_exact_scopes_still_work_and_globs_are_case_sensitive() -> None:
+    store = Store(LogicalClock(), {"a[1]": 1, "Hist:x": 2})
+    view = store.view(frozenset({"a[1]", "hist:*"}), frozenset(), ListSink(), PATH)
+    assert view.get("a[1]") == 1  # a literal key containing glob characters matches itself
+    with pytest.raises(StoreReadDenied):
+        view.get("a2")  # `[1]` is also a glob class, so `a1` would match too (documented in NOTES)
+    with pytest.raises(StoreReadDenied):
+        view.get("Hist:x")
+
+
+def test_glob_scope_is_enforced_for_the_pd_layer() -> None:
+    from gao_idl.environments.pd.layers import pd_round_layer
+
+    entry = pd_round_layer().entry
+    assert entry.store_reads == entry.store_writes == frozenset({"hist:*"})
+    view = Store(LogicalClock()).view(entry.store_reads, entry.store_writes, ListSink(), PATH)
+    view.set("hist:alice~bob", [])
+    with pytest.raises(StoreWriteDenied):
+        view.set("secret", 1)
