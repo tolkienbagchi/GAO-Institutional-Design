@@ -48,5 +48,5 @@ and continued, as in [tutorial 4](tutorials/04_pause_resume.md).
 
 !!! note "Knapsack"
     The `knapsack` funding rule works at cent resolution: it rounds each project cost to the
-    nearest cent, so the float costs that `RandomAgent` invents are fine. The other rules use
+    next cent (rounding up, so it never overspends the exact budget); the float costs that `RandomAgent` invents are fine. The other rules use
     exact costs.

@@ -192,17 +192,34 @@ def test_knapsack_guards() -> None:
     assert knapsack(projects(1.25), ballots(v=["p0"]), 1.2499) == []
 
 
-def test_knapsack_rounds_sub_cent_costs() -> None:
-    """Costs are rounded to the nearest cent: 1.004 counts as 1.00 and 1.006 as 1.01."""
+def test_knapsack_rounds_sub_cent_costs_up() -> None:
+    """Costs are rounded up to the next cent, so the answer never exceeds the exact budget."""
     both = ballots(v=["p0", "p1"])
-    assert knapsack(projects(1.004, 1.004), both, 2.0) == ["p0", "p1"]  # 1.00 + 1.00 <= 2.00
-    assert knapsack(projects(1.006, 1.006), both, 2.0) == ["p0"]  # 1.01 + 1.01 > 2.00
-    assert knapsack(projects(1.004, 1.006), both, 2.0) == ["p0"]  # 1.00 + 1.01 > 2.00
-    assert knapsack(projects(1.004, 1.006), both, 2.01) == ["p0", "p1"]
+    assert knapsack(projects(1.004, 1.004), both, 2.0) == ["p0"]  # 1.01 + 1.01 > 2.00
+    assert knapsack(projects(1.004, 1.004), both, 2.02) == ["p0", "p1"]
+    assert knapsack(projects(1.006, 1.006), both, 2.0) == ["p0"]
+    assert knapsack(projects(1.0, 1.0), both, 2.0) == ["p0", "p1"]  # exact cents are untouched
     one = ballots(v=["p0"])
     # a project whose exact cost exceeds the budget is never a candidate, rounding or not
     assert knapsack(projects(1.004), one, 1.0) == []
     assert knapsack(projects(0.996), one, 1.0) == ["p0"]  # counted as 1.00
+
+
+def test_knapsack_never_overspends_exact_budget_randomized() -> None:
+    """Sum of exact costs of the funded set is within the exact budget for random float costs."""
+    rng = np.random.default_rng(7)
+    for _ in range(300):
+        n = int(rng.integers(1, 7))
+        costs = [float(rng.uniform(0.001, 3.0)) for _ in range(n)]
+        projs = projects(*costs)
+        voters = {f"v{i}": [p.id for p in projs if rng.random() < 0.6] for i in range(4)}
+        budget = float(rng.uniform(0.5, 6.0))
+        funded = knapsack(projs, voters, budget)
+        total = sum(
+            (F(repr(c)) for c, p in zip(costs, projs, strict=True) if p.id in funded),
+            F(0),
+        )
+        assert total <= F(repr(budget))
 
 
 # ------------------------------------------------------------------ Method of Equal Shares

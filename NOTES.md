@@ -1418,3 +1418,11 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - Added `docs/releasing.md` (checklist, release gate, tag and upload commands; in the mkdocs nav, which `tests/test_docs.py` requires) and `CHANGELOG.md` with a `0.1.0` section, one line per milestone plus one paragraph for the fix-up. No tag was created.
 - The changelog section is headed `Unreleased`, since the date is the maintainer's to set when tagging; the releasing checklist says to replace it. The brief did not give a date.
 - The release gate in `docs/releasing.md` does `rm -rf dist` explicitly before `python -m build`, because `clean_install.sh` deliberately does not (task 3). Version consistency also covers `CITATION.cff`, which no test checks; I left that as a checklist item rather than adding a test (outside the brief).
+
+## 2026-10-22 — M6 fix-up review: `knapsack` rounds costs UP, not to nearest (reviewer change)
+- Rounding to the nearest cent let `knapsack` return a set whose exact cost exceeds the budget (the fix-up's own
+  test funded two 1.004 projects on a budget of 2.00; exact total 2.008), which the funding layer's exact re-check
+  would reject with `ContractError` in a live session. `weight = math.ceil(cost * 100)` now: every rounded cost is at
+  least the exact cost, so any set that fits the rounded costs fits the exact budget. Cost: results may be conservative
+  by under a cent per project. Tests: `test_knapsack_rounds_sub_cent_costs_up`,
+  `test_knapsack_never_overspends_exact_budget_randomized` (300 random float instances). `docs/runs.md` wording updated.

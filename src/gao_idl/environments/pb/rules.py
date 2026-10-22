@@ -11,8 +11,8 @@ funded project ids in ascending id order (natural order: ``p2`` before ``p10``),
   Unapproved projects are never funded, so no rule spends money on projects nobody wants.
 * All ties are broken by project id ascending (natural order). Costs and budgets are compared as
   exact decimal fractions (``Fraction(repr(x))``), so ``0.1 + 0.2 <= 0.3`` holds.
-* ``knapsack`` operates at cent resolution (it rounds each cost to the nearest cent); the other
-  rules use exact costs.
+* ``knapsack`` operates at cent resolution (it rounds each cost up to the next cent, so its
+  answer never overspends the exact budget); the other rules use exact costs.
 
 Stability: internal; it may change without notice. Use the names exported by ``gao_idl`` where
 there is one.
@@ -149,16 +149,16 @@ def knapsack(
 ) -> list[str]:
     """Maximise the total number of approvals within the budget (exact DP over integer costs).
 
-    Operates at cent resolution: each cost is rounded to the nearest cent
-    (``round(Fraction(repr(x)) * 100)``, halves to even, so 1.004 counts as 1.00 and 1.006 as 1.01)
-    and the budget is floored to a whole number of cents. The optimum is therefore exact for the
-    rounded costs; a set that fits the rounded costs can exceed the budget by less than half a
-    cent per project in exact arithmetic. A project whose exact cost exceeds the budget is never
-    a candidate. The other rules use exact costs. Refuses more than 60 projects, and instances
-    whose DP table would exceed
-    50 million cells. Among all optimal sets the one with the lexicographically smallest
-    ascending id list wins (equivalently: scanning ids ascending, include a project whenever an
-    optimal solution still exists with it). Zero-approval projects are never funded.
+    Operates at cent resolution: each cost is rounded *up* to the next whole cent
+    (``math.ceil(Fraction(repr(x)) * 100)``, so 1.004 and 1.006 both count as 1.01) and the budget
+    is floored to a whole number of cents. Rounding up means every rounded cost is at least the
+    exact cost, so a set that fits the rounded costs always fits the exact budget (the layer's
+    exact re-check can never fail); the price is that the result may be conservative by under one
+    cent per project. A project whose exact cost exceeds the budget is never a candidate. The
+    other rules use exact costs. Refuses more than 60 projects, and instances whose DP table
+    would exceed 50 million cells. Among all optimal sets the one with the lexicographically
+    smallest ascending id list wins (equivalently: scanning ids ascending, include a project
+    whenever an optimal solution still exists with it). Zero-approval projects are never funded.
     """
     if len(projects) > MAX_KNAPSACK_PROJECTS:
         raise ValueError(
@@ -168,7 +168,7 @@ def knapsack(
     items = list(inst.candidates)
     weight: dict[str, int] = {}
     for pid in items:
-        weight[pid] = round(inst.cost[pid] * 100)
+        weight[pid] = math.ceil(inst.cost[pid] * 100)
     cap = min(int(inst.budget * 100 // 1), sum(weight.values()))
     if (len(items) + 1) * (cap + 1) > MAX_KNAPSACK_CELLS:
         raise ValueError("knapsack instance too large for the exact DP")
