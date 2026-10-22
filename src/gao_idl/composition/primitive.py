@@ -5,6 +5,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ValidationError
 
 from gao_idl.composition.process import Ctx, Exited, FailedResult, Frame, Pending, StepResult
+from gao_idl.composition.routing import store_failure_reason
 from gao_idl.core import events as ev
 from gao_idl.core.errors import (
     ContractError,
@@ -222,7 +223,13 @@ class Primitive:
         view = ctx.store.view(
             layer.entry.store_reads, layer.entry.store_writes, ctx.trace, ctx.path
         )
-        outcome = layer.outcome(cfg, parsed, stream(ctx.root_seed, ctx.path, "outcome"), view)
+        try:
+            outcome = layer.outcome(cfg, parsed, stream(ctx.root_seed, ctx.path, "outcome"), view)
+        except (KeyError, PermissionError) as e:  # store scope violation (see core.store)
+            reason = store_failure_reason(f"layer {layer.name!r}", e)
+            ctx.trace.emit(ev.Failed(t=ctx.clock.tick(), path=path, reason=reason))
+            failed = f.model_copy(update={"phase": "done", "requests": {}, "failed": reason})
+            return failed, FailedResult(reason=reason)
         ctx.trace.emit(
             ev.LayerCompleted(
                 t=ctx.clock.tick(),

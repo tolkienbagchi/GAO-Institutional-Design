@@ -15,7 +15,7 @@ from gao_idl.composition.process import (
     Process,
     StepResult,
 )
-from gao_idl.composition.routing import check_name, owns
+from gao_idl.composition.routing import check_name, owns, store_failure_reason
 from gao_idl.core import events as ev
 from gao_idl.core.errors import ContractError, UnknownDecision
 from gao_idl.core.ids import AgentId, DecisionId, Port
@@ -227,6 +227,11 @@ class Loop:
             ctx.trace.emit(ev.Truncated(t=ctx.clock.tick(), path=list(ctx.path), reason=reason))
             cut = Exit(port=TRUNCATED, record={"iterations": next_i, "last_exit": record})
             return f.model_copy(update={"result": cut}), Exited(exit=cut)
-        cfg = self.feedback[port].apply(record, ctx)
+        try:
+            cfg = self.feedback[port].apply(record, ctx)
+        except (KeyError, PermissionError) as e:
+            reason = store_failure_reason(f"feedback connector for port {port!r}", e)
+            ctx.trace.emit(ev.Failed(t=ctx.clock.tick(), path=list(ctx.path), reason=reason))
+            return f.model_copy(update={"failed": reason}), FailedResult(reason=reason)
         child_ctx = ctx.with_path(child(ctx.path, LoopIter(next_i)))
         return LoopFrame(i=next_i, child=self.body.start(cfg, child_ctx)), Continue()

@@ -175,3 +175,101 @@ def accumulate_layer(name: str = "acc", threshold: int = 10) -> SimpleLayer:
     return replace(
         decision_layer(name), exits={Port("again"): Rec, Port("stop"): Rec}, export=export
     )
+
+
+class Hist(BaseModel):
+    n: int
+    hist: list[int]
+
+
+def stash_layer(name: str = "stash", limit: int = 4) -> SimpleLayer:
+    """Loop body that accumulates ``n`` into store key ``hist`` (iteration 0 creates it).
+
+    Exits ``again`` with ``{"n"}`` until n+1 reaches ``limit``, then ``stop`` with the history.
+    """
+
+    def outcome(
+        cfg: Config, actions: dict[RoleId, BaseModel], rng: Generator, store: StoreView
+    ) -> BaseModel:
+        n = N.model_validate(cfg.state).n
+        hist = [] if n == 0 else store.get("hist")
+        hist = [*hist, n]
+        store.set("hist", hist)
+        return Hist(n=n + 1, hist=hist)
+
+    def export(cfg: Config, out: BaseModel) -> Exit:
+        h = Hist.model_validate(out.model_dump())
+        if h.n < limit:
+            return Exit(port=Port("again"), record={"n": h.n})
+        return Exit(port=Port("stop"), record=h.model_dump())
+
+    return SimpleLayer(
+        name=name,
+        entry=Contract(
+            state_schema=N, store_reads=frozenset({"hist"}), store_writes=frozenset({"hist"})
+        ),
+        exits={Port("again"): N, Port("stop"): Hist},
+        outcome=outcome,
+        export=export,
+    )
+
+
+def snoop_layer(name: str = "snoop", mode: str = "read") -> SimpleLayer:
+    """Deliberately broken: touches store key ``secret`` without declaring it."""
+
+    def outcome(
+        cfg: Config, actions: dict[RoleId, BaseModel], rng: Generator, store: StoreView
+    ) -> BaseModel:
+        if mode == "read":
+            store.get("secret")
+        else:
+            store.set("secret", 1)
+        return N()
+
+    return SimpleLayer(
+        name=name,
+        entry=Contract(state_schema=N),
+        exits={Port("done"): N},
+        outcome=outcome,
+        export=lambda cfg, out: Exit(port=Port("done"), record={"n": 0}),
+    )
+
+
+def writer_layer(name: str = "writer", key: str = "shared", value: int = 42) -> SimpleLayer:
+    """Automatic layer that writes ``value`` to store key ``key`` and exits ``done``."""
+
+    def outcome(
+        cfg: Config, actions: dict[RoleId, BaseModel], rng: Generator, store: StoreView
+    ) -> BaseModel:
+        store.set(key, value)
+        return N(n=value)
+
+    return SimpleLayer(
+        name=name,
+        entry=Contract(state_schema=N, store_writes=frozenset({key})),
+        exits={Port("done"): N},
+        outcome=outcome,
+        export=lambda cfg, out: Exit(port=Port("done"), record=out.model_dump()),
+    )
+
+
+def reader_layer(name: str = "reader", key: str = "shared") -> SimpleLayer:
+    """Automatic layer that reads store key ``key`` and exits ``done`` with ``{"n": value}``."""
+
+    def outcome(
+        cfg: Config, actions: dict[RoleId, BaseModel], rng: Generator, store: StoreView
+    ) -> BaseModel:
+        return N(n=store.get(key))
+
+    return SimpleLayer(
+        name=name,
+        entry=Contract(state_schema=N, store_reads=frozenset({key})),
+        exits={Port("done"): N},
+        outcome=outcome,
+        export=lambda cfg, out: Exit(port=Port("done"), record=out.model_dump()),
+    )
+
+
+def no_agents(cfg: Config) -> dict[str, Config]:
+    """Splitter function for automatic branches: every branch gets ``N(0)`` and no roles."""
+    return {name: Config(state={"n": 0}, roles={}) for name in cfg.state["branches"]}

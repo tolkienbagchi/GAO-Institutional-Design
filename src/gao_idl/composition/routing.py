@@ -24,3 +24,9 @@ def check_name(what: str, name: str) -> None:
             f"{what} name {name!r} must be non-empty and avoid the reserved characters "
             f"{RESERVED_NAME_CHARS!r}"
         )
+
+
+def store_failure_reason(where: str, error: KeyError | PermissionError) -> str:
+    """Failure reason for a store access that left its declared scope (or read an unset key)."""
+    detail = error.args[0] if error.args else ""
+    return f"{where} violated its store scope: {type(error).__name__}: {detail}"

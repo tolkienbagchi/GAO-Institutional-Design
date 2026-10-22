@@ -1,5 +1,8 @@
 """Composite environment factories used only by tests (addressable via ``env_ref`` strings)."""
 
+from typing import Any
+
+from gao_idl.composition.connector import Connector
 from gao_idl.composition.loop import Loop
 from gao_idl.composition.par import DictJoiner, DisjointSplitter, OpenState, Par
 from gao_idl.composition.primitive import Primitive
@@ -9,15 +12,21 @@ from gao_idl.core.ids import AgentId, Port, RoleId
 from gao_idl.core.schemas import Config
 from tests.composition.layers import (
     Agents,
+    N,
     accumulate_layer,
     choice_layer,
     counter_layer,
     decision_layer,
     n_feedback,
+    no_agents,
+    reader_layer,
     rec_to_seed,
+    snoop_layer,
     split_agents,
+    stash_layer,
     step_layer,
     to_n,
+    writer_layer,
 )
 
 SEQ_CHOICE = "tests.composition.envs:seq_choice"
@@ -25,6 +34,10 @@ SEQ_DECISIONS = "tests.composition.envs:seq_decisions"
 PAR_PLAYERS = "tests.composition.envs:par_players"
 LOOP_COUNTER = "tests.composition.envs:loop_counter"
 LOOP_DECISIONS = "tests.composition.envs:loop_decisions"
+LOOP_STASH = "tests.composition.envs:loop_stash"
+PAR_SHARED_STORE = "tests.composition.envs:par_shared_store"
+SNOOP = "tests.composition.envs:snoop"
+SEQ_STORE_CONNECTOR = "tests.composition.envs:seq_store_connector"
 
 
 def seq_choice(port: str = "a", payload: int = 5) -> tuple[Process, Config]:
@@ -86,3 +99,48 @@ def loop_decisions(threshold: int = 10, max_iter: int = 10) -> tuple[Process, Co
         on_limit="truncate",
     )
     return loop, Config(state={"start": 0}, roles={RoleId("player"): AgentId("alice")})
+
+
+def loop_stash(max_iter: int = 10, limit: int = 4) -> tuple[Process, Config]:
+    """Loop whose body appends to a store list each iteration (store persists across iterations)."""
+    loop = Loop(
+        Primitive(stash_layer(limit=limit)),
+        feedback={Port("again"): n_feedback()},
+        until={Port("stop"): Port("finished")},
+        max_iter=max_iter,
+        on_limit="fail",
+    )
+    return loop, Config(state={"n": 0}, roles={})
+
+
+def par_shared_store(writer: str = "A", reader: str = "B") -> tuple[Process, Config]:
+    """Two automatic branches: ``writer`` writes store key ``shared``, ``reader`` reads it."""
+    par = Par(
+        {writer: Primitive(writer_layer()), reader: Primitive(reader_layer())},
+        DisjointSplitter(no_agents, OpenState),
+        DictJoiner(Port("done"), OpenState),
+    )
+    return par, Config(state={"branches": [writer, reader]}, roles={})
+
+
+def snoop(mode: str = "read") -> tuple[Process, Config]:
+    """A single layer that touches an undeclared store key."""
+    return Primitive(snoop_layer(mode=mode)), Config(state={"n": 0}, roles={})
+
+
+def seq_store_connector(mode: str = "read") -> tuple[Process, Config]:
+    """A Seq whose connector touches an undeclared store key."""
+
+    def fn(rec: dict[str, Any], ledger: Any, store: Any) -> Config:
+        if mode == "read":
+            store.get("secret")
+        else:
+            store.set("secret", 1)
+        return Config(state={"n": 0}, roles={})
+
+    seq = Seq(
+        Primitive(choice_layer()),
+        {Port("a"): (Connector(fn, N), Primitive(step_layer()))},
+        name="seq",
+    )
+    return seq, Config(state={"port": "a", "payload": 1}, roles={})

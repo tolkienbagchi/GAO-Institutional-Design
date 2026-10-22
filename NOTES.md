@@ -282,3 +282,27 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   `body`/`feedback`/`until`/`max_iter`/`on_limit` (Loop), `timeout` (Primitive). Schemas are described by
   class name and sorted field names, not full JSON Schema (keeps the tree small); everything is sorted so
   the output is stable.
+
+## 2026-10-21 — M1 task 6: store scopes end to end
+- **A store-scope violation now fails the session instead of escaping `advance()` as an exception.**
+  `Primitive._settle` catches `KeyError` / `PermissionError` around `layer.outcome(...)` (the only place a
+  layer has a `StoreView`), emits `Failed` at the layer's path and returns `FailedResult` with a reason like
+  `layer 'snoop' violated its store scope: KeyError: store key 'secret' is not in this view's read scope`.
+  Caveat: the catch is by exception type, so an unrelated `KeyError` bug inside a layer's `outcome` is also
+  reported this way (the message names it, and the session is marked failed rather than crashing).
+  The same conversion applies to connectors in `Seq` and to feedback connectors in `Loop` (`Failed` is
+  emitted at the composite's path). Not converted: `ContractError` from a connector's output schema (a
+  wiring bug, still an exception), `ValueError` for a non-JSON store value.
+  Also: reading a key that is *in scope but never written* raises `KeyError` too (M0 behaviour), so it fails the
+  session the same way.
+- Store keys are shared across the whole session: values written in one `Loop` iteration are visible in the
+  next (`test_store_persists_across_loop_iterations`; the body creates the key on iteration 0 and reads it
+  afterwards, because a declared-but-unset key cannot be read).
+- **`Par` branches share the one session store** (as briefed; a per-branch store is a possible later change).
+  Hazard to know about: a cross-branch read-after-write dependency is only well defined if the writer has
+  already run. Automatic branches run in sorted-name order inside one step, so the order is deterministic
+  (`test_par_branches_share_the_store` has writer `A`, reader `B`; swapping the names makes the reader fail,
+  pinned by `test_par_cross_branch_read_before_write_fails_in_sorted_order`). For decision branches the
+  order follows the input-log order (see the Par note), which is deterministic given the log but is the
+  agents' choice, so environments should not rely on cross-branch store dependencies.
+- Ordering of writes before reads is not checked statically (the brief says to skip it).

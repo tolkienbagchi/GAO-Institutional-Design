@@ -15,7 +15,7 @@ from gao_idl.composition.process import (
     Process,
     StepResult,
 )
-from gao_idl.composition.routing import check_name, owns
+from gao_idl.composition.routing import check_name, owns, store_failure_reason
 from gao_idl.core import events as ev
 from gao_idl.core.errors import ContractError, UnknownDecision
 from gao_idl.core.ids import AgentId, DecisionId, Port
@@ -208,7 +208,12 @@ class Seq:
         exit_ = Exit(port=f.exited_port, record=f.exited_record)
         if f.stage == 0 and exit_.port in self.routes:
             connector, cont = self.routes[exit_.port]
-            cfg = connector.apply(exit_.record, ctx)
+            try:
+                cfg = connector.apply(exit_.record, ctx)
+            except (KeyError, PermissionError) as e:
+                reason = store_failure_reason(f"connector for port {exit_.port!r}", e)
+                ctx.trace.emit(ev.Failed(t=ctx.clock.tick(), path=list(ctx.path), reason=reason))
+                return f.model_copy(update={"failed": reason}), FailedResult(reason=reason)
             child_ctx = ctx.with_path(child(ctx.path, cont.name))
             nxt = SeqFrame(
                 stage=1, child=cont.start(cfg, child_ctx), child_name=cont.name, route=exit_.port
