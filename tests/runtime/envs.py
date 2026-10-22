@@ -7,7 +7,15 @@ from numpy.random import Generator
 from pydantic import BaseModel
 
 from gao_idl.composition.primitive import Primitive
-from gao_idl.composition.process import Continue, Ctx, Exited, Frame, Process, StepResult
+from gao_idl.composition.process import (
+    Continue,
+    Ctx,
+    Exited,
+    Frame,
+    Pending,
+    Process,
+    StepResult,
+)
 from gao_idl.core import events as ev
 from gao_idl.core.errors import UnknownDecision
 from gao_idl.core.ids import AgentId, Port, RoleId
@@ -32,6 +40,18 @@ def bidding_default_timeout(values: dict[str, float]) -> tuple[Process, Config]:
     _, cfg = build_bidding_only(values)
     layer = replace(
         bidding_layer(), timeout=DefaultAction(), default_action=lambda cfg, role: Bid(amount=0)
+    )
+    return Primitive(layer), cfg
+
+
+def bidding_capped(values: dict[str, float]) -> tuple[Process, Config]:
+    """Bidding where bids above 10 are infeasible; a timed-out bidder bids 0."""
+    _, cfg = build_bidding_only(values)
+    layer = replace(
+        bidding_layer(),
+        timeout=DefaultAction(),
+        default_action=lambda cfg, role: Bid(amount=0),
+        feasible=lambda cfg, role, action: isinstance(action, Bid) and action.amount <= 10,
     )
     return Primitive(layer), cfg
 
@@ -157,3 +177,15 @@ class ContinueN(ContinueTwice):
 def continue_n(limit: int | None = None) -> tuple[Process, Config]:
     """Environment factory for :class:`ContinueN`; ``limit=None`` never reaches quiescence."""
     return ContinueN(limit), Config(state={}, roles={})
+
+
+class Stalled(ContinueTwice):
+    """A deliberately broken Process: it is never finished and waits on nothing."""
+
+    def step(self, frame: Frame, inputs: list[Any], ctx: Ctx) -> tuple[Frame, StepResult]:
+        return frame, Pending(requests=[])
+
+
+def stalled() -> tuple[Process, Config]:
+    """Environment factory for :class:`Stalled`."""
+    return Stalled(), Config(state={}, roles={})

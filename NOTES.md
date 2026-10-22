@@ -566,3 +566,46 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - `HumanTransportAgent` additions: `wait_outstanding()` (an `asyncio.Event`-based wait, so tests need no sleeping),
   and `provide` raises `UnknownDecision` for an id that is not outstanding (already answered, cancelled, or never
   asked). A deadline cancels `act`, which withdraws the request from `outstanding()`.
+
+## 2026-10-21 — M2 part C: runner (`runtime/runner.py`)
+- Shape as briefed: `run(session, adapters, policy, clock)` and `run_sync` (`asyncio.run` with the real clock). All
+  `advance` / `submit` / `timeout` calls are in the one coroutine (tested by recording `current_task()` and the thread
+  id in a `Session` subclass); adapter `act` calls are tasks that only return an action.
+- **Ambiguity: the ledger.** The brief says the runner "never reads `session.ledger` to construct anything it passes to
+  an adapter" but also that `EpisodeEnd.final_utility` is filled when `disclose_final_utility=True`, and that value can
+  only come from the ledger. Conservative reading: the ledger is read in exactly one place, the `final_utility` of
+  `EpisodeEnd`, and only when the flag is set. Test: a `Session` subclass whose `ledger` raises runs fine by default and
+  raises with the flag.
+- **Extension: catch-up on attach.** After `episode_start` the runner delivers every `ReportDelivered` already in
+  `session.trace` (by `report_id`, tracked in a set), and it dispatches `session.pending()` rather than only decisions
+  that appeared in the events of this `advance()`. Reason: a session restored from a snapshot has already advanced inside
+  `replay`, so `advance()` returns no events, and a fresh adapter (the briefed restore test) would otherwise have an empty
+  history and no work. Reading `session.trace` for this is not the ledger. Within a run each report is delivered once
+  (set of ids); `HumanTransportAgent` and `ScriptedAgent` also dedupe, so re-attaching a used adapter is harmless.
+- Adapters get **deep copies** of requests and reports (a `DecisionRequest` has mutable dicts inside a frozen model, and the
+  same objects sit in the ledger and the pending set). Mutating them has no effect on the session (tested).
+- Order of events: when several tasks finish in one wake-up they are submitted in dispatch order (a sequence number), not
+  in the set order `asyncio.wait` returns, so scripted runs write the same input log every time (tested). With a `Par`
+  the log order is part of the trace, so this matters.
+- Retry: `SchemaError` / `Infeasible` from `submit` -> the same request is dispatched once more (new `act` call; the
+  deadline keeps counting from the first dispatch); a second failure -> `session.timeout`. Every rejection leaves an
+  `action_rejected` event in the trace (existing Session behaviour). Any exception (or cancellation) raised by `act`
+  -> warning log and `session.timeout`, no retry. Other `GaoError`s from `submit` (e.g. `UnknownDecision`) are bugs and
+  propagate. Exceptions from `observe` / `episode_start` / `episode_end` also propagate (the brief says nothing; failing
+  loudly was the conservative choice); the `finally` block cancels and awaits all in-flight adapter tasks, so a failed or
+  cancelled run leaves no tasks behind (tested).
+- Deadlines: `RunnerPolicy.deadline_seconds` applies per decision from its first dispatch, measured with `clock`
+  (default `time.monotonic`) and used to compute the `asyncio.wait` timeout. `DecisionRequest.deadline` (the pinned
+  per-request field, always `None` so far) is ignored: its units ("runner-interpreted wall clock") are undefined.
+  A `clock` that does not advance in real time would make the wait loop sleep for real without expiring anything.
+  Expired tasks are cancelled and awaited, then `session.timeout` is called, so the layer's `TimeoutPolicy` decides.
+- A pending request whose agent has no adapter raises `RuntimeError("no adapter for agent …")` (silently timing it out would
+  invent behaviour, invariant 6). Reports for an agent without an adapter are skipped.
+- `terminal` is derived from the end state (`session.failed`, `result.port == "truncated"`), not the last trace event:
+  for a `Loop` truncation the last event is `Truncated`, and for a `Par` failure it may be an unrelated store access.
+- Stall detection is `RuntimeError("stalled: …")` when, after `advance()`, the session is not finished and no decision is in
+  flight. Test stub: `tests/runtime/envs.py::Stalled` (returns `Pending([])`).
+- `HumanTransportAgent.provide` now removes the request from `outstanding()` immediately (before `act` resumes), so
+  `wait_outstanding()` right after `provide` cannot return the answered request.
+- Test-only additions: `bidding_capped` (bids above 10 are infeasible; timeout default 0) and `stalled` in
+  `tests/runtime/envs.py`. No test uses `asyncio.sleep`; the only real wait is the 0.01 s deadline.

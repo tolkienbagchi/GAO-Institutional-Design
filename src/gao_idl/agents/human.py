@@ -70,4 +70,5 @@ class HumanTransportAgent:
         entry = self._waiting.get(decision_id)
         if entry is None or entry[1].done():
             raise UnknownDecision(decision_id)
+        del self._waiting[decision_id]  # answered now, not when ``act`` next gets to run
         entry[1].set_result(dict(action))
