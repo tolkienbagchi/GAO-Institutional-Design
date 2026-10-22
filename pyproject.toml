@@ -12,7 +12,7 @@ dependencies = ["pydantic>=2.7", "numpy>=1.26"]
 
 [project.optional-dependencies]
 llm = ["httpx"]
-dev = ["pytest", "hypothesis", "ruff", "mypy"]
+dev = ["pytest", "pytest-timeout", "hypothesis", "ruff", "mypy"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gao_idl"]
@@ -20,6 +20,7 @@ packages = ["src/gao_idl"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+timeout = 30
 
 [tool.ruff]
 line-length = 100

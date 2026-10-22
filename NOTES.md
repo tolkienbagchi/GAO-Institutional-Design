@@ -624,3 +624,14 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   plus `test_a_failing_episode_end_does_not_hide_the_original_exception` and
   `test_provide_after_a_normal_finish_also_raises`. The scenario needs a human still waiting when `observe` raises: a
   four-agent fixed-pair PD where pair_0 completes (bob's `observe` raises) while carol (human) is outstanding.
+
+## 2026-10-21 — M2 fix-up task 2: test timeouts (new dev dependency)
+- **New dev dependency: `pytest-timeout`** (added to the `dev` extra) and `timeout = 30` under
+  `[tool.pytest.ini_options]`. It is NOT installed in this sandbox (no PyPI), so here pytest prints
+  "Unknown config option: timeout" and the plugin's 30 s cap is unverified; the in-test limits below do not need it.
+- `tests/aio.py`: `soon(awaitable)` = `asyncio.wait_for(..., 5)`, `run_test(coro)` = `asyncio.run` with a 10 s cap on the
+  whole body. In `tests/runtime/test_runner.py` and `tests/agents/test_adapters.py` every `wait_outstanding`, every await
+  of a runner task, and every `asyncio.run` goes through them.
+- Verified with the reviewer's mutation (reports broadcast to every adapter, so `ScriptedAgent.observe` raises): the full
+  suite under `timeout 120` now ends in 14 s with 19 failed / 274 passed instead of hanging (the runner cleanup of
+  task 1 plus the bounded waits). Mutation reverted.

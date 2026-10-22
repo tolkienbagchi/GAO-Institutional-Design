@@ -22,6 +22,7 @@ from gao_idl.core.ids import AgentId
 from gao_idl.core.schemas import DecisionRequest, ParticipantReport
 from gao_idl.runtime.runner import RunnerPolicy, run, run_sync
 from gao_idl.runtime.session import Session
+from tests.aio import run_test, soon
 from tests.runtime.envs import DEFAULT_TIMEOUT, params
 
 PD = "gao_idl.environments.pd:build_repeated_pd"
@@ -171,17 +172,17 @@ def test_human_transport_pauses_and_resumes() -> None:
         session = Session.start(PD, _human_pd(), 5)
         human = HumanTransportAgent()
         task = asyncio.ensure_future(run(session, {ALICE: human, BOB: ScriptedAgent(always("D"))}))
-        (first,) = await human.wait_outstanding()
+        (first,) = await soon(human.wait_outstanding())
         assert first.decision_id == "pd/loop[0]/round/branch[pair_0]#row"
         assert first.agent_id == ALICE and not task.done()  # the runner is blocked on the human
         human.provide(first.decision_id, {"move": "C"})
-        (second,) = await human.wait_outstanding()
+        (second,) = await soon(human.wait_outstanding())
         assert second.decision_id == "pd/loop[1]/round/branch[pair_0]#row"
         assert len(human.inbox) == 1  # last round's report arrived while waiting
         human.provide(second.decision_id, {"move": "C"})
-        return await task
+        return await soon(task)
 
-    session = asyncio.run(main())
+    session = run_test(main())
     reference = run_sync(
         Session.start(PD, _human_pd(), 5),
         {ALICE: ScriptedAgent(always("C")), BOB: ScriptedAgent(always("D"))},
@@ -196,13 +197,13 @@ def test_human_transport_snapshot_restore_resumes_in_a_new_runner() -> None:
         session = Session.start(PD, _human_pd(), 5)
         human = HumanTransportAgent()
         task = asyncio.ensure_future(run(session, {ALICE: human, BOB: ScriptedAgent(always("D"))}))
-        (first,) = await human.wait_outstanding()
+        (first,) = await soon(human.wait_outstanding())
         human.provide(first.decision_id, {"move": "C"})
-        (second,) = await human.wait_outstanding()
+        (second,) = await soon(human.wait_outstanding())
         snapshot = json.loads(json.dumps(session.snapshot()))  # mid-wait, through real JSON
         task.cancel()  # the first runner dies with its process
         with pytest.raises(asyncio.CancelledError):
-            await task
+            await soon(task)
         assert human.outstanding() == []
 
         restored = Session.restore(snapshot)
@@ -210,14 +211,14 @@ def test_human_transport_snapshot_restore_resumes_in_a_new_runner() -> None:
         task2 = asyncio.ensure_future(
             run(restored, {ALICE: fresh, BOB: ScriptedAgent(always("D"))})
         )
-        (again,) = await fresh.wait_outstanding()
+        (again,) = await soon(fresh.wait_outstanding())
         assert again.decision_id == second.decision_id and not task2.done()
         # the fresh agent has caught up on what alice had been told before the restart
         assert [r.report_id for r in fresh.inbox] == [r.report_id for r in human.inbox]
         fresh.provide(again.decision_id, {"move": "C"})
-        return restored, await task2
+        return restored, await soon(task2)
 
-    restored, _ = asyncio.run(main())
+    restored, _ = run_test(main())
     reference = run_sync(
         Session.start(PD, _human_pd(), 5),
         {ALICE: ScriptedAgent(always("C")), BOB: ScriptedAgent(always("D"))},
@@ -235,7 +236,7 @@ def test_deadline_triggers_timeout_policy() -> None:
     session = Session.start(DEFAULT_TIMEOUT, params(alice=10, bob=8), 1)
     adapters: dict[AgentId, AgentAdapter] = {ALICE: NeverAgent(), BOB: ScriptedAgent(bid(3))}
     began = time.monotonic()
-    asyncio.run(run(session, adapters, RunnerPolicy(deadline_seconds=0.01)))
+    run_test(run(session, adapters, RunnerPolicy(deadline_seconds=0.01)))
     assert time.monotonic() - began < 1.0
     assert session.finished and not session.failed
     defaulted = [e for e in session.trace if isinstance(e, ev.ActionDefaulted)]
@@ -256,13 +257,13 @@ def test_deadline_withdraws_the_humans_request() -> None:
         assert "action_defaulted" in kinds(session)
         return human
 
-    assert asyncio.run(main()).outstanding() == []
+    assert run_test(main()).outstanding() == []
 
 
 def test_deadline_with_a_fail_policy_fails_the_session() -> None:
     session = Session.start(PD, pd_params(["alice", "bob"], 2), 1)
     spy = Spy(ScriptedAgent(always("D")))
-    asyncio.run(run(session, {ALICE: NeverAgent(), BOB: spy}, RunnerPolicy(deadline_seconds=0.01)))
+    run_test(run(session, {ALICE: NeverAgent(), BOB: spy}, RunnerPolicy(deadline_seconds=0.01)))
     assert session.finished and session.failed and session.result is None
     assert "failed" in kinds(session)
     assert [e.terminal for e in spy.received if isinstance(e, EpisodeEnd)] == ["failed"]
@@ -372,10 +373,10 @@ def test_all_session_calls_happen_in_the_runners_coroutine() -> None:
                 RunnerPolicy(deadline_seconds=0.01),
             )
         )
-        await task
+        await soon(task)
         return task
 
-    task = asyncio.run(main())
+    task = run_test(main())
     assert {name for name, _, _ in calls} == {"advance", "submit", "timeout"}
     assert {t for _, t, _ in calls} == {task}
     assert len({thread for _, _, thread in calls}) == 1
@@ -452,14 +453,14 @@ def test_a_cancelled_run_leaves_no_tasks_behind() -> None:
         humans = {ALICE: HumanTransportAgent(), BOB: HumanTransportAgent()}
         task = asyncio.ensure_future(run(session, dict(humans.items())))  # type: ignore[arg-type]
         for human in humans.values():
-            await human.wait_outstanding()  # both adapter tasks are in flight
+            await soon(human.wait_outstanding())  # both adapter tasks are in flight
         task.cancel()
         with pytest.raises(asyncio.CancelledError):
-            await task
+            await soon(task)
         assert all(h.outstanding() == [] for h in humans.values())
         return len(asyncio.all_tasks())
 
-    assert asyncio.run(main()) == 1  # only the test's own task is left
+    assert run_test(main()) == 1  # only the test's own task is left
 
 
 # ------------------------------------------------------------------ the runner dies cleanly
@@ -506,7 +507,7 @@ async def _die_with_a_human_waiting(
         AgentId("dave"): ScriptedAgent(always("D")),
     }
     task = asyncio.ensure_future(run(session, adapters))
-    (waiting,) = await asyncio.wait_for(human.wait_outstanding(), 5)
+    (waiting,) = await soon(human.wait_outstanding())
     return human, waiting, task
 
 
@@ -515,14 +516,14 @@ def test_runner_exception_in_observe_cancels_inflight_and_reraises() -> None:
         bad = BadObserver()
         human, _, task = await _die_with_a_human_waiting(bad)
         with pytest.raises(ValueError, match="observe blew up"):
-            await asyncio.wait_for(task, 5)
+            await soon(task)
         assert human.outstanding() == []  # the in-flight act was cancelled and awaited
         assert [e.terminal for e in human.ends] == ["failed"]
         assert [e.terminal for e in bad.ends] == ["failed"]
         assert all(e.final_utility is None for e in human.ends)
         assert len(asyncio.all_tasks()) == 1  # nothing left running
 
-    asyncio.run(main())
+    run_test(main())
 
 
 def test_a_failing_episode_end_does_not_hide_the_original_exception() -> None:
@@ -533,22 +534,22 @@ def test_a_failing_episode_end_does_not_hide_the_original_exception() -> None:
             pytest.warns(UserWarning, match="episode_end failed for 'bob'"),
             pytest.raises(ValueError, match="observe blew up"),  # not the KeyError
         ):
-            await asyncio.wait_for(task, 5)
+            await soon(task)
         assert [e.terminal for e in human.ends] == ["failed"]  # the others still got theirs
 
-    asyncio.run(main())
+    run_test(main())
 
 
 def test_provide_after_runner_death_raises() -> None:
     async def main() -> None:
         human, waiting, task = await _die_with_a_human_waiting(BadObserver())
         with pytest.raises(ValueError):
-            await asyncio.wait_for(task, 5)
+            await soon(task)
         assert human.closed
         with pytest.raises(RuntimeError, match="runner is gone"):
             human.provide(waiting.decision_id, {"move": "C"})
 
-    asyncio.run(main())
+    run_test(main())
 
 
 def test_provide_after_a_normal_finish_also_raises() -> None:
@@ -556,11 +557,11 @@ def test_provide_after_a_normal_finish_also_raises() -> None:
         session = Session.start(PD, pd_params(["alice", "bob"], 1), 1)
         human = HumanTransportAgent()
         task = asyncio.ensure_future(run(session, {ALICE: human, BOB: ScriptedAgent(always("D"))}))
-        (req,) = await asyncio.wait_for(human.wait_outstanding(), 5)
+        (req,) = await soon(human.wait_outstanding())
         human.provide(req.decision_id, {"move": "C"})
-        await asyncio.wait_for(task, 5)
+        await soon(task)
         assert human.closed
         with pytest.raises(RuntimeError, match="runner is gone"):
             human.provide(req.decision_id, {"move": "C"})
 
-    asyncio.run(main())
+    run_test(main())

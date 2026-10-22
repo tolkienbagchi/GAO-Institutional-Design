@@ -18,6 +18,7 @@ from gao_idl.core.ids import AgentId, DecisionId, ReportId, RoleId
 from gao_idl.core.schemas import DecisionRequest, ParticipantReport
 from gao_idl.environments.auction.bidding import Bid
 from gao_idl.environments.pd.schemas import PDAction
+from tests.aio import run_test, soon
 
 ALICE = AgentId("alice")
 
@@ -105,8 +106,8 @@ def test_random_agent_acts_on_real_schemas_and_is_deterministic() -> None:
         out += [await agent.act(request(PDAction.model_json_schema())) for _ in range(5)]
         return out
 
-    first = asyncio.run(run(5))
-    assert first == asyncio.run(run(5)) != asyncio.run(run(6))
+    first = run_test(run(5))
+    assert first == run_test(run(5)) != run_test(run(6))
     for action in first[:5]:
         Bid.model_validate(action)
     for action in first[5:]:
@@ -137,7 +138,7 @@ def test_unsupported_schema_fragments_raise_naming_the_fragment(
 
 def test_random_agent_needs_an_object_schema() -> None:
     with pytest.raises(NotImplementedError):
-        asyncio.run(RandomAgent(0).act(request({"type": "integer"})))
+        run_test(RandomAgent(0).act(request({"type": "integer"})))
 
 
 # ------------------------------------------------------------------ ScriptedAgent
@@ -164,7 +165,7 @@ def test_scripted_agent_keeps_only_its_report_history() -> None:
         await agent.episode_start(ctx(keep_episode_memory=True))  # ...unless asked not to
         assert await agent.act(request({}, 3)) == {"n": 2}
 
-    asyncio.run(run())
+    run_test(run())
 
 
 # ------------------------------------------------------------------ HumanTransportAgent
@@ -178,34 +179,34 @@ def test_human_transport_waits_for_provide() -> None:
         req1, req2 = request({}, 1), request({}, 2)
         t1 = asyncio.create_task(agent.act(req1))
         t2 = asyncio.create_task(agent.act(req2))
-        assert (await agent.wait_outstanding())[0] == req1
+        assert (await soon(agent.wait_outstanding()))[0] == req1
         assert agent.outstanding() == [req1, req2]  # several requests may be outstanding
         assert not t1.done() and not t2.done()
         agent.provide(req2.decision_id, {"v": 2})
-        assert await t2 == {"v": 2}
+        assert await soon(t2) == {"v": 2}
         assert agent.outstanding() == [req1]
         agent.provide(req1.decision_id, {"v": 1})
-        assert await t1 == {"v": 1}
+        assert await soon(t1) == {"v": 1}
         assert agent.outstanding() == []
         with pytest.raises(UnknownDecision):
             agent.provide(req1.decision_id, {"v": 1})  # already answered
 
-    asyncio.run(run())
+    run_test(run())
 
 
 def test_human_transport_cancellation_withdraws_the_request() -> None:
     async def run() -> None:
         agent = HumanTransportAgent()
         task = asyncio.create_task(agent.act(request({}, 1)))
-        await agent.wait_outstanding()
+        await soon(agent.wait_outstanding())
         task.cancel()
         with pytest.raises(asyncio.CancelledError):
-            await task
+            await soon(task)
         assert agent.outstanding() == []
         with pytest.raises(UnknownDecision):
             agent.provide(DecisionId("root#r1"), {})
 
-    asyncio.run(run())
+    run_test(run())
 
 
 def test_report_dedup_in_human_transport() -> None:
@@ -220,4 +221,4 @@ def test_report_dedup_in_human_transport() -> None:
         with pytest.raises(ValueError, match="addressed to"):
             await agent.observe(report(0, agent="bob"))
 
-    asyncio.run(run())
+    run_test(run())
