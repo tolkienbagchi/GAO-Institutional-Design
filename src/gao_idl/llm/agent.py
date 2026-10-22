@@ -10,7 +10,7 @@ from typing import Any
 
 from pydantic import Field
 
-from gao_idl.agents.base import AgentAdapter, EpisodeContext, EpisodeEnd
+from gao_idl.agents.base import AgentAdapter, EpisodeContext, EpisodeEnd, ExternalRecorder
 from gao_idl.core.errors import AgentFailed
 from gao_idl.core.ids import AgentId, DecisionId
 from gao_idl.core.schemas import DecisionRequest, FrozenModel, ParticipantReport
@@ -59,7 +59,7 @@ class CallRecord(FrozenModel):
     response: str | None = None
 
 
-class LLMAgent(AgentAdapter):
+class LLMAgent(AgentAdapter, ExternalRecorder):
     """Asks an ``LLMBackend`` for each action, checks it locally, repairs a bounded number of times.
 
     Each attempt renders the prompt with the codec, calls the backend, parses the reply and
@@ -83,6 +83,7 @@ class LLMAgent(AgentAdapter):
         report_renderer: ReportRenderer = DefaultReportRenderer(),  # noqa: B008 (stateless)
         *,
         record_text: bool = False,
+        record_raw: bool = False,
     ) -> None:
         self.agent_id = agent_id
         self.backend = backend
@@ -93,12 +94,14 @@ class LLMAgent(AgentAdapter):
         self.timeout_s = timeout_s
         self.report_renderer = report_renderer
         self.record_text = record_text
+        self.record_raw = record_raw
         self.last_decision_id: DecisionId | None = None
         self._memory: Memory = NoMemory() if memory is None else memory.fresh()
         self._provisional: list[tuple[DecisionId, list[Message]]] = []
         self._acted: set[DecisionId] = set()
         self._seen: set[str] = set()
         self._calls: list[CallRecord] = []
+        self._external: list[dict[str, Any]] = []
 
     # ------------------------------------------------------------- adapter protocol
 
@@ -154,12 +157,16 @@ class LLMAgent(AgentAdapter):
                 )
             except BackendError as e:
                 problem = f"backend error: {scrub(str(e))}"
+                self._external.append(
+                    {"decision_id": did, "attempt": attempt, "error": scrub(str(e))}
+                )
                 self._record(did, attempt, None, prior, problem, prompt)
                 failures.append(f"attempt {attempt}: {problem}")
                 prior = problem
                 continue
             finally:
                 current_decision.reset(token)
+            self._external.append(self._payload(did, attempt, response))
             action, failure = self._check(response, request)
             self._record(did, attempt, response, prior, failure, prompt)
             if action is not None:
@@ -176,6 +183,16 @@ class LLMAgent(AgentAdapter):
     async def episode_end(self, end: EpisodeEnd) -> None:
         """Commit the last turn to memory; the conversation stays for ``keep_conversation``."""
         self._flush()
+
+    def drain_external(self) -> list[dict[str, Any]]:
+        """Raw model replies (and transport errors) since the last call, one item per attempt.
+
+        Items are ``{"decision_id", "attempt", "text", "parsed", "usage", "model", "latency_s"}``
+        (plus ``"raw"`` with ``record_raw``), or ``{"decision_id", "attempt", "error"}`` for a
+        failed call. The runner writes them to the session's input log before submitting.
+        """
+        items, self._external = self._external, []
+        return items
 
     # ------------------------------------------------------------------ inspection
 
@@ -197,6 +214,21 @@ class LLMAgent(AgentAdapter):
         if problems:
             return None, first_problems(problems)
         return action, None
+
+    def _payload(self, did: DecisionId, attempt: int, response: Response) -> dict[str, Any]:
+        """What is logged for one reply: enough to rerun the attempt without the network."""
+        item: dict[str, Any] = {
+            "decision_id": did,
+            "attempt": attempt,
+            "text": response.text,
+            "parsed": copy.deepcopy(response.parsed),
+            "usage": dict(response.usage),
+            "model": response.model,
+            "latency_s": response.latency_s,
+        }
+        if self.record_raw:
+            item["raw"] = copy.deepcopy(response.raw)
+        return item
 
     def _turn(self, request: DecisionRequest) -> list[Message]:
         """What this request adds to the conversation: its prompt without the system messages."""

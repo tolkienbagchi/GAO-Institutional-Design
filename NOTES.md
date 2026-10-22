@@ -918,3 +918,28 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   keywords plus local `$ref` into `$defs`; everything else is ignored (a pre-check, the layer is the authority). Strict, no coercion:
   `"5"` is not a number, `5.0` is **not** an integer (stricter than JSON Schema, matching pydantic strict mode), a bool is neither,
   `True` does not equal `1` in `enum`/`const`, and `NaN`/`inf` are not numbers.
+
+## 2026-10-22 — M4 task 5: recording raw replies in the input log; `ReplayBackend`
+- **`ExternalRecorder` lives in `agents/base.py`** (runtime-checkable protocol, `drain_external() -> list[dict]`, re-exported from
+  `gao_idl.agents`), not in `llm/`, for the same import-direction reason as `AgentFailed`: the runner may not import `gao_idl.llm`.
+  `LLMAgent` implements it.
+- **Envelope key.** One agent can have several decisions in flight and the runner runs them concurrently, so a single shared buffer
+  would mix them. Each drained item therefore carries `"decision_id"`; the runner pops that key and passes the rest to
+  `session.record_external(decision_id, payload)`. The payload is the briefed `{"attempt", "text", "parsed", "usage", "model",
+  "latency_s"}`, `"raw"` only with `LLMAgent(record_raw=True)`.
+- **Addition: failed calls are logged too.** A transport error is recorded as `{"attempt": i, "error": <scrubbed message>}`. Without
+  it a replay would hand the next recorded reply to the first attempt and diverge. `ReplayBackend` raises `BackendError(error)` for
+  such an item, so the agent repeats the same failure. Not in the brief; the payload dict is free-form.
+- Runner: after a flight finishes (answer, exception or `AgentFailed`) and for deadline expiries (after the cancel), the agent's buffer
+  is drained and logged **before** `submit` / `timeout` for that decision. A drain may also write items of other in-flight decisions
+  of the same agent; they are still logged before those decisions' own submissions. Buffers are not drained when the whole run dies.
+  A refused submission (`Infeasible`) is not in the log, but its raw reply is (the log shows both replies, then one `Submitted`).
+- **`ReplayBackend(session_log)`** takes the list of input events (not a `Session`). `complete()` has no decision argument, so it
+  reads `llm.backend.current_decision` (set by `LLMAgent` around each call) and serves the n-th recorded payload for that decision.
+  Outside an agent call, or past the end, it raises `ReplayExhausted` — a `DeterminismError`, deliberately **not** a `BackendError`,
+  so the agent does not retry it and a divergence is loud. `remaining()` / `served` are for assertions. Round trip tested through
+  `json.dumps(snapshot)`: a fresh `Session` driven by `LLMAgent`s over `ReplayBackend`s writes the identical input log (payloads
+  included) and an identical trace (including `agent_failed` and its reasons), with zero mock calls. Also with a `Par` (4-player PD).
+- `Session.replay` is unchanged: it calls `advance()` before each `ExternalResponse` (it is not a submission), which differs from the
+  live batching but cannot change the trace (Par applies inputs one at a time; amendment M1-1) — confirmed by the `Par` test.
+- Mutation check (reverted): not draining/recording in the runner fails 7 tests.

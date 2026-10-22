@@ -7,6 +7,7 @@ episode start/end notices, and nothing else (invariant 1).
 """
 
 import asyncio
+import copy
 import itertools
 import logging
 import time
@@ -15,7 +16,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from gao_idl.agents.base import AgentAdapter, EpisodeContext, EpisodeEnd
+from gao_idl.agents.base import AgentAdapter, EpisodeContext, EpisodeEnd, ExternalRecorder
 from gao_idl.core import events as ev
 from gao_idl.core.errors import AgentFailed, Infeasible, SchemaError
 from gao_idl.core.ids import AgentId, DecisionId, ReportId
@@ -63,7 +64,9 @@ async def run(
     1. ``episode_start`` for every adapter; reports already in the session (a restored or partly
        run one) are delivered first, so a fresh adapter can catch up.
     2. Until finished: ``advance``, deliver new reports, dispatch ``act`` for each newly pending
-       request, wait for the first completion or the earliest deadline, then ``submit`` (retry once
+       request, wait for the first completion or the earliest deadline, then log what an
+       ``ExternalRecorder`` adapter drained (``record_external``, always before the submission or
+       timeout it led to), then ``submit`` (retry once
        on ``SchemaError`` / ``Infeasible``, then ``timeout``), ``timeout`` on any other adapter
        exception (preceded by an ``agent_failed`` trace event if it is ``AgentFailed``), and
        ``timeout`` (after cancelling the task) on an expired deadline. A session
@@ -99,6 +102,14 @@ async def run(
             request, task, clock() if began is None else began, attempt, next(seq)
         )
 
+    def record_external(agent_id: AgentId) -> None:
+        """Log what an external-service adapter obtained, before its action is submitted."""
+        adapter = adapters.get(agent_id)
+        if isinstance(adapter, ExternalRecorder):
+            for item in adapter.drain_external():
+                payload = copy.deepcopy(item)
+                session.record_external(DecisionId(payload.pop("decision_id")), payload)
+
     async def cancel_all() -> None:
         """Cancel every in-flight ``act`` task and wait until they are gone."""
         tasks = [f.task for f in flights.values() if not f.task.done()]
@@ -133,6 +144,7 @@ async def run(
                 timeout=timeout,
             )
             for flight in sorted((f for f in flights.values() if f.task.done()), key=_by_seq):
+                record_external(flight.request.agent_id)
                 _settle(session, flights, flight, dispatch)
             if policy.deadline_seconds is not None:
                 now = clock()
@@ -146,6 +158,7 @@ async def run(
                 await asyncio.gather(*(f.task for f in expired), return_exceptions=True)
                 for flight in expired:
                     del flights[flight.request.decision_id]
+                    record_external(flight.request.agent_id)
                     session.timeout(flight.request.decision_id)
     except (Exception, asyncio.CancelledError):
         # Cancel what is in flight first, then tell every adapter the episode failed (also when the

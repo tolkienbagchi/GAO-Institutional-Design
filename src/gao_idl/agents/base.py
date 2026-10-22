@@ -1,6 +1,6 @@
 """The adapter protocol and the episode objects. Adapters see requests and reports, nothing else."""
 
-from typing import Any, Literal, Protocol
+from typing import Any, Literal, Protocol, runtime_checkable
 
 from gao_idl.core.ids import AgentId
 from gao_idl.core.schemas import DecisionRequest, FrozenModel, ParticipantReport
@@ -51,4 +51,20 @@ class AgentAdapter(Protocol):
 
     async def episode_end(self, end: EpisodeEnd) -> None:
         """The episode is over."""
+        ...
+
+
+@runtime_checkable
+class ExternalRecorder(Protocol):
+    """An adapter that obtained answers from an external service (e.g. a language model).
+
+    After each ``act`` (finished, failed or cancelled) the runner drains it and writes every item
+    to the session's input log as an ``ExternalResponse`` *before* it submits the action, so a
+    replay needs no external call. Each item is a JSON-able dict with a ``"decision_id"`` key naming
+    the decision it belongs to (one agent may have several decisions in flight); the runner removes
+    that key and records the rest as the payload. Draining empties the buffer.
+    """
+
+    def drain_external(self) -> list[dict[str, Any]]:
+        """The items collected since the last call, oldest first."""
         ...
