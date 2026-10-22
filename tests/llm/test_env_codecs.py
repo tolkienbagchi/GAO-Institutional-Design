@@ -146,6 +146,7 @@ def test_pd_prompt_shows_this_pairs_history_and_no_payoff_table() -> None:
         "agents": ["alice", "bob", "carol", "dave"],
         "rounds": 3,
         "matching": "round_robin",
+        "disclose_payoffs": False,
     }
     mock = MockBackend([{"move": "C"}, {"move": "D"}, {"move": "C"}])
     agent = LLMAgent(ALICE, mock, PDCodec(), FullTranscript(), report_renderer=PDReportRenderer())
@@ -205,3 +206,27 @@ def test_the_sentinel_check_is_not_vacuous() -> None:
     (request,) = session.pending_for(BOB)
     text = "\n".join(m.content for m in DefaultCodec().render(request, [], []))
     assert "7777.5" in text
+
+
+def _first_pd_prompt(**extra: object) -> str:
+    pd_params = {"agents": ["alice", "bob"], "rounds": 2, **extra}
+    mock = MockBackend([{"move": "C"}, {"move": "C"}])
+    agent = LLMAgent(ALICE, mock, PDCodec(), None, report_renderer=PDReportRenderer())
+    same = ScriptedAgent(lambda request, reports: {"move": "D"})
+    session = play(PD, pd_params, {ALICE: agent, BOB: same})
+    assert not session.failed
+    return "\n".join(m.content for m in mock.calls[0].messages)
+
+
+def test_pd_prompt_has_the_four_payoff_pairs_when_disclosed() -> None:
+    prompt = _first_pd_prompt()
+    assert "Payoffs (your move, their move: your payoff, their payoff):" in prompt
+    for line in ("C, C: 3, 3", "C, D: 0, 5", "D, C: 5, 0", "D, D: 1, 1"):
+        assert line in prompt
+
+
+def test_pd_prompt_has_no_digit_from_the_table_when_not_disclosed() -> None:
+    prompt = _first_pd_prompt(disclose_payoffs=False)
+    assert "Payoffs (" not in prompt
+    stripped = "\n".join(ln for ln in prompt.splitlines() if not ln.startswith("This is round"))
+    assert not any(d in stripped for d in "0135"), stripped

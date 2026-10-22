@@ -141,11 +141,12 @@ def test_rematching_history_is_per_pair() -> None:
     assert dave[3] == [["D", "C"]]
 
 
-def test_other_pairs_not_disclosed() -> None:
+@pytest.mark.parametrize("disclose", [True, False])
+def test_other_pairs_not_disclosed(disclose: bool) -> None:
     """Noninterference: what carol and dave play never reaches alice's or bob's streams."""
     sessions = []
     for carol_dave in ({"carol": "CCDD", "dave": "DCDC"}, {"carol": "DDCC", "dave": "CDCD"}):
-        s = start(params(FOUR, 3))
+        s = start(params(FOUR, 3, disclose_payoffs=disclose))
         drive(s, scripted({**PATTERNS, **carol_dave}))
         sessions.append(s)
     a, b = sessions
@@ -268,3 +269,28 @@ def test_bad_populations_and_rounds_are_contract_errors(agents: list[str], round
 def test_unknown_matching_is_a_contract_error() -> None:
     with pytest.raises(ContractError):
         build_repeated_pd([AgentId("a"), AgentId("b")], 1, "random")  # type: ignore[arg-type]
+
+
+def _observations(**extra: Any) -> list[dict[str, Any]]:
+    session = Session.start(ENV, params(FOUR, 2, **extra), 7)
+    return [req.observation for req in drive(session, lambda req: "C")]
+
+
+def test_observation_carries_payoffs_by_default() -> None:
+    seen = _observations()
+    assert seen
+    for obs in seen:
+        assert {k: tuple(v) for k, v in obs["payoffs"].items()} == STANDARD_PAYOFFS
+
+
+def test_observation_has_no_payoffs_key_when_not_disclosed() -> None:
+    seen = _observations(disclose_payoffs=False)
+    assert seen
+    for obs in seen:
+        assert "payoffs" not in obs
+        assert set(obs) == {"round_index", "own_history"}
+
+
+def test_disclose_payoffs_must_be_a_bool() -> None:
+    with pytest.raises(ContractError):
+        build_repeated_pd(["a", "b"], 1, disclose_payoffs="no")  # type: ignore[arg-type]
