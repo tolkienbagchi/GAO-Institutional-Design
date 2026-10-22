@@ -53,6 +53,10 @@ payoff only if a report carries it.
 3. **Is it committed in advance or chosen live?** A posted price or a rule is an automatic layer
    (no roles). A choice is a role. If you want to compare "the toll is fixed" with "a regulator
    picks it", build both so that everything downstream cannot tell them apart, and test that.
+   If an external simulator decides (a slow model, a solver), give it a role whose adapter
+   implements `ExternalRecorder`: the runner records its outputs as `ExternalResponse` events, so
+   replay never re-runs it. An automatic layer that calls a slow function is not recorded, so
+   that function must be deterministic and cheap.
 4. **What is private, and who must never learn it?** Each answer is a test: change the secret and
    check that nobody else's information stream changes by one event.
 5. **What repeats, and what carries over?** Repetition is a `Loop`; what carries over passes through

@@ -72,6 +72,7 @@ After the nine, restate the design as a table (role, sees, chooses, learns) and 
 | "only they know", "secret" | observation of that role only; write the noninterference test |
 | "it builds up", "remembers", "reputation" | store key under a glob scope, copied into state by a connector |
 | "a regulator picks, or it is fixed" | role vs automatic layer, with the substitution test |
+| "an external simulator decides" | a role whose adapter implements `ExternalRecorder` (outputs recorded as `ExternalResponse`); an automatic layer calling a slow function is not recorded, so keep it deterministic and cheap |
 
 ## Templates
 

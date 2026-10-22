@@ -146,9 +146,11 @@ recorded run never calls the model again.
     *Transportation Research Part D* 161 (2026) 105628: route flows become emissions, a fixed
     weight matrix disperses them onto zones, concentrations become exposure. With the real
     pipeline you would replace `exposure_kernel` (one function, in
-    `gao_idl.environments.congestion.model`) by a call to it. A slow external kernel is handled
-    like an LLM backend: the answer is recorded in the input log as an `ExternalResponse`, so a
-    replay or a restore never runs the kernel again.
+    `gao_idl.environments.congestion.model`) by a call to it. A slow external simulator
+    is given a role (say `simulator`) whose adapter implements `ExternalRecorder`; the runner
+    records what it returns as `ExternalResponse` events in the input log, so a replay or a
+    restore never runs it again. An *automatic* layer that calls a slow function is not
+    recorded, so such a function must be deterministic and cheap.
 
 ## The whole script
 
