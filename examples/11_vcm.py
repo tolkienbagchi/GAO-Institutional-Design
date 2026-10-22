@@ -1,5 +1,6 @@
 """Tutorial 11: a carbon market with verifiers, then one experiment on verifier reputation."""
 
+import json
 import os
 from collections.abc import Callable
 from typing import Any
@@ -12,17 +13,18 @@ from gao_idl.environments.vcm import (
     clear_call_auction,
     lemons_population,
 )
+from gao_idl.environments.vcm.learning import MarkdownActCodec, RecordObsCodec
 from gao_idl.environments.vcm.scripted import (
     honest_verifier,
     naive_buyer,
+    naive_project_buyer,
     skeptical_buyer,
+    skeptical_project_buyer,
     truthful_seller,
 )
 from gao_idl.learning import (
-    FieldObsCodec,
     QConfig,
     RewardExtractor,
-    SchemaActCodec,
     TableAgent,
     TrainSpec,
     default_opponent_factory,
@@ -47,7 +49,7 @@ def params(pop: Population = POP, **over: Any) -> dict[str, Any]:
 
 
 def players(
-    pop: Population = POP, verifier: Policy = honest_verifier, buyer: Policy = naive_buyer
+    pop: Population = POP, verifier: Policy = honest_verifier, buyer: Policy = naive_project_buyer
 ) -> dict[AgentId, AgentAdapter]:
     who: dict[AgentId, AgentAdapter] = {}
     who |= {AgentId(v.agent): ScriptedAgent(verifier) for v in pop.verifiers}
@@ -160,12 +162,20 @@ def step4() -> None:
 
 
 # --8<-- [start:experiment]
-def trajectory(buyer: Policy, visible: bool, rounds: int) -> tuple[list[float | None], list[float]]:
-    """Clearing price and the biased verifier's share of traded volume, per round."""
+def trajectory(
+    buyer: Policy, visible: bool, form: str, rounds: int = 6
+) -> tuple[dict[str, list[float | None]], list[float]]:
+    """Public clearing prices (the pool's, or two projects') and the biased verifier's share of
+    the traded volume, per round."""
     session = play(
-        params(rounds=rounds, p_audit=0.5, reputation_visible=visible), players(buyer=buyer)
+        params(rounds=rounds, p_audit=0.5, reputation_visible=visible, market_form=form),
+        players(buyer=buyer),
     )
-    prices = [r.get("price") for r in reports(session, "b0", "clearing")]
+    rows = reports(session, "b0", "clearing")
+    if form == "pooled":
+        prices = {"pool": [r.get("price") for r in rows]}
+    else:
+        prices = {p: [r["projects"][p].get("price") for r in rows] for p in ("s0", "s2")}
     own = {
         s: [r.get("own_fill", 0.0) for r in reports(session, s, "clearing")]
         for s in ["s0", "s1", "s2", "s3"]
@@ -178,20 +188,26 @@ def trajectory(buyer: Policy, visible: bool, rounds: int) -> tuple[list[float | 
 
 
 def step5() -> None:
-    rounds = 6
-    for name, buyer in (("naive", naive_buyer), ("skeptical", skeptical_buyer)):
-        for visible in (False, True):
-            prices, shares = trajectory(buyer, visible, rounds)
-            tag = "visible" if visible else "hidden "
-            print(
-                f"step 5 {name:9s} {tag} price",
-                [None if p is None else round(p, 2) for p in prices],
-            )
-            print(f"step 5 {name:9s} {tag} v1 volume share", [round(x, 2) for x in shares])
-    # the lemons dynamic: once the record is shown, skeptical buyers discount the whole pool, so
-    # the honest high-quality projects (cost 8 and 7) stop selling and v1's share rises
-    _, hidden = trajectory(skeptical_buyer, False, rounds)
-    _, shown = trajectory(skeptical_buyer, True, rounds)
+    """Per-project orders, then the pooled market, each with and without the record shown."""
+    for form, naive, skeptical in (
+        ("per_project", naive_project_buyer, skeptical_project_buyer),
+        ("pooled", naive_buyer, skeptical_buyer),
+    ):
+        for name, buyer in (("naive", naive), ("skeptical", skeptical)):
+            for visible in (False, True):
+                prices, shares = trajectory(buyer, visible, form)
+                tag = f"step 5 {form:11s} {name:9s} {'visible' if visible else 'hidden '}"
+                for key, series in prices.items():
+                    print(tag, f"price {key}", [None if x is None else round(x, 2) for x in series])
+                print(tag, "v1 volume share", [round(x, 2) for x in shares])
+    # per project, the record changes what the skeptic buys: v1's volume share falls
+    # (4 credits in 10 to 3), the honest projects keep their prices; pooled, the same buyers
+    # collapse the whole market onto v1
+    _, hidden = trajectory(skeptical_project_buyer, False, "per_project")
+    _, shown = trajectory(skeptical_project_buyer, True, "per_project")
+    assert shown[-1] < hidden[-1]
+    _, hidden = trajectory(skeptical_buyer, False, "pooled")
+    _, shown = trajectory(skeptical_buyer, True, "pooled")
     assert shown[-1] > hidden[-1]
 
 
@@ -199,44 +215,81 @@ def step5() -> None:
 
 
 # --8<-- [start:learning]
-def learner(visible: bool) -> TableAgent:
-    field = "reputation.v1.mean_error" if visible else "round"
-    return TableAgent(
-        AgentId("b0"),
-        FieldObsCodec([field]),
-        SchemaActCodec(grid={"price": [3.0, 4.0, 5.0, 6.0, 7.0, 8.0], "qty": [10]}),
-        RewardExtractor(fields=["own_net"]),
-        QConfig(alpha=0.3, gamma=0.0, epsilon=0.3),
-        0,
-    )
+def v1_inflates(episode_seed: int) -> bool:
+    """One episode in ten, v1 inflates its reports by 0.3; otherwise it reports what it measured."""
+    return episode_seed % 10 == 3
+
+
+def opponents(agent: AgentId, description: str, seed: int) -> AgentAdapter:
+    """The rivals: honest v0, truthful sellers, naive per-project buyers, and v1 of unknown type."""
+    if description == "v1":
+        inflating = v1_inflates(seed)
+        return ScriptedAgent(inflating_verifier if inflating else honest_verifier)
+    return default_opponent_factory(
+        scripted={
+            "verifier": honest_verifier,
+            "seller": truthful_seller,
+            "buyer": naive_project_buyer,
+        }
+    )(agent, description, seed)
+
+
+def inflating_verifier(
+    request: DecisionRequest, reports: list[ParticipantReport]
+) -> dict[str, Any]:
+    return {p: min(1.0, x + 0.3) for p, x in request.observation["measurements"].items()}
 
 
 def step6() -> None:
-    factory = default_opponent_factory(
-        scripted={"verifier": honest_verifier, "seller": truthful_seller, "buyer": naive_buyer}
-    )
-    naive = play(params(rounds=4, p_audit=1.0), players())
-    print("step 6 naive buyer b0 utility: {:.1f}".format(naive.ledger.utility(AgentId("b0"))))
+    """A tabular buyer chooses how far to mark down v1's projects; the record is its only cue."""
+    verifiers = [v.model_dump() | {"bias": 0.0} for v in POP.verifiers]  # v1's type is its policy
     for visible in (False, True):
         spec = TrainSpec(
             env_ref=ENV,
-            params=params(rounds=4, p_audit=1.0, reputation_visible=visible),
+            params=params(
+                rounds=4,
+                p_audit=1.0,
+                market_form="per_project",
+                reputation_visible=visible,
+                verifiers=verifiers,
+            ),
             learner=AgentId("b0"),
-            episodes=20 if FAST else 120,
+            episodes=8 if FAST else 120,
             seed=1,
             opponents={
-                **{AgentId(v.agent): "scripted:verifier" for v in POP.verifiers},
+                AgentId("v0"): "scripted:verifier",
+                AgentId("v1"): "v1",
                 **{AgentId(s.agent): "scripted:seller" for s in POP.sellers},
                 AgentId("b1"): "scripted:buyer",
                 AgentId("b2"): "scripted:buyer",
             },
         )
-        result = train(spec, learner(visible), factory)
-        played = evaluate(spec, result.checkpoint, factory, episodes=4, seed=9)
-        print(
-            f"step 6 learner ({'visible' if visible else 'hidden '}) greedy mean return:",
-            played.mean,
+        agent = TableAgent(
+            AgentId("b0"),
+            RecordObsCodec("v1"),
+            MarkdownActCodec("v1"),
+            RewardExtractor(fields=["own_net"]),
+            QConfig(alpha=0.3, gamma=0.0, epsilon=0.3),
+            0,
         )
+        result = train(spec, agent, opponents)
+        played = evaluate(
+            spec,
+            result.checkpoint,
+            opponents,
+            episodes=4 if FAST else 20,
+            seed=9,
+            obs_codec=RecordObsCodec("v1"),
+            act_codec=MarkdownActCodec("v1"),
+        )
+        best: dict[Any, tuple[float, float]] = {}
+        for state, action, value in result.checkpoint["q"]:
+            key = json.dumps(state)
+            if key not in best or value > best[key][1]:
+                best[key] = (action, value)
+        tag = "step 6 learner (" + ("visible" if visible else "hidden ") + ")"
+        print(tag, "mean return:", None if played.mean is None else round(played.mean, 1))
+        print(tag, "greedy markdown of v1 by state:", {k: m for k, (m, _) in sorted(best.items())})
 
 
 # --8<-- [end:learning]
