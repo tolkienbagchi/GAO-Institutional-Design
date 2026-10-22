@@ -35,6 +35,21 @@ print(resumed.result.port)  # settle
 print(resumed.reports_for("alice")[0].payload)  # {'status': 'bid accepted', 'own_bid': 5.0}
 ```
 
+## Tutorials
+
+- **Congestion pricing as an institution** (`docs/tutorials/congestion.md`, `examples/10_congestion.py`):
+  a toll, commuters with private values of time, and a regulator told one equity metric or
+  another; one experiment on what the reporting regime does to the toll a regulator settles on.
+- **A carbon market with verifiers** (`docs/tutorials/vcm.md`, `examples/11_vcm.py`): a call auction
+  for credits whose quality is certified by paid verifiers, audits, and a reputation loop; one
+  experiment on whether showing buyers the verifiers' track record helps.
+
+Both environments are stylized institutions to run experiments on, not models of any real city
+or market. `docs/designing.md` is the nine questions to answer before building one of your own;
+`skills/` holds the same protocol, and two more (writing a language-model codec, explaining an
+environment), as instructions an AI assistant can follow, and `docs/for-agents/llms.md` is the
+single page to give it.
+
 ## Command line
 
 ```bash

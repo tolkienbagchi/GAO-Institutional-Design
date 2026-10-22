@@ -38,7 +38,11 @@ nav:
       - 4. Pause and resume: tutorials/04_pause_resume.md
       - 5. Train and evaluate: tutorials/05_train_and_evaluate.md
       - 6. Information tests: tutorials/06_information_tests.md
+      - 10. Congestion pricing: tutorials/congestion.md
+      - 11. Carbon market with verifiers: tutorials/vcm.md
+  - Designing an environment: designing.md
   - Reproducible runs: runs.md
+  - For AI agents: for-agents/llms.md
   - API reference:
       - Overview: api/index.md
       - core: api/core.md

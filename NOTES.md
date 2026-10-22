@@ -1426,3 +1426,181 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   least the exact cost, so any set that fits the rounded costs fits the exact budget. Cost: results may be conservative
   by under a cent per project. Tests: `test_knapsack_rounds_sub_cent_costs_up`,
   `test_knapsack_never_overspends_exact_budget_randomized` (300 random float instances). `docs/runs.md` wording updated.
+
+## 2026-10-22 — M7 task 0: no numbered task 0 in the brief; PyPI unreachable; reading order
+- **The brief numbers its tasks 1–6 and has no task 0** (the request says "starting with task 0"). As in M5, task 0 is this entry:
+  inherited/environment items, no code. The request also names the brief `M7_tutortials_agent_skills.md`; the attached file is
+  `M7_tutorials_and_agent_skills.md` (typo only). I read the shared context with all amendments, the brief, this file in full and
+  every `briefs/REPORT_*.md` (M0–M6 and the four fix-ups) before touching code.
+- **PyPI is unreachable** (`pip download hypothesis`: "No matching distribution found", tried once, not retried). So
+  `pip install -e ".[dev,llm,docs]"`, the hypothesis tests (`tests/core/test_paths_property.py`,
+  `tests/environments/test_pb_rules_property.py`), `pytest-timeout`, `python -m build`, `httpx`, `mkdocstrings` and Python 3.11 are
+  unavailable/unverified, exactly as in M0–M6. `mkdocs` and `mkdocs-material` are present. Gate substitute:
+  `PYTHONPATH=src:.:/usr/local/lib/python3.13/dist-packages` with the two hypothesis files `--ignore`d. **Baseline before M7:
+  753 passed, 4 skipped, 2 deselected (not slow) in 58 s; ruff, ruff format and `mypy src/gao_idl` (68 files) clean.**
+- Dependencies: M7 adds none (stdlib, numpy and pydantic only).
+- The brief's "Stretch (only if tasks 1–6 are otherwise done)" is item 6 of task 1's layer list, not a reference to the brief's
+  tasks. It is decided at the end of task 1 (see that entry).
+
+## 2026-10-22 — M7 task 1: `environments/congestion/`
+- **Layout.** `model.py` (internal; the pure stylized city: zones, routes, BPR, the exposure surrogate, both equity metrics,
+  the commuter population), `schemas.py` and `layers.py` (internal), `__init__.py` (`build_congestion`, supporting), `scripted.py`
+  (`myopic_commuter`, `greedy_regulator`; supporting) and `llm.py` (`RegulatorCodec`, `CommuterCodec`, `CongestionReportRenderer`;
+  supporting). No change to core, composition, runtime, agents, learning or llm. Public API unchanged (23 names).
+- **Composition.** `Loop(Seq(toll_setting, Seq(travel, exposure)))`, loop name `congestion`, `max_iter=periods+1`,
+  `on_limit="fail"`. The brief says "normal termination through a counter, as in PD"; I did not add a separate counter layer:
+  `exposure` is the last automatic layer of the period and exits `again` or, after the last period, `finished`. Same semantics, one
+  layer fewer. Say if you want the PD's separate `round_counter`.
+- **Store.** `exposure.outcome` writes `prev:times` and `prev:report` (the regulator-visible report); the feedback connector reads
+  `prev:*` and copies both into the next `PeriodIn` (amendment: `observe` has no store access). Period 0 starts from free-flow
+  times (`t0`) and no report — the declared initial condition, nothing invented.
+- **Brief gaps, conservative readings.**
+  - `equity_metric` (the metric the regulator's utility `-objective` is defined by) is a factory parameter. It defaults to the
+    regime's metric; under `report_regime="both"` it must be given (`ContractError` otherwise); a metric the regime hides is
+    refused, so the regulator's objective can never leak a hidden metric.
+  - The regulator's report carries `objective` and `payoff = -objective` (what the exposure layer credits it). `payoff` exists so a
+    tabular learner can take its reward from a report field, as the learning package requires; `RewardExtractor` cannot negate.
+  - `public_report` adds `citywide_mean` (population-weighted mean concentration over all zones) to every report, regulator's
+    included. The brief says only "citywide mean concentration only".
+  - The factory does not see the session seed, so "value of time drawn from the seed" is a factory parameter, `population_seed`
+    (default 0). Explicit `commuters` (dicts) override the draw. `tutorial_commuters()` is the explicit six-commuter fixture of the
+    tutorial and the headline test.
+  - Both toll forms announce the toll to every commuter (public report of `toll_setting`), so commuters cannot tell which form is
+    running. The comparison test drops the regulator's own events (its report, its utility increments) and the global clock `t`.
+  - Commuter reports are sent by `exposure` (it knows the zone concentration) to agents that hold no role in that layer: `audience`
+    names them. The runtime accepts this; nothing in the brief forbids it.
+  - Timeouts: `Fail` (default) or `DefaultAction` (commuters take `transit`, which is open to all; the regulator plays
+    `default_toll`); `DropRole` is refused for both layers, like the PD.
+  - `ev_share` is validated at construction as well as in the kernel.
+- **Stylized numbers.** All of `default_city` is stylized (module docstring says so): 3 peripheral zones (`Z3` a DAC), fare 3,
+  500 vehicles per commuter-agent, BPR caps 4000, threshold 1.2 and DAC weight 2 in the objectives. The numbers were chosen by a
+  seeded random search, run in a scratchpad and not part of the repo, for one property: with `tutorial_commuters()` the hotspot
+  objective is lowest at toll 15 and the population-weighted one at toll 10, toll 0 worse than the best on both, with every
+  commuter's best route at least 1 cost unit better than the second best at every toll, so the outcome is stable under BPR and the
+  myopic commuter does not oscillate. A first fixture without that margin did oscillate at toll 10 (period-by-period flip between
+  two routes); that is why the margin is part of the fixture's explanation in `test_equity_metrics_can_disagree`.
+- **Tests** (`tests/environments/test_congestion.py`, 19 tests, 2 `slow`): all the brief's named tests plus factory validation,
+  restore at three points, population determinism, commuter reports. `assert_noninterference` needs every listed agent to have a
+  pending decision in the first round, so the `v_i` test uses the committed form (no regulator in round 1) and checks that the
+  helper does catch c0's own information changing. `assert_substitution_equivalent` compares the whole trace including the
+  regulator's decision events, so it cannot be used for the two forms; the test compares the downstream events directly.
+- **Out-of-scope edit.** `tests/llm/test_integration.py::test_nothing_below_the_llm_package_imports_it` has an allow-list of
+  environment modules that may import `gao_idl.llm`; `congestion/llm.py` (required by the brief) is added to it.
+- **Stretch (`revenue_to_pb`) — not done in this task.** It reuses the PB layers inside a stage that does not exist yet; decide at
+  the end of the milestone, only if everything else is green. Recorded as a decision to revisit, not as done.
+
+## 2026-10-22 — M7 task 2: tutorial "Congestion pricing as an institution"
+- **Files.** `docs/tutorials/congestion.md` (the path the brief names), `examples/10_congestion.py`, nav entry "10. Congestion
+  pricing". The existing tests expect `docs/tutorials/<example stem>.md`; for stems numbered 10 and up, `tests/test_examples.py`
+  now also accepts the page named without the number (`congestion.md`). `EXPECTED_OUTPUT` gains `10_congestion`, and
+  `test_the_six_tutorials_exist` is renamed `test_the_tutorials_exist` (same check). Both edits are what task 6 asks for anyway.
+- **Walk-through vs the real environment.** Examples may import only non-internal modules, and `layers.py` / `schemas.py` are
+  internal, so steps 1–5 rebuild a *miniature* of the environment from the public API (`SimpleLayer`, `Seq`, `Loop`,
+  `Connector`) around one permissive `Stage` record, with the real kernel from `congestion.model`; steps 6–7 use
+  `build_congestion`. To allow that, `congestion/model.py` is now **supporting** (documented in the API reference), not internal:
+  it is the swappable kernel, which the docs chapter points at. Nothing else changed in `src/`.
+- **Mirroring.** The page shows each step through snippet sections (`--8<-- "examples/10_congestion.py:<section>"`) and the whole
+  script once at the end, which is what the mirror test checks for.
+- **Prose numbers** (tolls `[0, 10, 15, 15, 15, 15]` vs `[0, 10, 15, 10, 10, 10]`; DAC exposure 1,938 vs 1,020, non-DAC 255 vs 638) are
+  quoted from a run of the example; `test_equity_metrics_can_disagree` pins the objectives they come from.
+- **Not verifiable here.** `mkdocs build --strict` needs `mkdocstrings`, which is not installed (PyPI unreachable). I built the
+  tutorial pages with a reduced config (no API pages, no mkdocstrings) and checked that every snippet section resolves and the
+  section markers are stripped; the full strict build stays unverified, as in M0–M6. The real-backend snippet in step 7 is shown,
+  not executed (it needs credentials and `httpx`).
+
+## 2026-10-22 — M7 task 3: `environments/vcm` (voluntary carbon market)
+- **Prices and baskets.** Prices are per credit. Credits are pooled across sellers: a buyer's credits come pro rata from the
+  sold projects, so a buyer's true value of a fill is the quantity-weighted true quality of the basket, not of one project.
+- **Verifiers.** The brief did not say how verifiers map to projects; I chose a one-verifier-per-project partition
+  (`Population.check()` enforces it). A verifier's *measurement* (true quality + bias + noise, `sigma`) is distinct from its
+  *report* (what it publishes); honest scripted verifiers publish the measurement. The verification layer accepts only `Fail`
+  timeouts (a missing verification has no sensible default).
+- **Clearing.** Uniform-price call auction, exact `Fraction` arithmetic. Price = midpoint (k=1/2) of the marginal bid/ask pair;
+  ties on the long side are rationed pro rata (not by arrival). Hand-worked cases are tests. `DefaultAction`/`DropRole` on a
+  market role means an order for quantity 0.
+- **Audits.** One uniform draw per project per round, in project order, keyed by path (not by a stateful counter), so the draws
+  do not depend on who acted first. Penalty applies when |reported − true| > `tol`. `mean_error` is 0.0 when nothing was audited.
+  Reputation lives in the store (`rep:<verifier>`, `last:clearing`); the observation connector copies it into state because
+  `observe` has no store access (Amendments).
+- **`settle_on`.** "reported"/"true" changes only the ledger's settlement value; it is not shown to reports (buyer reports state
+  value at known quality), so it cannot leak the truth.
+- **Test drivers.** `assert_noninterference` / `assert_arrival_invariant` need every listed agent pending in round 1, which a
+  multi-stage market lacks; the tests use custom drivers instead.
+- **`population_seed`** seeds only the drawn population, never play.
+- **Slow learning test (decision).** I first tried to show a tabular buyer exploiting the visible track record. On this fixture
+  every trading bid loses money (about −13 vs honest, −20..−24 vs inflating verifier), so the learner stays out whether or not
+  the record is visible. The slow test therefore asserts only that the naive buyer loses and the learner does not; it does not
+  claim a visible-vs-hidden separation for learners. The reputation effect is shown with scripted naive vs skeptical buyers
+  (tutorial step 5). Underdetermined by the brief; conservative reading taken.
+- **Out-of-scope edit.** `vcm/llm.py` added to the import allow-list in `tests/llm/test_integration.py`.
+
+## 2026-10-22 — M7 task 4: tutorial "A carbon market with verifiers"
+- **Files.** `docs/tutorials/vcm.md`, `examples/11_vcm.py`, nav entry, `EXPECTED_OUTPUT["11_vcm"]`. The page-name mapping from
+  task 2 already covers `vcm.md`.
+- **No hand-built miniature.** Unlike tutorial 10, `vcm/layers.py` and `schemas.py` are internal and a faithful miniature would
+  duplicate them, so steps 2–4 switch features of `build_vcm` on (`p_audit`, `rounds`, `reputation_visible`) and inspect the ledger.
+  Step 1 is `clear_call_auction` alone. Underdetermined by the brief ("add verification…"); this is the conservative reading.
+- **Step 2** is the noninterference comparison written directly (complement all `theta`, compare buyers'/sellers' streams) since
+  the helper needs round-one decisions for every listed agent.
+- **Step 5 (experiment)** uses scripted buyers (naive vs skeptical, record hidden vs shown). Biased-verifier volume share is taken
+  from the sellers' own fills (s2, s3 are v1's). Result and its limits (pooled basket drives it) are in the prose.
+- **Step 6 (learning buyers)** shows the tabular buyer staying out of the market (0 vs −90 for the naive buyer) in both
+  conditions: no visible-vs-hidden separation on this fixture; stated in the tutorial, not tuned away.
+- **"Each a one-line parameter or a swappable layer"**: fee, penalty/tol, `p_audit`, `reputation_visible` are parameters; audit
+  targeting and fee-on-correctness are layer swaps. The page says so.
+- Prose numbers are quoted from a run; `mkdocs build --strict` remains unverified (no mkdocstrings).
+
+## 2026-10-22 — M7 task 5: skills and `docs/for-agents/llms.md`
+- **Files.** `skills/{design-environment,write-llm-codec,explain-environment}/SKILL.md` (167, 163, 85 lines; limit 400),
+  `docs/for-agents/llms.md` (≈330 lines; limit 1500), `tests/test_skills.py`.
+- **Runnable blocks** are fenced `python` blocks whose first line is `# runnable`; the test `exec`s each with the repository root as
+  working directory and `examples/` on `sys.path` (so skills may use the digit-named example modules). I mutation-checked that a
+  failing assertion in a block fails the test. The design skill's block uses the PD environment, not an invented one, so it needs no
+  importable module.
+- **"Generic fixture names"** are read as every public name in `gao_idl.testing` starting with `assert_` (six); the test requires
+  the design skill to mention all of them.
+- **"Nine invariants"** in `llms.md` are the nine from the shared context verbatim in substance. **"The four information objects"**
+  were not defined in the briefs I was given; I chose observation, action schema, report and exit record (the ledger and trace are
+  listed as researcher-side only). Underdetermined; the design skill's questions refer to these.
+- **Skill links** in `llms.md` are repo paths in code spans, not URLs, because the repository's public URL is not known to me and
+  `mkdocs --strict` rejects links out of `docs/`.
+- **Codec skill's leak test** compares the numbers in the prompt with the numbers in everything the agent was given (observations,
+  schemas, delivered reports). That detects a leak of any hidden number; it does not detect a leak in words.
+- **`llms.md` accuracy** is checked mechanically only for the presence of every public name (23 + 24); signatures and prose were
+  written from the code and the shared-context amendments and are not machine-checked.
+
+## 2026-10-22 — M7 task 6: designing chapter and integration
+- `docs/designing.md` (nine questions in prose, a text diagram of the four information objects, both tutorials as worked cases),
+  nav entries "Designing an environment" and "For AI agents", README "Tutorials" section, `/skills` added to the sdist include list.
+  `tests/test_examples.py` already runs both new examples under `GAO_EXAMPLE_FAST=1` (tasks 2 and 4).
+- The diagram is a fenced text block, not Mermaid: the docs theme config has no Mermaid support and I did not add a dependency.
+- **Stretch `revenue_to_pb` — not done.** It would need the PB layers reused inside a new stage; the brief forbids forking
+  `environments/pb`, and reuse without a change to `pb` (out of scope) was not possible for me to establish in the time. Skipped, not
+  attempted.
+
+## 2026-10-22 — M7 fix-up
+- **Per-project market form** (`build_vcm(market_form="per_project"|"pooled")`, default per-project). Buyer action schema is generated
+  with `pydantic.create_model`: one optional `Order` field per project id (`extra="forbid"`, each `Order` capped at that project's
+  quantity and at `price_cap`); `feasible` checks total qty ≤ demand. Omitted or qty 0 = no order. Sellers unchanged. Clearing runs
+  `clear_call_auction` once per project (rule not duplicated); fills, `own_fills`, `own_payment` and public price/volume are per project.
+  The pooled form is byte-for-byte the old behaviour; the old tests run with `market_form="pooled"`.
+- **Report/store additions**: `ClearingRecord.projects`, `RoundState.bids`/`last_projects`, optional `ProjectView.last_price/last_volume`
+  (dropped when None, so pooled reports are unchanged), store key `last:clearing` carries `projects`.
+- **Default population** is now `lemons_population()` when no population argument is given (`n_*`/`population_seed` default to `None`;
+  any of them given → `draw_population` with the old defaults 4/3/2/0). The fixture already had gains from trade per project:
+  v0 projects s0 (θ .9, cost 8), s1 (θ .8, cost 7); v1 projects s2 (θ .4, cost 3), s3 (θ .3, cost 2.5); buyer values 10/10.5/11; v1 inflates
+  by 0.3. Search (scratchpad `pp_check.py`, naive buyers, 6 seeds, true net per buyer): s0 +17.5, s1 +16.7, s2 −9.6, s3 −13.8; a skeptic
+  with the record visible: s2 +5.4, s3 ≈ −0.6…+1.1. Stylized; no empirical claim.
+- **Scripted per-project buyers** split demand in proportion to (believed) quality, largest remainder, capped at project quantity
+  (`split_demand`). An equal split made rivals' behaviour hide the record's effect on volume.
+- **`vcm/learning.py`** (new, supporting): `RecordObsCodec` (hidden, or record summarised as min(wrong,1), min(audited,1)) and
+  `MarkdownActCodec` (markdown ∈ {0,.1,.2,.3,.4} on one verifier's projects, even demand split). Added `::: ` entry in the API docs.
+- **Learner test design.** The first attempt (v1 inflating in every episode) cannot separate the conditions: marking down is best
+  whether or not the record is seen. With v1 inflating in 1 episode in 10 (`episode_seed % 10 == 3`), fixed-markdown returns (`pp_mark.py`,
+  b0, p_audit=1; 12.79 = v0-only) are: markdown 0 → 18.2 honest / −5.8 inflating; .1 → 16.25 / 2.2; .2 → 12.79 / 10.2; .3 → 12.79 / 18.2.
+  Hidden prefers markdown 0 iff P(inflate) < ≈0.18, so with P = 0.1 the hidden learner trusts v1 and the visible learner can condition on
+  having been caught.
+- **`RandomAgent` cannot play per-project buyers** (nested `$ref` schemas are unsupported by it); not changed (`agents` is out of scope).
+- **Tutorial 10/designing/design skill**: slow external simulator = role + `ExternalRecorder` adapter; automatic layer calling a slow
+  function is not recorded. `llms.md` was touched only for the `build_vcm` parameter row (defaults changed, `market_form` added).
+- Example 11 in `GAO_EXAMPLE_FAST=1` mode trains fewer episodes, so step 6 numbers differ slightly from the tutorial's (full mode).
