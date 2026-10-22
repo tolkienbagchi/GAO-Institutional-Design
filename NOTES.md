@@ -168,3 +168,18 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - `.gitignore` now ignores `.venv*/` (plus the existing `.hypothesis/`, `dist/`). No `.Rhistory` or `~$*` files
   exist in the repository, so nothing was removed.
 - Tasks 3-5 share files (`session.py`, tests), so they are one commit instead of three.
+
+## 2026-10-21 — M1 task 0: inherited M0 items; PyPI still unreachable
+- The M0 fix-up report still lists the hatchling build and the hypothesis tests as unverified. I tried
+  `pip download hypothesis` once: DNS fails (`Name or service not known`), so
+  `pip install -e ".[dev]"`, `pytest tests/core/test_paths_property.py` and `python -m build` could **not** be
+  run. `build` and `hatchling` are not installed either. Not retried, per the brief. Still unverified: the
+  hatchling wheel layout, the hypothesis property tests, mypy and CI on Python 3.11.
+- Local gate substitute (same as M0, plus one fix): ruff/mypy/pytest are uv-tool venvs that cannot see the
+  system `dist-packages`, so they are run with
+  `PYTHONPATH=src:.:/usr/local/lib/python3.13/dist-packages` and `--ignore=tests/core/test_paths_property.py`
+  (hypothesis missing). Baseline before any M1 change: 125 passed.
+- `Session.advance()` now raises `RuntimeError("process did not reach quiescence")` after
+  `MAX_CONSECUTIVE_CONTINUES = 10_000` consecutive `Continue` results (the 10 000th raises; 9 999 is fine).
+  The frame is left as the last step produced it and the session is not marked finished. Tests:
+  `tests/runtime/test_session_guard.py` with a `ContinueN` stub in `tests/runtime/envs.py`.

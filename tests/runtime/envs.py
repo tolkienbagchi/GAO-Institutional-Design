@@ -138,3 +138,22 @@ class ContinueTwice:
 def continue_twice() -> tuple[Process, Config]:
     """Environment factory for :class:`ContinueTwice`."""
     return ContinueTwice(), Config(state={}, roles={})
+
+
+class ContinueN(ContinueTwice):
+    """A stub Process that returns ``Continue`` ``limit`` times (forever if None), then exits."""
+
+    def __init__(self, limit: int | None) -> None:
+        self.limit = limit
+
+    def step(self, frame: Frame, inputs: list[Any], ctx: Ctx) -> tuple[Frame, StepResult]:
+        assert isinstance(frame, StubFrame)
+        nxt = StubFrame(n=frame.n + 1)
+        if self.limit is None or frame.n < self.limit:
+            return nxt, Continue()
+        return nxt, Exited(exit=Exit(port=Port("done"), record={"steps": nxt.n}))
+
+
+def continue_n(limit: int | None = None) -> tuple[Process, Config]:
+    """Environment factory for :class:`ContinueN`; ``limit=None`` never reaches quiescence."""
+    return ContinueN(limit), Config(state={}, roles={})

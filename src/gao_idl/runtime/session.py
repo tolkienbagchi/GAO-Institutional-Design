@@ -34,6 +34,8 @@ from gao_idl.core.store import Store
 from gao_idl.core.trace import LogicalClock
 from gao_idl.runtime.registry import resolve
 
+MAX_CONSECUTIVE_CONTINUES = 10_000
+
 
 class _TraceList:
     """Trace sink appending to a list."""
@@ -132,6 +134,7 @@ class Session:
             return []
         start = len(self._sink.events)
         inputs = list(self._inbox)
+        continues = 0
         while True:
             frame, result = self._process.step(self._frame, inputs, self._ctx)
             self._frame = frame
@@ -139,6 +142,9 @@ class Session:
             inputs = []
             if not isinstance(result, Continue):
                 break
+            continues += 1
+            if continues >= MAX_CONSECUTIVE_CONTINUES:
+                raise RuntimeError("process did not reach quiescence")
         if isinstance(result, Pending):
             self._pending = {r.decision_id: r for r in result.requests}
         elif isinstance(result, Exited):
