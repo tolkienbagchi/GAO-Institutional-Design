@@ -8,7 +8,7 @@ import pytest
 
 from gao_idl import AgentAdapter, ScriptedAgent, Session, run_sync
 from gao_idl.core import events as ev
-from gao_idl.core.errors import ContractError
+from gao_idl.core.errors import ContractError, Infeasible, SchemaError
 from gao_idl.core.ids import AgentId
 from gao_idl.core.schemas import DecisionRequest, ParticipantReport
 from gao_idl.environments.vcm import (
@@ -18,10 +18,18 @@ from gao_idl.environments.vcm import (
     draw_population,
     lemons_population,
 )
-from gao_idl.environments.vcm.llm import BuyerCodec, VCMReportRenderer, VerifierCodec
+from gao_idl.environments.vcm.learning import MarkdownActCodec, RecordObsCodec
+from gao_idl.environments.vcm.llm import (
+    BuyerCodec,
+    ProjectBuyerCodec,
+    VCMReportRenderer,
+    VerifierCodec,
+)
 from gao_idl.environments.vcm.scripted import (
     honest_verifier,
     naive_buyer,
+    naive_project_buyer,
+    skeptical_project_buyer,
     truthful_seller,
 )
 from gao_idl.learning import (
@@ -52,6 +60,7 @@ def params(pop: Population = POP, **over: Any) -> dict[str, Any]:
     base: dict[str, Any] = {
         "rounds": 3,
         "p_audit": 0.5,
+        "market_form": "pooled",
         "sellers": [s.model_dump() for s in pop.sellers],
         "buyers": [b.model_dump() for b in pop.buyers],
         "verifiers": [v.model_dump() for v in pop.verifiers],
@@ -454,7 +463,7 @@ def test_tabular_buyer_learns_to_stay_out_of_the_lemons_market(visible: bool) ->
     """
     spec = TrainSpec(
         env_ref=ENV,
-        params=params(rounds=4, p_audit=1.0, reputation_visible=visible),
+        params=params(rounds=4, p_audit=1.0, reputation_visible=visible, market_form="pooled"),
         learner=aid("b0"),
         episodes=120,
         seed=1,
@@ -470,7 +479,7 @@ def test_tabular_buyer_learns_to_stay_out_of_the_lemons_market(visible: bool) ->
     )
     result = train(spec, learner(visible), factory)
     played = evaluate(spec, result.checkpoint, factory, episodes=4, seed=9)
-    naive = play(params(rounds=4, p_audit=1.0, reputation_visible=visible))
+    naive = play(params(rounds=4, p_audit=1.0, reputation_visible=visible, market_form="pooled"))
     assert naive.ledger.utility(aid("b0")) < -10  # the naive buyer loses on every round
     assert played.mean is not None and played.mean >= 0.0  # the learner stays out, or breaks even
 
@@ -494,3 +503,351 @@ def test_mocked_llm_verifier_and_buyer_complete_a_round() -> None:
     assert "theta" not in sent and "true_quality" not in sent
     assert reports(session, "b0", "clearing")[0]["round"] == 0
     assert_replay_equivalent(session)
+
+
+# ------------------------------------------------------------------ per-project orders
+
+
+def pp(pop: Population = POP, **over: Any) -> dict[str, Any]:
+    """Parameters of the default (per-project) market on the tutorial population."""
+    return params(pop, market_form="per_project", **over)
+
+
+def true_net_by_project(session: Session, buyer: str) -> dict[str, float]:
+    """``fill * (value * true quality - price)`` per project, from the buyer's own reports."""
+    value = next(b.value for b in POP.buyers if b.agent == buyer)
+    net: dict[str, float] = {}
+    for r in reports(session, buyer, "clearing"):
+        for project, fill in r.get("own_fills", {}).items():
+            price = r["projects"][project]["price"]
+            net[project] = net.get(project, 0.0) + fill * (
+                value * POP.seller(project).theta - price
+            )
+    return net
+
+
+def test_the_default_market_is_per_project_on_the_default_fixture() -> None:
+    session = Session.start(ENV, {"rounds": 1}, 0)
+    run_sync(session, agents(POP, buyer=naive_project_buyer))
+    assert session.finished and not session.failed
+    assert "own_fills" in reports(session, "b0", "clearing")[0]
+    # the default population is the tutorial fixture, and it has gains from trade: with truthful
+    # verification every buyer values the honest sellers' projects above their cost
+    assert build_vcm()[1].state == build_vcm(**pp(rounds=5))[1].state
+    for buyer in POP.buyers:
+        for project in ("s0", "s1"):
+            assert buyer.value * POP.seller(project).theta > POP.seller(project).cost
+    with pytest.raises(ContractError, match="market_form"):
+        build_vcm(market_form="mixed")
+
+
+def test_per_project_clearing_is_one_auction_per_project() -> None:
+    pop = Population.model_validate(
+        {
+            "sellers": [
+                {"agent": "s1", "quantity": 4, "theta": 0.8, "cost": 6.0},
+                {"agent": "s2", "quantity": 4, "theta": 0.8, "cost": 7.0},
+            ],
+            "buyers": [
+                {"agent": "b1", "demand": 5, "value": 10.0},
+                {"agent": "b2", "demand": 5, "value": 8.0},
+            ],
+            "verifiers": [{"agent": "v", "projects": ["s1", "s2"]}],
+        }
+    )
+    bids = {
+        "b1": {"s1": {"price": 10.0, "qty": 3}, "s2": {"price": 9.0, "qty": 2}},
+        "b2": {"s1": {"price": 8.0, "qty": 3}},
+    }
+
+    def policy(request: DecisionRequest, reports: list[ParticipantReport]) -> dict[str, Any]:
+        if request.role.startswith("buyer"):
+            return bids[request.agent_id]
+        return (
+            honest_verifier(request, reports)
+            if request.layer == "verification"
+            else (truthful_seller(request, reports))
+        )
+
+    who = {a: ScriptedAgent(policy) for a in ("v", "s1", "s2", "b1", "b2")}
+    session = play(pp_for(pop), {aid(a): x for a, x in who.items()})
+    # s1 alone: bids 10x3, 8x3 against ask 6x4: V = 4, marginal pair (8, 6), price 7, b1 fills 3
+    # and b2 (marginal, 1 of its 3 left) fills 1. s2 alone: bid 9x2 against ask 7x4: price 8.
+    alone = clear_call_auction([("b1", 10, 3), ("b2", 8, 3)], [("s1", 6, 4)])
+    assert (alone.price, alone.volume, alone.bid_fills) == (7.0, 4, {"b1": 3.0, "b2": 1.0})
+    mine = reports(session, "b1", "clearing")[0]
+    assert mine["projects"] == {
+        "s1": {"price": 7.0, "volume": 4},
+        "s2": {"price": 8.0, "volume": 2},
+    }
+    assert mine["own_fills"] == {"s1": 3.0, "s2": 2.0}
+    assert mine["own_payment"] == pytest.approx(3 * 7.0 + 2 * 8.0)
+    assert reports(session, "b2", "clearing")[0]["own_fills"] == {"s1": 1.0}
+    assert reports(session, "s2", "clearing")[0]["own_revenue"] == pytest.approx(2 * 8.0)
+    # a buyer's basket is exactly what it bid for: b2 holds nothing of s2
+    assert "s2" not in reports(session, "b2", "clearing")[0]["own_fills"]
+    assert session.ledger.utility(aid("s1")) == pytest.approx(4 * (7.0 - 6.0))
+    assert session.ledger.utility(aid("b1")) == pytest.approx(-(3 * 7.0 + 2 * 8.0) + 10.0 * 0.8 * 5)
+
+
+def pp_for(pop: Population, **over: Any) -> dict[str, Any]:
+    return params(pop, rounds=1, p_audit=0.0, market_form="per_project", **over)
+
+
+def _first_buyer_request(market_form: str = "per_project") -> tuple[Session, DecisionRequest]:
+    session = Session.start(ENV, params(rounds=1, market_form=market_form), 3)
+    session.advance()
+    for r in session.pending():
+        session.submit(r.agent_id, r.decision_id, honest_verifier(r, []))
+    session.advance()
+    return session, session.pending_for(aid("b0"))[0]
+
+
+def test_per_project_orders_are_checked() -> None:
+    _, request = _first_buyer_request()
+    assert set(request.action_schema["properties"]) == {"s0", "s1", "s2", "s3"}
+    assert request.action_schema.get("required", []) == []  # every order is optional
+    for bad, error in (
+        ({"s0": {"price": 3.0, "qty": 6}, "s1": {"price": 3.0, "qty": 5}}, Infeasible),  # 11 > 10
+        ({"zz": {"price": 3.0, "qty": 1}}, SchemaError),  # not a listed project
+        ({"s0": {"price": 3.0, "qty": 11}}, SchemaError),  # more than the project has
+        ({"s0": {"price": -1.0, "qty": 1}}, SchemaError),
+    ):
+        session, request = _first_buyer_request()
+        with pytest.raises(error):
+            session.submit(aid("b0"), request.decision_id, bad)
+    session, request = _first_buyer_request()
+    session.submit(aid("b0"), request.decision_id, {})  # an empty order set is fine
+    session, request = _first_buyer_request()
+    session.submit(
+        aid("b0"),
+        request.decision_id,
+        {"s0": {"price": 3.0, "qty": 0}, "s1": {"price": 1, "qty": 10}},
+    )  # qty 0 means no order; exactly the demand is fine
+
+
+def test_per_project_buyers_do_not_see_each_others_bids_or_the_true_quality() -> None:
+    def bidder(price: float) -> Policy:
+        def policy(request: DecisionRequest, reports: list[ParticipantReport]) -> dict[str, Any]:
+            if request.agent_id == "b1":
+                return {"s0": {"price": price, "qty": 5}}
+            return naive_project_buyer(request, reports)
+
+        return policy
+
+    low, high = (play(pp(rounds=1), agents(buyer=bidder(p))) for p in (5.11, 9.37))
+    stream = json.dumps([i.model_dump(mode="json") for i in high.ledger.information(aid("b0"))])
+    assert "9.37" not in stream and "5.11" not in stream
+    assert requests(low, "b0", "market") == requests(high, "b0", "market")
+    # no audits: flipping every true quality changes nothing any buyer or seller is told
+    quiet, quiet2 = (
+        play(
+            pp(pop, rounds=1, p_audit=0.0),
+            agents(pop, verifier=constant_verifier, buyer=naive_project_buyer),
+        )
+        for pop in (POP, other_theta())
+    )
+    for who in ("b0", "b1", "b2", "s0", "s1", "s2", "s3"):
+        a = [i.model_dump(mode="json") for i in quiet.ledger.information(aid(who))]
+        b = [i.model_dump(mode="json") for i in quiet2.ledger.information(aid(who))]
+        assert a == b, who
+
+
+def test_naive_buyer_loses_on_biased_projects_and_gains_on_honest_ones() -> None:
+    gained: dict[str, float] = {}
+    for seed in range(4):
+        session = play(pp(rounds=4, p_audit=0.5), agents(buyer=naive_project_buyer), seed=seed)
+        for buyer in ("b0", "b1", "b2"):
+            for project, net in true_net_by_project(session, buyer).items():
+                gained[project] = gained.get(project, 0.0) + net
+    # v0 (honest) verified s0 and s1; v1 overstates s2 and s3 by 0.3
+    assert gained["s0"] > 0 and gained["s1"] > 0
+    assert gained["s2"] < 0 and gained["s3"] < 0
+
+
+def test_skeptical_buyer_with_visible_record_outperforms_hidden() -> None:
+    def total(visible: bool, seed: int, buyer: Policy) -> float:
+        session = play(
+            pp(rounds=5, p_audit=1.0, settle_on="true", reputation_visible=visible),
+            agents(buyer=buyer),
+            seed=seed,
+        )
+        return sum(session.ledger.utility(aid(b.agent)) for b in POP.buyers)
+
+    for seed in range(3):
+        shown = total(True, seed, skeptical_project_buyer)
+        hidden = total(False, seed, skeptical_project_buyer)
+        assert shown > hidden, seed
+        # the record is all that separates them: with it hidden the skeptic is the naive buyer
+        assert hidden == pytest.approx(total(False, seed, naive_project_buyer))
+        # and it is not that the record helps a naive buyer, who ignores it
+        assert total(True, seed, naive_project_buyer) == pytest.approx(hidden)
+
+
+def test_per_project_replay_restore_and_timeouts() -> None:
+    p = pp(rounds=3, reputation_visible=True)
+    session = play(p, agents(buyer=naive_project_buyer), seed=5)
+    assert_replay_equivalent(session)
+    resumed = Session.restore(session.snapshot())
+    assert resumed.finished and ev.dump(resumed.trace) == ev.dump(session.trace)
+    for kind in ("drop", "default"):
+        started = Session.start(ENV, pp(rounds=1, timeout={"kind": kind}), 2)
+        started.advance()
+        for r in started.pending():
+            started.submit(r.agent_id, r.decision_id, honest_verifier(r, []))
+        started.advance()
+        for r in started.pending():
+            if r.agent_id == "b0":
+                started.timeout(r.decision_id)
+            else:
+                started.submit(
+                    r.agent_id,
+                    r.decision_id,
+                    answer(r) if r.role.startswith("seller") else naive_project_buyer(r, []),
+                )
+        started.advance()
+        assert started.finished and not started.failed
+        fills = reports(started, "b0", "clearing")[0].get("own_fills")
+        # a defaulted buyer sent an empty order set; a dropped one sent nothing: no fills either way
+        assert fills == ({} if kind == "default" else None)
+
+
+def test_mocked_llm_buyer_completes_a_per_project_round() -> None:
+    backend = MockBackend(lambda messages: {"s0": {"price": 7.0, "qty": 4}})
+    who = agents(buyer=naive_project_buyer)
+    who[aid("b0")] = LLMAgent(
+        aid("b0"), backend, ProjectBuyerCodec(), report_renderer=VCMReportRenderer()
+    )
+    session = play(pp(rounds=2, p_audit=0.0), who)
+    assert len(backend.calls) == 2
+    sent = json.dumps([c.model_dump(mode="json") for c in backend.calls])
+    assert "theta" not in sent and "true_quality" not in sent
+    assert reports(session, "b0", "clearing")[0]["own_fills"] != {}
+    assert_replay_equivalent(session)
+
+
+def inflating_verifier(
+    request: DecisionRequest, reports: list[ParticipantReport]
+) -> dict[str, Any]:
+    return {p: min(1.0, x + 0.3) for p, x in request.observation["measurements"].items()}
+
+
+def v1_inflates(episode_seed: int) -> bool:
+    """One episode in ten: v1 inflates its reports; otherwise it reports its measurement."""
+    return episode_seed % 10 == 3
+
+
+class Recorder:
+    """Wraps a frozen learner and keeps the orders it sends (researcher-side bookkeeping)."""
+
+    def __init__(self, inner: TableAgent) -> None:
+        self.inner = inner
+        self.orders: list[dict[str, Any]] = []
+
+    async def episode_start(self, ctx: Any) -> None:
+        await self.inner.episode_start(ctx)
+
+    async def observe(self, report: ParticipantReport) -> None:
+        await self.inner.observe(report)
+
+    async def act(self, request: DecisionRequest) -> dict[str, Any]:
+        action = await self.inner.act(request)
+        self.orders.append(action)
+        return action
+
+    async def episode_end(self, end: Any) -> None:
+        await self.inner.episode_end(end)
+
+
+def project_learner(visible: bool) -> TableAgent:
+    return TableAgent(
+        aid("b0"),
+        RecordObsCodec("v1"),
+        MarkdownActCodec("v1"),
+        RewardExtractor(fields=["own_net"]),
+        QConfig(alpha=0.3, gamma=0.0, epsilon=0.3),
+        0,
+    )
+
+
+@pytest.mark.slow
+def test_tabular_buyer_discounts_biased_verifier_when_record_visible() -> None:
+    """v1 inflates by 0.3 in one episode in ten (an unknown type), is audited every round, and
+    the learner is paid its audited net. Hidden, the best fixed policy trusts v1 (a loss in one
+    episode in ten costs less than staying out of the other nine); with the record shown, the
+    learner marks v1's projects down once v1 has been caught. Rivals are naive per-project buyers.
+    """
+    vs = [v.model_dump() for v in POP.verifiers]
+    vs[1]["bias"] = 0.0  # the type is in the verifier's policy, below
+    factory_names = {
+        "verifier": honest_verifier,
+        "seller": truthful_seller,
+        "buyer": naive_project_buyer,
+    }
+
+    def factory(agent_id: Any, description: str, seed: int) -> Any:
+        if description == "v1":
+            return ScriptedAgent(inflating_verifier if v1_inflates(seed) else honest_verifier)
+        return default_opponent_factory(scripted=factory_names)(agent_id, description, seed)
+
+    def spec(visible: bool) -> TrainSpec:
+        return TrainSpec(
+            env_ref=ENV,
+            params=params(
+                rounds=4,
+                p_audit=1.0,
+                market_form="per_project",
+                reputation_visible=visible,
+                verifiers=vs,
+            ),
+            learner=aid("b0"),
+            episodes=120,
+            seed=1,
+            opponents={
+                aid("v0"): "scripted:verifier",
+                aid("v1"): "v1",
+                **{aid(s.agent): "scripted:seller" for s in POP.sellers},
+                aid("b1"): "scripted:buyer",
+                aid("b2"): "scripted:buyer",
+            },
+        )
+
+    trained = {}
+    for visible in (True, False):
+        learner_ = project_learner(visible)
+        trained[visible] = (spec(visible), train(spec(visible), learner_, factory).checkpoint)
+    returns = {}
+    for visible, (sp, ckpt) in trained.items():
+        returns[visible] = evaluate(
+            sp,
+            ckpt,
+            factory,
+            episodes=20,
+            seed=9,
+            obs_codec=RecordObsCodec("v1"),
+            act_codec=MarkdownActCodec("v1"),
+        )
+    caught = sum(v1_inflates(9 * 1_000_003 + e) for e in range(20))
+    assert caught >= 1  # the evaluation includes episodes in which v1 inflates
+    shown, hidden = returns[True].mean, returns[False].mean
+    assert shown is not None and hidden is not None and shown > hidden
+
+    def v1_bids(visible: bool) -> list[float]:
+        """The learner's greedy prices on v1's projects in the rounds after v1 was caught."""
+        sp, ckpt = trained[visible]
+        agent = TableAgent.from_checkpoint(
+            ckpt, RecordObsCodec("v1"), MarkdownActCodec("v1"), learning=False
+        )
+        seed = next(s for s in range(9 * 1_000_003, 9 * 1_000_003 + 50) if v1_inflates(s))
+        probe = Recorder(agent)
+        session = Session.start(ENV, sp.params, seed)
+        who: dict[AgentId, Any] = {aid("b0"): probe}
+        for a, d in sp.opponents.items():
+            if a != aid("b0"):
+                who[a] = factory(a, d, seed)
+        run_sync(session, who)
+        by_round = probe.orders[1:]  # round 0 is played before anything is known
+        return [o[p]["price"] for o in by_round for p in ("s2", "s3") if p in o]
+
+    low, high = v1_bids(True), v1_bids(False)
+    assert low and high and max(low) < min(high)

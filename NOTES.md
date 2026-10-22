@@ -1577,3 +1577,30 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - **Stretch `revenue_to_pb` — not done.** It would need the PB layers reused inside a new stage; the brief forbids forking
   `environments/pb`, and reuse without a change to `pb` (out of scope) was not possible for me to establish in the time. Skipped, not
   attempted.
+
+## 2026-10-22 — M7 fix-up
+- **Per-project market form** (`build_vcm(market_form="per_project"|"pooled")`, default per-project). Buyer action schema is generated
+  with `pydantic.create_model`: one optional `Order` field per project id (`extra="forbid"`, each `Order` capped at that project's
+  quantity and at `price_cap`); `feasible` checks total qty ≤ demand. Omitted or qty 0 = no order. Sellers unchanged. Clearing runs
+  `clear_call_auction` once per project (rule not duplicated); fills, `own_fills`, `own_payment` and public price/volume are per project.
+  The pooled form is byte-for-byte the old behaviour; the old tests run with `market_form="pooled"`.
+- **Report/store additions**: `ClearingRecord.projects`, `RoundState.bids`/`last_projects`, optional `ProjectView.last_price/last_volume`
+  (dropped when None, so pooled reports are unchanged), store key `last:clearing` carries `projects`.
+- **Default population** is now `lemons_population()` when no population argument is given (`n_*`/`population_seed` default to `None`;
+  any of them given → `draw_population` with the old defaults 4/3/2/0). The fixture already had gains from trade per project:
+  v0 projects s0 (θ .9, cost 8), s1 (θ .8, cost 7); v1 projects s2 (θ .4, cost 3), s3 (θ .3, cost 2.5); buyer values 10/10.5/11; v1 inflates
+  by 0.3. Search (scratchpad `pp_check.py`, naive buyers, 6 seeds, true net per buyer): s0 +17.5, s1 +16.7, s2 −9.6, s3 −13.8; a skeptic
+  with the record visible: s2 +5.4, s3 ≈ −0.6…+1.1. Stylized; no empirical claim.
+- **Scripted per-project buyers** split demand in proportion to (believed) quality, largest remainder, capped at project quantity
+  (`split_demand`). An equal split made rivals' behaviour hide the record's effect on volume.
+- **`vcm/learning.py`** (new, supporting): `RecordObsCodec` (hidden, or record summarised as min(wrong,1), min(audited,1)) and
+  `MarkdownActCodec` (markdown ∈ {0,.1,.2,.3,.4} on one verifier's projects, even demand split). Added `::: ` entry in the API docs.
+- **Learner test design.** The first attempt (v1 inflating in every episode) cannot separate the conditions: marking down is best
+  whether or not the record is seen. With v1 inflating in 1 episode in 10 (`episode_seed % 10 == 3`), fixed-markdown returns (`pp_mark.py`,
+  b0, p_audit=1; 12.79 = v0-only) are: markdown 0 → 18.2 honest / −5.8 inflating; .1 → 16.25 / 2.2; .2 → 12.79 / 10.2; .3 → 12.79 / 18.2.
+  Hidden prefers markdown 0 iff P(inflate) < ≈0.18, so with P = 0.1 the hidden learner trusts v1 and the visible learner can condition on
+  having been caught.
+- **`RandomAgent` cannot play per-project buyers** (nested `$ref` schemas are unsupported by it); not changed (`agents` is out of scope).
+- **Tutorial 10/designing/design skill**: slow external simulator = role + `ExternalRecorder` adapter; automatic layer calling a slow
+  function is not recorded. `llms.md` was touched only for the `build_vcm` parameter row (defaults changed, `market_form` added).
+- Example 11 in `GAO_EXAMPLE_FAST=1` mode trains fewer episodes, so step 6 numbers differ slightly from the tutorial's (full mode).

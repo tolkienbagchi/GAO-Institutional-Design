@@ -42,6 +42,10 @@ Ready-made environments: auction, congestion pricing, voluntary carbon market, p
 
 ::: gao_idl.environments.vcm
 
+## `gao_idl.environments.vcm.learning`
+
+::: gao_idl.environments.vcm.learning
+
 ## `gao_idl.environments.vcm.llm`
 
 ::: gao_idl.environments.vcm.llm
