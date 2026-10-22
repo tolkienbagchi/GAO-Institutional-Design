@@ -37,6 +37,7 @@ LOOP_DECISIONS = "tests.composition.envs:loop_decisions"
 LOOP_STASH = "tests.composition.envs:loop_stash"
 PAR_SHARED_STORE = "tests.composition.envs:par_shared_store"
 SNOOP = "tests.composition.envs:snoop"
+LOOP_PAR_SEQ = "tests.composition.envs:loop_par_seq"
 SEQ_STORE_CONNECTOR = "tests.composition.envs:seq_store_connector"
 
 
@@ -144,3 +145,27 @@ def seq_store_connector(mode: str = "read") -> tuple[Process, Config]:
         name="seq",
     )
     return seq, Config(state={"port": "a", "payload": 1}, roles={})
+
+
+def loop_par_seq(max_iter: int = 3) -> tuple[Process, Config]:
+    """``Loop(Par(Seq(...)))``: each iteration, alice and bob each decide twice in their own branch.
+
+    The loop never terminates normally; it is cut off by ``max_iter`` (reserved ``truncated`` port).
+    """
+    agents = {"A": ["alice"], "B": ["bob"]}
+
+    def branch(agent: str) -> Seq:
+        return Seq(
+            Primitive(decision_layer("first")),
+            {Port("done"): (rec_to_seed({"player": agent}), Primitive(decision_layer("second")))},
+            name=f"seq_{agent}",
+        )
+
+    par = Par(
+        {"A": branch("alice"), "B": branch("bob")},
+        DisjointSplitter(split_agents, Agents),
+        DictJoiner(Port("again"), OpenState),
+    )
+    again = Connector(lambda rec, ledger, store: Config(state={"agents": agents}, roles={}), Agents)
+    loop = Loop(par, {Port("again"): again}, {}, max_iter=max_iter, on_limit="truncate")
+    return loop, Config(state={"agents": agents}, roles={})
