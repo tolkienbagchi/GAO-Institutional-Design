@@ -770,3 +770,23 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - `TrainSpec.episodes >= 1`; the learner may not also be listed as an opponent. `TrainResult` / `EvalResult` round-trip through
   `model_dump(mode="json")` / `model_validate` (tested for `TrainResult`).
 - Mutation check (reverted): `evaluate` building the agent with `learning=True` fails `test_the_evaluation_agent_is_new_frozen_and_never_updated`.
+
+## 2026-10-22 — M3 task 4: sanity environments (`environments/toy/`)
+- Built only from existing pieces (`Primitive`, `Seq`, `Loop`, `Connector`, `SimpleLayer`); no runtime change.
+- **Bandit** (`build_bandit(means, agent="agent")`): `Seq("bandit")` of the `pull` layer (role `player`, observation
+  `{"n_arms": k}`, action `{"arm": int in [0, k-1]}`, strict int so `"0"` is refused) and the automatic, role-less `settle` layer,
+  which draws `rng.random() < means[arm]` from its own path-keyed stream and reports `{"arm", "own_reward"}` to the player (also
+  credited to the ledger). The reward is therefore a function of the session seed only; the trainer's per-episode seeds make
+  episodes independent. `means` must be a non-empty list of finite probabilities (`ContractError` otherwise). The agent id is a
+  parameter (the brief fixes none). Ids: `bandit/pull#player`.
+- **Chain** (`build_chain(horizon=3, agent="agent")`): `Loop("chain")` over one `chain_step` layer, ids `chain/loop[i]#player`,
+  `max_iter=horizon`, the body leaves through `done` on its last step, so the session ends `normal` and the loop limit (`on_limit="fail"`)
+  is never touched. Observation `{"state": position}`; action `{"move": "left" | "right"}`; after each step the player is told
+  `{"own_reward", "position"}`.
+- **Ambiguity: "reward 1 only on reaching state 2 from the right action twice".** Conservative reading: reward 1 exactly on the
+  transition `state 1 --right--> state 2` (`right` clamps at 2, `left` clamps at 0) and 0 on every other step, so a return is 0 or 1
+  and the optimum within 3 steps is 1. Three of the eight 3-move sequences reach it (`LRR`, `RRL`, `RRR`: `left` at state 0
+  stays in 0). Reading it as "pays on every step that ends in state 2" would make `RRR` worth 2 and contradict the brief's
+  "eval return == 1.0".
+- The horizon is not in the observation (the brief: observation = state index), so the last step's decision is state-aliased with
+  earlier steps; harmless for this task.
