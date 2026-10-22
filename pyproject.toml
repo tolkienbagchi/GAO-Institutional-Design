@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
@@ -8,6 +8,9 @@ version = "0.1.0"
 description = "Composable multi-agent environments with resumable, replayable sessions"
 readme = "README.md"
 requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{name = "Tolkien Bagchi", email = "tb549@cornell.edu"}]
 dependencies = ["pydantic>=2.7", "numpy>=1.26"]
 keywords = ["multi-agent", "mechanism design", "game theory", "reinforcement learning", "simulation"]
 classifiers = [
@@ -21,13 +24,17 @@ classifiers = [
     "Topic :: Scientific/Engineering",
 ]
 
+[project.urls]
+Repository = "https://github.com/tolkienbagchi/GAO-Institutional-Design"
+Documentation = "https://github.com/tolkienbagchi/GAO-Institutional-Design/tree/main/docs"
+
 [project.scripts]
 gao-idl = "gao_idl.cli:main"
 
 [project.optional-dependencies]
 llm = ["httpx"]
 dev = ["pytest", "pytest-timeout", "hypothesis", "ruff", "mypy", "build", "twine"]
-docs = ["mkdocs-material>=9.5", "mkdocstrings[python]>=0.25"]
+docs = ["mkdocs>=1.6,<2", "mkdocs-material>=9.5", "mkdocstrings[python]>=0.25"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gao_idl"]
@@ -42,6 +49,8 @@ include = [
     "/mkdocs.yml",
     "/pyproject.toml",
     "/README.md",
+    "/LICENSE",
+    "/CITATION.cff",
     "/NOTES.md",
 ]
 

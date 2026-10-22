@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+title: "GAO Institutional Design Lab (gao_idl)"
+version: 0.1.0
+type: software
+license: Apache-2.0
+repository-code: "https://github.com/tolkienbagchi/GAO-Institutional-Design"
+authors:
+  - family-names: Bagchi
+    given-names: Tolkien
+    email: tb549@cornell.edu
+# doi: add the Zenodo DOI here after the first release (an empty value fails CFF validation)

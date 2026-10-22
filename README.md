@@ -43,3 +43,8 @@ gao-idl replay run.json                               # rebuild it from the log,
 ```
 
 `python -m gao_idl.cli` does the same. See `docs/runs.md`.
+
+## License
+
+Apache License 2.0 (see `LICENSE`). Copyright 2026 Tolkien Bagchi. To cite the software, see
+`CITATION.cff`.
