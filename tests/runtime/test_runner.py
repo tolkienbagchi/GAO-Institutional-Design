@@ -460,3 +460,107 @@ def test_a_cancelled_run_leaves_no_tasks_behind() -> None:
         return len(asyncio.all_tasks())
 
     assert asyncio.run(main()) == 1  # only the test's own task is left
+
+
+# ------------------------------------------------------------------ the runner dies cleanly
+
+
+class RecordingHuman(HumanTransportAgent):
+    """A human transport that remembers how its episode ended."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.ends: list[EpisodeEnd] = []
+
+    async def episode_end(self, end: EpisodeEnd) -> None:
+        self.ends.append(end)
+        await super().episode_end(end)
+
+
+class BadObserver(ScriptedAgent):
+    """Raises from ``observe``; ``fail_end`` makes ``episode_end`` raise too."""
+
+    def __init__(self, fail_end: bool = False) -> None:
+        super().__init__(always("D"))
+        self.fail_end, self.ends = fail_end, []
+
+    async def observe(self, report: ParticipantReport) -> None:
+        raise ValueError("observe blew up")
+
+    async def episode_end(self, end: EpisodeEnd) -> None:
+        self.ends.append(end)
+        if self.fail_end:
+            raise KeyError("episode_end blew up too")
+
+
+async def _die_with_a_human_waiting(
+    bob: AgentAdapter,
+) -> tuple[RecordingHuman, DecisionRequest, "asyncio.Task[Session]"]:
+    """Two pairs: pair_0 finishes (and bob's ``observe`` raises) while carol (human) still waits."""
+    session = Session.start(PD, pd_params([str(a) for a in FOUR], 1), 1)
+    human = RecordingHuman()
+    adapters: dict[AgentId, AgentAdapter] = {
+        ALICE: ScriptedAgent(always("C")),
+        BOB: bob,
+        AgentId("carol"): human,
+        AgentId("dave"): ScriptedAgent(always("D")),
+    }
+    task = asyncio.ensure_future(run(session, adapters))
+    (waiting,) = await asyncio.wait_for(human.wait_outstanding(), 5)
+    return human, waiting, task
+
+
+def test_runner_exception_in_observe_cancels_inflight_and_reraises() -> None:
+    async def main() -> None:
+        bad = BadObserver()
+        human, _, task = await _die_with_a_human_waiting(bad)
+        with pytest.raises(ValueError, match="observe blew up"):
+            await asyncio.wait_for(task, 5)
+        assert human.outstanding() == []  # the in-flight act was cancelled and awaited
+        assert [e.terminal for e in human.ends] == ["failed"]
+        assert [e.terminal for e in bad.ends] == ["failed"]
+        assert all(e.final_utility is None for e in human.ends)
+        assert len(asyncio.all_tasks()) == 1  # nothing left running
+
+    asyncio.run(main())
+
+
+def test_a_failing_episode_end_does_not_hide_the_original_exception() -> None:
+    async def main() -> None:
+        bad = BadObserver(fail_end=True)
+        human, _, task = await _die_with_a_human_waiting(bad)
+        with (
+            pytest.warns(UserWarning, match="episode_end failed for 'bob'"),
+            pytest.raises(ValueError, match="observe blew up"),  # not the KeyError
+        ):
+            await asyncio.wait_for(task, 5)
+        assert [e.terminal for e in human.ends] == ["failed"]  # the others still got theirs
+
+    asyncio.run(main())
+
+
+def test_provide_after_runner_death_raises() -> None:
+    async def main() -> None:
+        human, waiting, task = await _die_with_a_human_waiting(BadObserver())
+        with pytest.raises(ValueError):
+            await asyncio.wait_for(task, 5)
+        assert human.closed
+        with pytest.raises(RuntimeError, match="runner is gone"):
+            human.provide(waiting.decision_id, {"move": "C"})
+
+    asyncio.run(main())
+
+
+def test_provide_after_a_normal_finish_also_raises() -> None:
+    async def main() -> None:
+        session = Session.start(PD, pd_params(["alice", "bob"], 1), 1)
+        human = HumanTransportAgent()
+        task = asyncio.ensure_future(run(session, {ALICE: human, BOB: ScriptedAgent(always("D"))}))
+        (req,) = await asyncio.wait_for(human.wait_outstanding(), 5)
+        human.provide(req.decision_id, {"move": "C"})
+        await asyncio.wait_for(task, 5)
+        assert human.closed
+        with pytest.raises(RuntimeError, match="runner is gone"):
+            human.provide(req.decision_id, {"move": "C"})
+
+    asyncio.run(main())

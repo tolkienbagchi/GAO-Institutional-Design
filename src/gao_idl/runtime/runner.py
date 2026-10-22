@@ -10,6 +10,7 @@ import asyncio
 import itertools
 import logging
 import time
+import warnings
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Literal
@@ -66,8 +67,10 @@ async def run(
        on ``SchemaError`` / ``Infeasible``, then ``timeout``), ``timeout`` on any other adapter
        exception, and ``timeout`` (after cancelling the task) on an expired deadline. A session
        that is neither finished nor waiting on any task raises ``RuntimeError("stalled")``.
-    3. ``episode_end`` for every adapter. ``clock`` must run in the same units as real time (it
-       sets the timeout of the wait).
+    3. ``episode_end`` for every adapter (``terminal="failed"`` if the run dies of an exception,
+       after the in-flight tasks are cancelled and awaited; the original exception is re-raised).
+
+    ``clock`` must run in the same units as real time (it sets the timeout of the wait).
     """
     started = session.input_log[0]
     if not isinstance(started, ev.Started):
@@ -93,6 +96,14 @@ async def run(
         flights[request.decision_id] = _Flight(
             request, task, clock() if began is None else began, attempt, next(seq)
         )
+
+    async def cancel_all() -> None:
+        """Cancel every in-flight ``act`` task and wait until they are gone."""
+        tasks = [f.task for f in flights.values() if not f.task.done()]
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        flights.clear()
 
     try:
         for agent in sorted(adapters):
@@ -134,17 +145,25 @@ async def run(
                 for flight in expired:
                     del flights[flight.request.decision_id]
                     session.timeout(flight.request.decision_id)
-        terminal = _terminal(session)
+    except Exception:
+        # Cancel what is in flight first, then tell every adapter the episode failed; a failing
+        # ``episode_end`` is reported as a warning so the original exception is the one raised.
+        await cancel_all()
         for agent in sorted(adapters):
-            utility = session.ledger.utility(agent) if policy.disclose_final_utility else None
-            end = EpisodeEnd(agent_id=agent, terminal=terminal, final_utility=utility)
-            await adapters[agent].episode_end(end)
-        return session
+            try:
+                end = EpisodeEnd(agent_id=agent, terminal="failed")
+                await adapters[agent].episode_end(end)
+            except Exception as e:
+                warnings.warn(f"episode_end failed for {agent!r}: {e!r}", stacklevel=2)
+        raise
     finally:
-        pending = [f.task for f in flights.values() if not f.task.done()]
-        for task in pending:
-            task.cancel()
-        await asyncio.gather(*pending, return_exceptions=True)
+        await cancel_all()  # any exit, including cancellation: nothing is left running
+    terminal = _terminal(session)
+    for agent in sorted(adapters):
+        utility = session.ledger.utility(agent) if policy.disclose_final_utility else None
+        end = EpisodeEnd(agent_id=agent, terminal=terminal, final_utility=utility)
+        await adapters[agent].episode_end(end)
+    return session
 
 
 def _by_seq(flight: _Flight) -> int:

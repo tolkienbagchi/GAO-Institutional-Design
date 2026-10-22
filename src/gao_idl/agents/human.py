@@ -22,10 +22,12 @@ class HumanTransportAgent:
         self._agent: AgentId | None = None
         self._waiting: dict[DecisionId, tuple[DecisionRequest, asyncio.Future[dict[str, Any]]]] = {}
         self._arrived = asyncio.Event()
+        self.closed = False
 
     async def episode_start(self, ctx: EpisodeContext) -> None:
         """Remember which agent this is; drop earlier reports unless ``keep_episode_memory``."""
         self._agent = ctx.agent_id
+        self.closed = False
         if not ctx.keep_episode_memory:
             self.inbox, self._seen = [], set()
 
@@ -38,7 +40,10 @@ class HumanTransportAgent:
         self._arrived.set()
         try:
             return await future
-        finally:  # answered or cancelled (deadline): no longer outstanding
+        except asyncio.CancelledError:  # deadline or dead runner: withdraw the request
+            self._waiting.pop(request.decision_id, None)
+            raise
+        finally:
             self._waiting.pop(request.decision_id, None)
 
     async def observe(self, report: ParticipantReport) -> None:
@@ -50,7 +55,8 @@ class HumanTransportAgent:
             self.inbox.append(report)
 
     async def episode_end(self, end: EpisodeEnd) -> None:
-        """Nothing to clean up."""
+        """The runner is done (or dead): close the transport, ``provide`` now raises."""
+        self.closed = True
 
     # ---------------------------------------------------------- the "UI" side
 
@@ -66,7 +72,13 @@ class HumanTransportAgent:
         return self.outstanding()
 
     def provide(self, decision_id: DecisionId, action: dict[str, Any]) -> None:
-        """Answer an outstanding request; UnknownDecision if there is none with this id."""
+        """Answer an outstanding request.
+
+        RuntimeError if the episode has ended (the runner is gone); UnknownDecision if there is no
+        outstanding request with this id.
+        """
+        if self.closed:
+            raise RuntimeError("runner is gone")
         entry = self._waiting.get(decision_id)
         if entry is None or entry[1].done():
             raise UnknownDecision(decision_id)

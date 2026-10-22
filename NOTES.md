@@ -609,3 +609,18 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   `wait_outstanding()` right after `provide` cannot return the answered request.
 - Test-only additions: `bidding_capped` (bids above 10 are infeasible; timeout default 0) and `stalled` in
   `tests/runtime/envs.py`. No test uses `asyncio.sleep`; the only real wait is the 0.01 s deadline.
+
+## 2026-10-21 — M2 fix-up task 1: the runner never leaves work dangling
+- `run()`: the main loop is in `try / except Exception / finally`. On an exception it first cancels and awaits every
+  in-flight `act` task, then calls `episode_end(terminal="failed", final_utility=None)` on every adapter (a failing
+  `episode_end` becomes a `warnings.warn`, so the original exception surfaces), then re-raises. The `finally` block
+  also cancels and awaits in-flight tasks on cancellation (no `episode_end` is sent on cancellation: the brief says
+  "by exception"; a cancelled runner is silent). The normal `episode_end` phase is after the block, so an exception from
+  it propagates as before without a second round of "failed" notices. `final_utility` is never read on failure.
+- `HumanTransportAgent`: `closed` (set by `episode_end`, cleared by `episode_start`); `provide` raises
+  `RuntimeError("runner is gone")` once closed, checked before the unknown-decision check, also after a normal finish.
+  `act` withdraws its request on `CancelledError` (explicit clause; the `finally` pop stays as the answered path).
+- Tests: `test_runner_exception_in_observe_cancels_inflight_and_reraises`, `test_provide_after_runner_death_raises`,
+  plus `test_a_failing_episode_end_does_not_hide_the_original_exception` and
+  `test_provide_after_a_normal_finish_also_raises`. The scenario needs a human still waiting when `observe` raises: a
+  four-agent fixed-pair PD where pair_0 completes (bob's `observe` raises) while carol (human) is outstanding.
