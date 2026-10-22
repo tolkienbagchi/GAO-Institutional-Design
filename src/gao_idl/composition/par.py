@@ -139,7 +139,9 @@ class Par:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "branches", dict(self.branches))
-        self._validate_wiring()
+        from gao_idl.composition import contracts  # lazy: contracts imports the composites
+
+        contracts.check(self)
         reads: set[str] = set()
         writes: set[str] = set()
         for proc in self.branches.values():
@@ -159,8 +161,8 @@ class Par:
         """Ordered ``(branch name, process)`` pairs (sorted by name)."""
         return [(n, self.branches[n]) for n in sorted(self.branches)]
 
-    def _validate_wiring(self) -> None:
-        """Local (non-recursive) wiring checks; raises ContractError."""
+    def validate_wiring(self) -> None:
+        """Local (non-recursive) wiring checks; raises ContractError. Called by contracts.check."""
         check_name("par", self.name)
         if not self.branches:
             raise ContractError(f"par {self.name!r} has no branches")

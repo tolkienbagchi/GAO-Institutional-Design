@@ -265,3 +265,20 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   `on_limit`; two `until` ports mapping to one target with different record schemas.
 - `LoopFrame` has extra fields `exited_port`, `exited_record`, `result`, `failed` (see Seq/Par notes);
   once `result` or `failed` is set, stepping again returns it without re-emitting anything.
+
+## 2026-10-21 — M1 task 5: contracts.check / describe
+- Layout: each composite exposes its *local* rules as `validate_wiring()` and (Seq, Loop) `compute_exits()`;
+  `contracts.check(process)` calls them and recurses through `_children()` (Seq: first + continuations by
+  port; Par: branches by name; Loop: the body). Each constructor calls `contracts.check(self)` from
+  `__post_init__` through a lazy import (contracts imports the composites, so a top-level import would be
+  circular). In tasks 2-4 the constructors called `validate_wiring()` directly; behaviour is unchanged.
+- `check` also recomputes the exit map, so conflicting port schemas are re-detected when it is called on an
+  existing tree. Leaves (`Primitive`, custom processes) have no `_children` and are not inspected.
+- The brief's store-ordering check is deliberately **not** implemented (it says to skip it). A composite's
+  `entry.store_reads` / `store_writes` is the union over everything it contains, including connectors;
+  `describe` shows it. Actual enforcement is the per-layer / per-connector `StoreView` scope at runtime.
+- `describe(process)` returns `{kind, name, entry{state_schema{name, fields}, roles, store_reads,
+  store_writes}, exits{port: schema}}` plus `first`/`routes` (Seq), `branches`/`splitter`/`joiner` (Par),
+  `body`/`feedback`/`until`/`max_iter`/`on_limit` (Loop), `timeout` (Primitive). Schemas are described by
+  class name and sorted field names, not full JSON Schema (keeps the tree small); everything is sorted so
+  the output is stable.

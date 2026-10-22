@@ -81,8 +81,10 @@ class Loop:
     def __post_init__(self) -> None:
         object.__setattr__(self, "feedback", dict(self.feedback))
         object.__setattr__(self, "until", dict(self.until))
-        self._validate_wiring()
-        object.__setattr__(self, "_exits", self._compute_exits())
+        from gao_idl.composition import contracts  # lazy: contracts imports the composites
+
+        contracts.check(self)
+        object.__setattr__(self, "_exits", self.compute_exits())
         entry = self.body.entry
         reads, writes = set(entry.store_reads), set(entry.store_writes)
         for connector in self.feedback.values():
@@ -105,8 +107,8 @@ class Loop:
         """The body, as the single ``(name, process)`` pair."""
         return [(self.body.name, self.body)]
 
-    def _validate_wiring(self) -> None:
-        """Local (non-recursive) wiring checks; raises ContractError."""
+    def validate_wiring(self) -> None:
+        """Local (non-recursive) wiring checks; raises ContractError. Called by contracts.check."""
         check_name("loop", self.name)
         if isinstance(self.max_iter, bool) or not isinstance(self.max_iter, int):
             raise ContractError(f"loop {self.name!r}: max_iter must be an int")
@@ -142,7 +144,8 @@ class Loop:
                     f"{self.body.entry.state_schema.__name__}"
                 )
 
-    def _compute_exits(self) -> dict[Port, type[BaseModel]]:
+    def compute_exits(self) -> dict[Port, type[BaseModel]]:
+        """Exit ports and schemas implied by the wiring; ContractError on conflicting schemas."""
         exits: dict[Port, type[BaseModel]] = {}
         for port in sorted(self.until):
             target, schema = self.until[port], self.body.exits[port]

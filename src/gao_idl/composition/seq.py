@@ -65,8 +65,10 @@ class Seq:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "routes", dict(self.routes))
-        self._validate_wiring()
-        object.__setattr__(self, "_exits", self._compute_exits())
+        from gao_idl.composition import contracts  # lazy: contracts imports the composites
+
+        contracts.check(self)
+        object.__setattr__(self, "_exits", self.compute_exits())
         reads, writes = self._store_scope()
         entry = self.first.entry
         object.__setattr__(
@@ -88,8 +90,8 @@ class Seq:
             (self.routes[p][1].name, self.routes[p][1]) for p in sorted(self.routes)
         ]
 
-    def _validate_wiring(self) -> None:
-        """Local (non-recursive) wiring checks; raises ContractError."""
+    def validate_wiring(self) -> None:
+        """Local (non-recursive) wiring checks; raises ContractError. Called by contracts.check."""
         check_name("seq", self.name)
         for name, _ in self._children():
             check_name("seq child", name)
@@ -112,7 +114,8 @@ class Seq:
                     f"first process ({cont.name!r}); decision ids would collide"
                 )
 
-    def _compute_exits(self) -> dict[Port, type[BaseModel]]:
+    def compute_exits(self) -> dict[Port, type[BaseModel]]:
+        """Exit ports and schemas implied by the wiring; ContractError on conflicting schemas."""
         exits: dict[Port, type[BaseModel]] = {}
 
         def add(port: Port, schema: type[BaseModel], origin: str) -> None:
