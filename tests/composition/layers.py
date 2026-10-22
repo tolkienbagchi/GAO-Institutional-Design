@@ -273,3 +273,22 @@ def reader_layer(name: str = "reader", key: str = "shared") -> SimpleLayer:
 def no_agents(cfg: Config) -> dict[str, Config]:
     """Splitter function for automatic branches: every branch gets ``N(0)`` and no roles."""
     return {name: Config(state={"n": 0}, roles={}) for name in cfg.state["branches"]}
+
+
+def fixed_decision_layer(name: str = "dec") -> SimpleLayer:
+    """``decision_layer`` with a deterministic ``observe`` (no draws), so it is path-independent."""
+
+    def observe(cfg: Config, role: RoleId, rng: Generator) -> BaseModel:
+        return Obs(start=Seed.model_validate(cfg.state).start, draw=0)
+
+    return replace(decision_layer(name), observe=observe)
+
+
+def n_to_seed(roles: dict[str, str]) -> Connector:
+    """``N`` record -> ``Seed`` state (start = n) with the given role assignment."""
+    assignment = {RoleId(r): AgentId(a) for r, a in roles.items()}
+
+    def fn(rec: dict[str, Any], ledger: Any, store: StoreView) -> Config:
+        return Config(state={"start": rec["n"]}, roles=dict(assignment))
+
+    return Connector(fn, Seed)

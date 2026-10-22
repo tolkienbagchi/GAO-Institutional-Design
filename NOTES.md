@@ -339,3 +339,36 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   through the bidding layer, so a later milestone may want to split it again.
 - `assert_noninterference` / `assert_arrival_invariant` drive one decision round (they submit once per agent
   and advance), which is exactly what the two-layer auction needs because settlement is automatic.
+
+## 2026-10-21 — M1 task 8: testing fixtures
+- `events.strip_paths(dicts, *, drop_t=False)` (new, in `core/events.py`) works on dumped JSON dicts (trace
+  events from `events.dump`, or `model_dump(mode="json")` of ledger information). It removes `path` (top level
+  and inside `request` / `report` / `increment`), reduces `decision_id` to its role (`a/b#r` -> `r`) and
+  `report_id` to `agent:n`, and optionally `t`. Only those path-bearing fields are touched, never user
+  payloads (a user action containing a `"path"` key survives). Ids embedded inside free-text `reason`
+  strings are not rewritten.
+- `Session` resolves environments by `env_ref`, but the helpers receive Process objects, so they register
+  the process in a module-level dict for the duration of a `with` block and address it through
+  `gao_idl.testing._adhoc_factory` (the key `adhoc-N` appears only in the throwaway session's `Started`
+  event). Consequences: sessions created this way are for inspection after the block; `check_determinism`
+  / replay must be done inside it (`tests/composition/test_substitution.py` does).
+- `assert_substitution_equivalent(a, b, cfg, seed, actions)` runs both to completion (answering every pending
+  decision with `actions[agent]`), then compares result/failed flag, per-agent utility, per-agent information
+  streams and traces *with `t` kept*, all path-stripped. Keeping `t` is deliberate: composites must not tick
+  the clock. A mutation that makes `Seq` tick once on exit is caught.
+- **Limit worth knowing:** because RNG streams are keyed by path (pinned design), restructuring a process
+  changes the stream seen by a layer that draws randomness, so substitution equivalence holds only for
+  deterministic layers. `test_substitution_is_only_for_deterministic_layers` pins this (the helper correctly
+  reports a difference for a drawing layer wrapped in a Seq). The associativity test therefore uses
+  `fixed_decision_layer` (no draws) and checks all five bracketings of four layers (three automatic, one
+  decision).
+- `assert_branch_rng_independence(build_par_env, seed, *, actions=None, branch="A", other="B")`: the brief's
+  signature has no way to supply actions, so `actions` is an optional keyword (needed when branches have
+  roles). It builds the Par over `(branch, other)` and over `(branch,)`, and compares the events whose path
+  contains `Branch(branch)` and the information streams of the agents acting in it, path-stripped **and
+  with `t` dropped** (the sibling's events shift the logical clock, so `t` cannot match). It also fails if
+  the branch produced no events. A negative control (a splitter that leaks the number of branches into the
+  branch state) is detected.
+- Helper limitation carried over from M0: they submit `actions[agent]` to every pending decision of that
+  agent. `_drive` now loops until the session finishes (needed for multi-stage processes), with a cap of
+  1000 rounds.

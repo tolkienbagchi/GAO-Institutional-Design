@@ -203,3 +203,39 @@ def load(data: Iterable[dict[str, Any]]) -> list[InputEvent | TraceEvent]:
     """Inverse of :func:`dump`."""
     out: list[InputEvent | TraceEvent] = _ADAPTER.validate_python(list(data))
     return out
+
+
+def _local_id(value: str, sep: str) -> str:
+    """The part of a decision/report id after the path (``path#role`` -> ``role``)."""
+    return value.partition(sep)[2]
+
+
+def _strip_one(d: dict[str, Any], drop_t: bool) -> dict[str, Any]:
+    out = dict(d)
+    out.pop("path", None)
+    if drop_t:
+        out.pop("t", None)
+    if isinstance(out.get("decision_id"), str):
+        out["decision_id"] = _local_id(out["decision_id"], "#")
+    if isinstance(out.get("report_id"), str):
+        out["report_id"] = _local_id(out["report_id"], "@")
+    return out
+
+
+def strip_paths(items: Iterable[dict[str, Any]], *, drop_t: bool = False) -> list[dict[str, Any]]:
+    """Remove hierarchical paths from dumped events/information so structurally different but
+    equivalent compositions can be compared.
+
+    Takes JSON dicts (``dump`` output, or ``model_dump(mode="json")`` of ledger information).
+    Drops ``path`` (top level and inside ``request`` / ``report`` / ``increment``), reduces
+    ``decision_id`` to its role and ``report_id`` to ``agent:n``, and with ``drop_t`` also drops the
+    logical time ``t``. User payloads (actions, observations, records) are left untouched.
+    """
+    out: list[dict[str, Any]] = []
+    for d in items:
+        one = _strip_one(d, drop_t)
+        for key in ("request", "report", "increment"):
+            if isinstance(one.get(key), dict):
+                one[key] = _strip_one(one[key], drop_t)
+        out.append(one)
+    return out

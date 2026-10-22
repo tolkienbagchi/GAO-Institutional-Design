@@ -100,3 +100,39 @@ def test_events_are_frozen() -> None:
 def test_timeout_policies_round_trip() -> None:
     for p in (Fail(), DefaultAction(), DropRole()):
         assert type(p).model_validate(p.model_dump(mode="json")) == p
+
+
+def test_strip_paths_removes_paths_ids_and_optionally_t() -> None:
+    req = DecisionRequest(
+        decision_id=DecisionId("a/loop[1]/b#bidder:0"),
+        path=["a", LoopIter(1), "b"],
+        layer="b",
+        role=RoleId("bidder:0"),
+        agent_id=AgentId("x"),
+        observation={"path": "user data stays"},
+        action_schema={},
+    )
+    rep = ParticipantReport(
+        report_id=ReportId("a/b@x:2"), path=["a", "b"], layer="b", agent_id=AgentId("x"), payload={}
+    )
+    inc = UtilityIncrement(agent_id=AgentId("x"), amount=1.0, path=["a"], t=9)
+    trace = [
+        ev.DecisionRequested(t=1, path=["a", LoopIter(1), "b"], request=req),
+        ev.ReportDelivered(t=2, path=["a", "b"], report=rep),
+        ev.UtilityIncrementEvent(t=3, path=["a"], increment=inc),
+    ]
+    stripped = ev.strip_paths(ev.dump(trace))
+    assert all("path" not in d for d in stripped)
+    assert stripped[0]["request"] == {
+        "decision_id": "bidder:0",
+        "layer": "b",
+        "role": "bidder:0",
+        "agent_id": "x",
+        "observation": {"path": "user data stays"},
+        "action_schema": {},
+        "deadline": None,
+    }
+    assert stripped[1]["report"]["report_id"] == "x:2" and "path" not in stripped[1]["report"]
+    assert stripped[2]["increment"]["t"] == 9 and stripped[0]["t"] == 1  # t kept by default
+    no_t = ev.strip_paths(ev.dump(trace), drop_t=True)
+    assert all("t" not in d for d in no_t) and "t" not in no_t[2]["increment"]
