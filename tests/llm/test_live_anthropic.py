@@ -29,7 +29,7 @@ def test_live_auction_round_and_replay_without_inference() -> None:
     pytest.importorskip("httpx")
     key = os.environ["GAO_ANTHROPIC_API_KEY"]
     backend = AnthropicBackend(
-        os.environ.get("GAO_ANTHROPIC_MODEL", "claude-haiku-4-5"),
+        os.environ.get("GAO_ANTHROPIC_MODEL", "claude-haiku-5-5"),
         lambda: SecretStr(key),
         base_url=os.environ.get("GAO_ANTHROPIC_BASE_URL", "https://api.anthropic.com"),
     )

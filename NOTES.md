@@ -1006,3 +1006,39 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   bids below R are ignored." or "There is no reserve price.".
 - Reading: the brief says "no digit from the table" for the undisclosed PD prompt. The round index and history legitimately
   contain digits, so the test checks the round-0 prompt with its "This is round N" line removed.
+
+## M4 fix-up task 3 (M4b): Anthropic Messages API backend (2026-10-22)
+
+- **Commit order.** 3b (`schema_transform.py`, with its unit tests) was committed before 3a (`anthropic.py`), because 3a imports it;
+  the other two are in brief order. The brief's `httpx.MockTransport` tests need `httpx`, which this sandbox lacks, so
+  `tests/llm/test_anthropic.py` drives the backend through the same injected fake transport as the OpenAI-compatible tests (the real
+  request building, retry and parsing code all run) and adds two `httpx.MockTransport` tests behind `pytest.importorskip("httpx")`
+  (they patch `httpx.AsyncClient` so the real `httpx_transport` runs). Those two were **never executed** here.
+- **API facts used** (from the brief, checked against the live docs there on 2026-10-22; I could not re-check them: no network):
+  `POST {base_url}/v1/messages`; headers `x-api-key`, `anthropic-version: 2023-06-01` (the default of `api_version`, overridable),
+  `content-type: application/json`; system text in the top-level `system`; structured output via `output_config.format`
+  `{"type": "json_schema", "schema": ...}`; no beta header, no `output_format`, no tools. `temperature` and `max_tokens` are always
+  sent. If the live docs disagree with this, the docs win; nothing here depends on a field the brief did not name.
+- **Messages.** System messages join with a blank line; consecutive same-role messages merge with a blank line. A request with no
+  user/assistant message raises `BackendError`. A first `assistant` message is passed through as is (not adjusted).
+- **Parsing.** First `text` block (other block types, e.g. thinking, are skipped). `parsed` is set only for a JSON *object*; a
+  `stop_reason` of `refusal` or `max_tokens` forces `parsed=None` (the text is still returned, `raw["stop_reason"]` has the reason).
+  `usage` keeps only `input_tokens` and `output_tokens`. `Response.raw` is the whole reply with the credential scrubbed.
+- **Retries** reuse the OpenAI-compatible policy: 429, 529 and every 5xx plus transport failures, `max_retries=3` retries (4 requests,
+  delays 0.5/1/2 s); other 4xx never retry. The credential is fetched per request and scrubbed (value, `x-api-key` header text).
+- **Stripped schema features** (`to_anthropic_schema`): `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`, `multipleOf`,
+  `minLength`, `maxLength`, `pattern` (always dropped, even simple ones, as the brief prefers) and `maxItems` are removed because the
+  API's schema subset does not accept them; `minItems` above 1 is clamped to 1. Each is appended to the node's `description` as
+  `"(minimum: 0)"` so the model still reads it. Objects lacking `additionalProperties` get `false`; an existing value (for example
+  the schema a `dict[str, float]` field emits) is kept, because the brief says only "lacks it". `$defs`/`$ref`, `enum`, `const`,
+  `anyOf`, `required`, `default`, `title` and `description` are untouched. The walk visits subschema positions only, never
+  `enum`/`const`/`default` data. Pure and idempotent.
+- **The local validator is the authority.** The transform applies to the request only. `LLMAgent` validates against the original
+  schema (`llm/validate.py`, unchanged), so a `{"amount": -1}` the API accepts is still rejected and repaired (a test covers this).
+- **Not changed:** `OpenAICompatBackend`, the validator, the agent, the runner. `OpenAICompatBackend`'s `HttpReply`,
+  `TransportFailure`, `httpx_transport`, `RETRYABLE_STATUS` and `_scrub_json` are imported by the new module (one private helper
+  crosses modules inside the package).
+- `gao_idl.llm.__init__` now exports `AnthropicBackend` and `to_anthropic_schema`. Importing `gao_idl.llm` still never imports
+  `httpx` (checked by the existing subprocess test).
+- Live smoke test `tests/llm/test_live_anthropic.py` (`GAO_ANTHROPIC_API_KEY`, optional `GAO_ANTHROPIC_MODEL`, default
+  `claude-haiku-5-5`, and `GAO_ANTHROPIC_BASE_URL`): skipped here; left for the maintainer.
