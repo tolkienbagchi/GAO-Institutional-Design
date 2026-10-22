@@ -95,6 +95,17 @@ def _total(inst: _Instance, funded: Sequence[str]) -> Fraction:
     return sum((inst.cost[p] for p in funded), Fraction(0))
 
 
+def total_cost(projects: Sequence[Project], funded: Sequence[str]) -> Fraction:
+    """Exact (decimal) total cost of the projects with the given ids."""
+    by_id = {p.id: _q(p.cost) for p in projects}
+    return sum((by_id[i] for i in funded), Fraction(0))
+
+
+def within_budget(projects: Sequence[Project], funded: Sequence[str], budget: float) -> bool:
+    """Whether the funded ids cost at most ``budget``, compared exactly."""
+    return total_cost(projects, funded) <= _q(budget)
+
+
 def _greedy_order(inst: _Instance) -> list[str]:
     """Candidates by approval count desc, cost asc, id asc."""
     return sorted(inst.candidates, key=lambda p: (-inst.count(p), inst.cost[p], _id_key(p)))

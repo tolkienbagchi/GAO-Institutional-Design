@@ -1115,3 +1115,40 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   single project pydantic emits `const` rather than `enum` for the item.
 - Mutation checks (all reverted): MES tie to the larger id, Phragmén stopping instead of skipping, knapsack preferring exclusion, no Add1,
   float instead of decimal costs each fail exactly the test that pins them.
+
+## 2026-10-22 — M5 tasks 2-3 merged: the four layers and `build_pb` (`environments/pb/layers.py`, `__init__.py`)
+- **Plan change (task 0 listed layers and composite as two tasks):** a layer cannot be exercised without the composite, so the layers and
+  `build_pb` are one commit with a smoke test (`test_every_rule_completes_the_pipeline`, `test_the_process_is_well_wired`); the
+  institution tests are the next commit.
+- **Layout.** `Seq("pb": nomination, proposed -> Seq("after_nomination": eligibility, eligible -> Seq("after_eligibility": voting,
+  voted -> funding_<rule>)))`: the brief's chain needs nested `Seq`s because a route's continuation is one process. The two inner names
+  are path elements, so ids read `pb/nomination#proposer:0` and `pb/after_nomination/after_eligibility/voting#voter:1`.
+  Funding layers are named `funding_<rule>` ("one layer per rule"); `FundingOutcome.rule` carries the plain rule name.
+  The rule is chosen in exactly one place: `FUNDING[rule]` in `build_pb` (`FUNDING` is `rules.RULE_FUNCTIONS`).
+- **`none` routing (reading).** "The `none` ports re-export at the top level" is taken literally: neither `none` port is routed, so `Seq`
+  re-exports both (same `EmptyExit` class, so no schema conflict). The brief also requires a public report when everyone dropped out; the
+  eligibility layer never runs then, so **the nomination layer itself delivers the public "none" report** (an `EligibilityReport` with
+  `status="none"`, empty lists) to every voter and proposer when nobody nominated, and delivers no report otherwise. The eligibility layer
+  does the same when nothing survives the screen.
+- **Nomination timeout.** Default `DropRole`; `Fail` is accepted; **`DefaultAction` is refused (`ContractError`)**: there is no neutral
+  nomination, a default one would be an invented project (invariant 6). `timeout_nomination` also takes the JSON dict form so session params
+  stay JSON. Voting uses `Fail` (the brief gives voting no timeout parameter; a silent abstention would be invented).
+- **Roles/ids.** Proposers and voters are sorted by agent id and numbered `proposer:i` / `voter:i`; duplicates inside one list are a
+  `ContractError`, the same agent in both lists is allowed. At least one voter is required (an empty electorate is a configuration error);
+  an empty proposer list is allowed and simply exits `none`. Project ids `p{i}` follow sorted `(proposer, title)`.
+- **Eligibility** rejects `cost > budget` or `cost > max_cost` with reason `over_budget`, `over_max_cost` or `over_budget_and_max_cost`
+  (the brief says "reason" only). Surviving projects keep their nomination ids (no renumbering) so ballots refer to stable ids.
+- **Ballots** are stored sorted in natural id order in `VotingOutcome` (a ballot is a set; the submitted order stays in `LayerCompleted.actions`).
+  The voting layer credits no utility (the brief defines none); funding does not either.
+- **Reports.** Eligibility/none: `EligibilityReport`, byte-identical for every recipient. Voting: `VotingReceipt(own_ballot)` to each voter.
+  Funding: `FundingReport{public, private?}`; `public` = rule, budget, funded `(id, title, cost)`, spent, and `ballots` only with
+  `reveal_ballots`; `private` (key omitted when absent) = `own_value_of_funded`, only for voters present in `private_values`, a missing
+  project value counting 0. **No report contains approval counts or any other rule detail** (those live in `FundingOutcome.details`, i.e. the
+  trace), so a voter's ballot reaches other voters' streams only through the funded set and `spent`.
+- `reveal_ballots` is closed over by `funding_layer(name, fn, *, reveal_ballots=False)` and `private_values` by the connector into voting
+  (neither is in the brief's `NominationState`); the whole process is still a function of the `env_ref` params (invariant 3).
+- `funding_layer` verifies each rule's answer (known ids, no repeats, exact budget check) and raises `ContractError` on a violation, so a bad
+  rule cannot silently overspend.
+- `ballot_schema(...)` with a single eligible project gives `{"const": "p0"}` for the item (pydantic's rendering of a one-value `Literal`)
+  instead of a one-element `enum`; `RandomAgent`, the local LLM validator and pydantic all handle it. With two or more projects it is an `enum`.
+- Not done, by the brief's "Do not": no runtime/composition change, no cardinal ballots, no cost-utility rules.
