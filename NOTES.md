@@ -1058,3 +1058,60 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   `PYTHONPATH=src:.:/usr/local/lib/python3.13/dist-packages` with `--ignore=tests/core/test_paths_property.py` and
   `--ignore=tests/environments/test_pb_rules_property.py`. Baseline before M5: 553 passed, 4 skipped, 1 deselected (not slow).
 - No new dependency is added in M5 (`fractions` and numpy only).
+
+## 2026-10-22 — M5 task 1: schemas and the four pure funding rules (`environments/pb/schemas.py`, `rules.py`)
+- **Common conventions (documented in the module docstring).** `rule(projects, ballots, budget) -> list[str]`, result in ascending
+  *natural* id order (`p2` before `p10`, reusing `role_sort_key`; plain string order would put `p10` before `p2`). `ballots` must map
+  every voter, abstainers with `[]`: `n = len(ballots)`. Unknown or repeated ids in a ballot are a `ValueError` (not ignored).
+  **Projects nobody approves are never funded, by any rule** (my reading of "take if fits": otherwise greedy would spend leftover
+  money on projects with zero support). Projects costing more than the budget are never candidates. Costs and budgets are compared as
+  exact decimal fractions (`Fraction(repr(x))`), so `0.1 + 0.2 <= 0.3` holds.
+- **Greedy:** approvals desc, cost asc, id asc; take if it fits.
+- **Knapsack:** exact DP over integer cents (numpy rows). Costs must be whole cents (`ValueError`); the *budget* is floored to cents,
+  which is exact for whole-cent costs (the brief says "assert exactness"; asserting it for the budget would refuse e.g. 10.005 although
+  the answer is well defined). Refuses `> 60` projects and tables over 50 M cells. Tie-break among optimal sets: lexicographically
+  smallest ascending id list (include a project whenever an optimum still exists with it).
+- **MES (the one documented variant):** cardinality utilities (every approved project is worth 1 to each approver), so ρ-affordability
+  is `sum(min(b_i, ρ)) >= cost`, smallest ρ first, supporters pay `min(b_i, ρ)`, exact rationals. The brief names no utility; cost
+  utilities are excluded by "Do not", and approval counts are what greedy and knapsack maximise. **Add1 completion** follows Peters,
+  Pierczyński, Skowron et al. as summarised in Boehmer et al., "Participatory Budgeting: Data, Tools, and Analysis" (arXiv:2305.11035,
+  §2.2): start at `b/n`, if the outcome is not exhaustive raise every initial endowment by one *unit* and rerun from scratch, until
+  exhaustive or until the next rerun would exceed `b`. That paper never says what a "unit" is or which run is returned; I took **one
+  currency unit per voter** and **the last run whose cost is within `b`** (round 0 never overspends). *Exhaustive* = no unfunded
+  candidate fits the money left. Then **greedy completion** adds whatever still fits in greedy order. Add1 is capped at 100 000 reruns
+  (`ValueError`); with costs in the millions and few voters that would be reached. EJR holds for the completed rule on the unit-cost
+  instances tested: an Add1 run at endowment `k'/n >= k/n` is MES for a larger committee size, which implies EJR for `k`, and
+  greedy completion only adds projects.
+- **Sequential Phragmén:** money formulation. `load_i` = money voter `i` has spent; a project is bought at time
+  `(cost + sum of supporters' loads) / |supporters|`; smallest time next, supporters' loads become that time. **When the next project
+  does not fit the money left it is discarded and the rule goes on** (not "stop at the first that does not fit"); the brief is silent
+  and this matches greedy's "take if fits". Pinned by a hand example.
+- **Worked examples, and how they were obtained.** The shell has no web access, so I read the papers through the WebFetch tool (a
+  summarising model, not the PDFs). Every fixture below was *also re-derived by hand from the definitions* before being pinned, and
+  matched, so I trust the numbers but not the transcription of the figures:
+  Peters & Skowron, *Proportionality and the Limits of Welfarism* (arXiv:1911.11747), Example 2 (n = 15, k = 4) — **the profile figure
+  was not in the extracted text; the tool reconstructed it from the prose** (c1, c2: v1–v12; c3: v1–v10; c4, c5: v6–v15). The stated
+  q-values 15/48, 15/48, 15/40, 1 and the committee {c1, c2, c3, c4} reproduce, with the paper's own tie choice (c3 over c4/c5) equal
+  to the smaller-id tie-break. Rey & Maly, *The (Computational) Social Choice Take on Indivisible Participatory Budgeting*
+  (arXiv:2303.00621): the MES example with cardinality satisfaction (outcome {p1, p2, p3}, bought p2, p1, p3) and the Phragmén example
+  (outcome {p1, p2}; the tool noted a garbled cell for p4, which I did not use). Brill, Freeman, Janson, Lackner, *Phragmén's Voting
+  Methods and Justified Representation* (AAAI 2017; Math. Programming 2024), Examples 4.3/4.6 (k = 3) and 6.3 (k = 4, final loads
+  3/4, 3/4, 0, 0, 3/4, 3/4, 1/2, 1/2). **Example numbers are those of the 2024 journal version as relayed by the tool**, the AAAI
+  version may number them differently. **Not verified against the PDFs:** all of the above. For greedy and knapsack there is no
+  literature example in the brief's list; their fixtures are mine (labelled HAND in the tests), plus the Rey–Maly instance computed by
+  hand. Two MES fixtures (add1, completion) are hand-made too; the Add1 one was found by a random search and re-derived.
+- `test_mes_ejr_on_small_instances` enumerates all multisets of ballots for up to 4 voters and up to 4 unit-cost projects with budgets
+  1–3, plus 1 500 seeded 5-voter/5-project profiles, for plain MES and for MES with completion (about 6 s). The exhaustive 5-voter
+  enumeration is `@pytest.mark.slow` (about 25 s). EJR was checked with the standard unit-cost definition (group size `>= ell*n/k`,
+  `>= ell` commonly approved projects); no violation was found, so the implementation was not touched on that account.
+- **Hypothesis:** `test_knapsack_matches_bruteforce` and `test_all_rules_within_budget` are in
+  `tests/environments/test_pb_rules_property.py` (thin wrappers over the same check functions as the numpy-seeded
+  `*_randomized` tests in `test_pb_rules.py`, which always run: 400 and 200 instances). The hypothesis module was NOT executed here.
+- Schemas: `NominationState.rule` is a validated `str` and is **not forwarded** through the pipeline (the funding layer is chosen by the
+  factory), so no pre-funding trace event depends on the rule. `Nomination.cost` is strict (numeric strings and bools refused, like
+  `Bid.amount`). `ProjectsExit`/`EmptyExit` carry `voters` and `proposers` (the public audience), and `VotingState`/`BallotsExit`
+  gain `proposers: list[AgentId] = []` — an addition to the brief's field lists, needed so the funding layer can address proposers.
+  `ballot_schema` is a cached `create_model` over `Literal[tuple(ids)]` with a no-duplicates validator and `extra="forbid"`; with a
+  single project pydantic emits `const` rather than `enum` for the item.
+- Mutation checks (all reverted): MES tie to the larger id, Phragmén stopping instead of skipping, knapsack preferring exclusion, no Add1,
+  float instead of decimal costs each fail exactly the test that pins them.
