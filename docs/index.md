@@ -15,17 +15,34 @@ them with scripted, human, tabular-RL or LLM participants.
 ## Architecture
 
 ```text
- participants               runner                      session                     environment
- ------------               ------                      -------                     -----------
- RandomAgent       act()    one task per      submit()  input log ---fold--> trace  Loop
- ScriptedAgent  <-------->  pending decision <------->  (event sourced)      ledger   +- Seq
- HumanTransportAgent        deadlines,        advance()  store (scoped)               |  +- Par
- TableAgent                 retries,                          |                       |  |  +- Primitive(layer)
- LLMAgent (gao_idl.llm)     timeouts                          v                       |  |  +- Primitive(layer)
-        ^                                              DecisionRequest ---------------+  +- Connector
-        |                                              ParticipantReport                    (record -> Config)
-        +-- sees only requests and reports addressed to its agent
++--------------------------------------------------------------+
+|  Runner (async)                                              |
+|   dispatches DecisionRequests to adapters, awaits actions,   |
+|   delivers ParticipantReports, enforces deadlines            |
++---------------+---------------------------------^------------+
+                | submit(agent, decision_id, action)   events
++---------------v---------------------------------+------------+
+|  Session (sync, deterministic)                               |
+|   log: [Started, Submitted, TimedOut, ExternalResponse, ...] |
+|   state = fold(interpreter, log)                             |
+|   +-------------------------------------------------------+  |
+|   | Process interpreter: frame stack over Seq/Par/Loop    |  |
+|   |  calls Layer kernels with derived RNG streams         |  |
+|   +-------------------------------------------------------+  |
+|   Ledger (per-agent utility, info stream) . Store . Trace    |
++--------------------------------------------------------------+
+        ^ trusted model code                  | authorized payloads only
+   Layers, connectors,                 Adapters: Scripted, Human
+   reporting policies                  transport, Tabular, LLM
 ```
+
+Three levels of trust:
+
+- **Model code** (layers, connectors, reporting policies, codecs declared by the environment author)
+  sees everything in its declared scope.
+- **Runtime** (session, interpreter, ledger) sees everything and emits the researcher trace.
+- **Adapters** see only the `DecisionRequest` and `ParticipantReport` payloads addressed to their
+  agent. This is enforced structurally (adapters never get a reference to the session), not by trust.
 
 A layer is a set of pure hooks (`observe`, `action_schema`, `feasible`, `outcome`, `utilities`,
 `export`, `report`, ...). Composition is checked when you build it, not when you run it.
