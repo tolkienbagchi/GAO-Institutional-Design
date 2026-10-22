@@ -3,6 +3,7 @@
 from gao_idl.core.errors import ContractError
 from gao_idl.core.ids import DecisionId
 from gao_idl.core.paths import Path, path_str
+from gao_idl.core.store import StoreScopeError
 
 RESERVED_NAME_CHARS = "/#@[]"
 
@@ -26,7 +27,7 @@ def check_name(what: str, name: str) -> None:
         )
 
 
-def store_failure_reason(where: str, error: KeyError | PermissionError) -> str:
-    """Failure reason for a store access that left its declared scope (or read an unset key)."""
+def store_failure_reason(where: str, error: StoreScopeError) -> str:
+    """Failure reason for a store access that left its declared scope."""
     detail = error.args[0] if error.args else ""
     return f"{where} violated its store scope: {type(error).__name__}: {detail}"

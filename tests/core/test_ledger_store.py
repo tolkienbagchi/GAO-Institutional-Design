@@ -8,7 +8,7 @@ from gao_idl.core.ids import AgentId, DecisionId, ReportId, RoleId
 from gao_idl.core.ledger import Ledger
 from gao_idl.core.paths import LoopIter, Path
 from gao_idl.core.schemas import DecisionRequest, ParticipantReport, UtilityIncrement
-from gao_idl.core.store import Store
+from gao_idl.core.store import Store, StoreReadDenied, StoreWriteDenied
 from gao_idl.core.trace import LogicalClock
 
 A, B = AgentId("alice"), AgentId("bob")
@@ -90,9 +90,9 @@ def test_store_scope_enforcement() -> None:
     store = Store(LogicalClock(), {"a": 1, "b": 2})
     view = store.view(frozenset({"a"}), frozenset({"b"}), sink, PATH)
     assert view.get("a") == 1
-    with pytest.raises(KeyError):
+    with pytest.raises(StoreReadDenied):
         view.get("b")  # not in reads
-    with pytest.raises(PermissionError):
+    with pytest.raises(StoreWriteDenied):
         view.set("a", 5)  # not in writes
     view.set("b", 9)
     assert store.view(frozenset({"b"}), frozenset(), sink, PATH).get("b") == 9

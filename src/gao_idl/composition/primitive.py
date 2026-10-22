@@ -28,6 +28,7 @@ from gao_idl.core.schemas import (
     ParticipantReport,
     UtilityIncrement,
 )
+from gao_idl.core.store import StoreScopeError
 from gao_idl.core.timeout import DefaultAction, DropRole, Fail
 
 
@@ -225,7 +226,7 @@ class Primitive:
         )
         try:
             outcome = layer.outcome(cfg, parsed, stream(ctx.root_seed, ctx.path, "outcome"), view)
-        except (KeyError, PermissionError) as e:  # store scope violation (see core.store)
+        except StoreScopeError as e:  # store scope violation (see core.store)
             reason = store_failure_reason(f"layer {layer.name!r}", e)
             ctx.trace.emit(ev.Failed(t=ctx.clock.tick(), path=path, reason=reason))
             failed = f.model_copy(update={"phase": "done", "requests": {}, "failed": reason})

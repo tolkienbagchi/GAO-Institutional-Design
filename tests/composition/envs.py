@@ -19,6 +19,7 @@ from tests.composition.layers import (
     Agents,
     N,
     accumulate_layer,
+    buggy_layer,
     choice_layer,
     counter_layer,
     decision_layer,
@@ -42,6 +43,7 @@ LOOP_DECISIONS = "tests.composition.envs:loop_decisions"
 LOOP_STASH = "tests.composition.envs:loop_stash"
 PAR_SHARED_STORE = "tests.composition.envs:par_shared_store"
 SNOOP = "tests.composition.envs:snoop"
+BUGGY = "tests.composition.envs:buggy"
 LOOP_PAR_SEQ = "tests.composition.envs:loop_par_seq"
 SEQ_STORE_CONNECTOR = "tests.composition.envs:seq_store_connector"
 ORDER_LEAK = "tests.composition.envs:order_leak"
@@ -135,12 +137,19 @@ def snoop(mode: str = "read") -> tuple[Process, Config]:
     return Primitive(snoop_layer(mode=mode)), Config(state={"n": 0}, roles={})
 
 
+def buggy(mode: str = "dict") -> tuple[Process, Config]:
+    """A single layer that raises a plain KeyError inside its declared store scope."""
+    return Primitive(buggy_layer(mode=mode)), Config(state={"n": 0}, roles={})
+
+
 def seq_store_connector(mode: str = "read") -> tuple[Process, Config]:
-    """A Seq whose connector touches an undeclared store key."""
+    """A Seq whose connector touches an undeclared store key (or, with ``bug``, has a plain bug)."""
 
     def fn(rec: dict[str, Any], ledger: Any, store: Any) -> Config:
         if mode == "read":
             store.get("secret")
+        elif mode == "bug":
+            {}["nope"]  # a plain KeyError, unrelated to the store
         else:
             store.set("secret", 1)
         return Config(state={"n": 0}, roles={})

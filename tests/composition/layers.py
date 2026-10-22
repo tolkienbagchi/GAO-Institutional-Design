@@ -235,6 +235,30 @@ def snoop_layer(name: str = "snoop", mode: str = "read") -> SimpleLayer:
     )
 
 
+def buggy_layer(name: str = "buggy", mode: str = "dict") -> SimpleLayer:
+    """Deliberately buggy but within its declared scope: raises a plain KeyError.
+
+    ``dict`` indexes an empty dict; ``unset`` reads the declared but never written key.
+    """
+
+    def outcome(
+        cfg: Config, actions: dict[RoleId, BaseModel], rng: Generator, store: StoreView
+    ) -> BaseModel:
+        if mode == "dict":
+            {}["nope"]
+        else:
+            store.get("declared")
+        return N()
+
+    return SimpleLayer(
+        name=name,
+        entry=Contract(state_schema=N, store_reads=frozenset({"declared"})),
+        exits={Port("done"): N},
+        outcome=outcome,
+        export=lambda cfg, out: Exit(port=Port("done"), record={"n": 0}),
+    )
+
+
 def writer_layer(name: str = "writer", key: str = "shared", value: int = 42) -> SimpleLayer:
     """Automatic layer that writes ``value`` to store key ``key`` and exits ``done``."""
 

@@ -437,3 +437,21 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - Consequence for an existing test: `test_reserve_unsold_port` now sees two reports for alice (the bid receipt
   and the unsold report) instead of one. New test `test_unsold_items_are_reported_to_every_bidder`. Mutation
   check: restoring `return None` fails both.
+
+## 2026-10-22 — M1 fix-up task 5: typed store exceptions
+
+- `core/store.py` now defines `StoreScopeError(GaoError)`, `StoreReadDenied(StoreScopeError, KeyError)` and
+  `StoreWriteDenied(StoreScopeError, PermissionError)`; `StoreView.get`/`set` raise them for out-of-scope keys.
+  Because the subclasses are still `KeyError` / `PermissionError`, nothing written against the old exceptions
+  breaks (`test_connector`, `test_ledger_store` still pass; the latter now asserts the typed classes).
+- `Primitive`, `Seq` and `Loop` catch `StoreScopeError` only. A scope violation still becomes `Failed` +
+  `FailedResult`, and the reason now names the typed class (`StoreReadDenied: ...`). Any other `KeyError`
+  — including an in-scope key that was never set — propagates out of `advance()` as a plain `KeyError`.
+- Behaviour change to be aware of: the documented Par shared-store hazard (reader named before its writer,
+  so it reads an unset in-scope key) used to be a failed session and is now an exception. The existing test
+  `test_par_cross_branch_read_before_write_fails_in_sorted_order` keeps its name but asserts the plain
+  `KeyError`; its docstring says so.
+- New tests: `test_unrelated_keyerror_in_layer_propagates` (dict indexing and unset in-scope key),
+  `..._in_a_connector_propagates`, `..._in_a_feedback_connector_propagates`, and a class-hierarchy test.
+  Mutation check: switching each of the three catch sites back to bare `KeyError, PermissionError` fails
+  exactly its propagation test (the Primitive one also fails the Par hazard test).

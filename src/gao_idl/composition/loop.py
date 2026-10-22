@@ -22,6 +22,7 @@ from gao_idl.core.ids import AgentId, DecisionId, Port
 from gao_idl.core.layer import Contract
 from gao_idl.core.paths import LoopIter, child
 from gao_idl.core.schemas import Config, Exit, FrozenModel
+from gao_idl.core.store import StoreScopeError
 
 TRUNCATED = Port("truncated")
 """Reserved exit port of every Loop; only truncation ever uses it."""
@@ -229,7 +230,7 @@ class Loop:
             return f.model_copy(update={"result": cut}), Exited(exit=cut)
         try:
             cfg = self.feedback[port].apply(record, ctx)
-        except (KeyError, PermissionError) as e:
+        except StoreScopeError as e:
             reason = store_failure_reason(f"feedback connector for port {port!r}", e)
             ctx.trace.emit(ev.Failed(t=ctx.clock.tick(), path=list(ctx.path), reason=reason))
             return f.model_copy(update={"failed": reason}), FailedResult(reason=reason)

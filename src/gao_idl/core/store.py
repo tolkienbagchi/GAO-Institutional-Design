@@ -5,8 +5,25 @@ import json
 from typing import Any
 
 from gao_idl.core import events as ev
+from gao_idl.core.errors import GaoError
 from gao_idl.core.paths import Path
 from gao_idl.core.trace import LogicalClock, TraceSink
+
+
+class StoreScopeError(GaoError):
+    """A store access outside the view's declared scope (a contract violation by the accessor)."""
+
+
+class StoreReadDenied(StoreScopeError, KeyError):
+    """A read of a key that is not in the view's read scope.
+
+    Also a ``KeyError`` so that code written against the plain store keeps working; a ``KeyError``
+    for an in-scope key that is merely unset stays a plain ``KeyError`` (a bug in the layer).
+    """
+
+
+class StoreWriteDenied(StoreScopeError, PermissionError):
+    """A write to a key that is not in the view's write scope."""
 
 
 class StoreView:
@@ -29,9 +46,12 @@ class StoreView:
         self._path = path
 
     def get(self, key: str) -> Any:
-        """Return a copy of the value at ``key``; KeyError if out of scope or unset."""
+        """Return a copy of the value at ``key``.
+
+        Raises StoreReadDenied if ``key`` is out of scope, a plain KeyError if in scope but unset.
+        """
         if key not in self._reads:
-            raise KeyError(f"store key {key!r} is not in this view's read scope")
+            raise StoreReadDenied(f"store key {key!r} is not in this view's read scope")
         value = copy.deepcopy(self._data[key])
         self._trace.emit(
             ev.StoreAccess(t=self._clock.tick(), path=list(self._path), key=key, mode="read")
@@ -39,9 +59,9 @@ class StoreView:
         return value
 
     def set(self, key: str, value: Any) -> None:
-        """Store a deep copy of the JSON-able ``value``; PermissionError if out of scope."""
+        """Store a deep copy of the JSON-able ``value``; StoreWriteDenied if out of scope."""
         if key not in self._writes:
-            raise PermissionError(f"store key {key!r} is not in this view's write scope")
+            raise StoreWriteDenied(f"store key {key!r} is not in this view's write scope")
         try:
             json.dumps(value, allow_nan=False)
         except (TypeError, ValueError) as e:
