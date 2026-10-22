@@ -1,6 +1,6 @@
 # `gao_idl.environments`
 
-Ready-made environments: auction, participatory budgeting, repeated prisoner's dilemma, toy tasks.
+Ready-made environments: auction, congestion pricing, participatory budgeting, repeated prisoner's dilemma, toy tasks.
 
 ## `gao_idl.environments.auction`
 
@@ -9,6 +9,18 @@ Ready-made environments: auction, participatory budgeting, repeated prisoner's d
 ## `gao_idl.environments.auction.llm`
 
 ::: gao_idl.environments.auction.llm
+
+## `gao_idl.environments.congestion`
+
+::: gao_idl.environments.congestion
+
+## `gao_idl.environments.congestion.llm`
+
+::: gao_idl.environments.congestion.llm
+
+## `gao_idl.environments.congestion.scripted`
+
+::: gao_idl.environments.congestion.scripted
 
 ## `gao_idl.environments.pb`
 

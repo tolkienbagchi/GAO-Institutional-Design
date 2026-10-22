@@ -1441,3 +1441,50 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - Dependencies: M7 adds none (stdlib, numpy and pydantic only).
 - The brief's "Stretch (only if tasks 1–6 are otherwise done)" is item 6 of task 1's layer list, not a reference to the brief's
   tasks. It is decided at the end of task 1 (see that entry).
+
+## 2026-10-22 — M7 task 1: `environments/congestion/`
+- **Layout.** `model.py` (internal; the pure stylized city: zones, routes, BPR, the exposure surrogate, both equity metrics,
+  the commuter population), `schemas.py` and `layers.py` (internal), `__init__.py` (`build_congestion`, supporting), `scripted.py`
+  (`myopic_commuter`, `greedy_regulator`; supporting) and `llm.py` (`RegulatorCodec`, `CommuterCodec`, `CongestionReportRenderer`;
+  supporting). No change to core, composition, runtime, agents, learning or llm. Public API unchanged (23 names).
+- **Composition.** `Loop(Seq(toll_setting, Seq(travel, exposure)))`, loop name `congestion`, `max_iter=periods+1`,
+  `on_limit="fail"`. The brief says "normal termination through a counter, as in PD"; I did not add a separate counter layer:
+  `exposure` is the last automatic layer of the period and exits `again` or, after the last period, `finished`. Same semantics, one
+  layer fewer. Say if you want the PD's separate `round_counter`.
+- **Store.** `exposure.outcome` writes `prev:times` and `prev:report` (the regulator-visible report); the feedback connector reads
+  `prev:*` and copies both into the next `PeriodIn` (amendment: `observe` has no store access). Period 0 starts from free-flow
+  times (`t0`) and no report — the declared initial condition, nothing invented.
+- **Brief gaps, conservative readings.**
+  - `equity_metric` (the metric the regulator's utility `-objective` is defined by) is a factory parameter. It defaults to the
+    regime's metric; under `report_regime="both"` it must be given (`ContractError` otherwise); a metric the regime hides is
+    refused, so the regulator's objective can never leak a hidden metric.
+  - The regulator's report carries `objective` and `payoff = -objective` (what the exposure layer credits it). `payoff` exists so a
+    tabular learner can take its reward from a report field, as the learning package requires; `RewardExtractor` cannot negate.
+  - `public_report` adds `citywide_mean` (population-weighted mean concentration over all zones) to every report, regulator's
+    included. The brief says only "citywide mean concentration only".
+  - The factory does not see the session seed, so "value of time drawn from the seed" is a factory parameter, `population_seed`
+    (default 0). Explicit `commuters` (dicts) override the draw. `tutorial_commuters()` is the explicit six-commuter fixture of the
+    tutorial and the headline test.
+  - Both toll forms announce the toll to every commuter (public report of `toll_setting`), so commuters cannot tell which form is
+    running. The comparison test drops the regulator's own events (its report, its utility increments) and the global clock `t`.
+  - Commuter reports are sent by `exposure` (it knows the zone concentration) to agents that hold no role in that layer: `audience`
+    names them. The runtime accepts this; nothing in the brief forbids it.
+  - Timeouts: `Fail` (default) or `DefaultAction` (commuters take `transit`, which is open to all; the regulator plays
+    `default_toll`); `DropRole` is refused for both layers, like the PD.
+  - `ev_share` is validated at construction as well as in the kernel.
+- **Stylized numbers.** All of `default_city` is stylized (module docstring says so): 3 peripheral zones (`Z3` a DAC), fare 3,
+  500 vehicles per commuter-agent, BPR caps 4000, threshold 1.2 and DAC weight 2 in the objectives. The numbers were chosen by a
+  seeded random search, run in a scratchpad and not part of the repo, for one property: with `tutorial_commuters()` the hotspot
+  objective is lowest at toll 15 and the population-weighted one at toll 10, toll 0 worse than the best on both, with every
+  commuter's best route at least 1 cost unit better than the second best at every toll, so the outcome is stable under BPR and the
+  myopic commuter does not oscillate. A first fixture without that margin did oscillate at toll 10 (period-by-period flip between
+  two routes); that is why the margin is part of the fixture's explanation in `test_equity_metrics_can_disagree`.
+- **Tests** (`tests/environments/test_congestion.py`, 19 tests, 2 `slow`): all the brief's named tests plus factory validation,
+  restore at three points, population determinism, commuter reports. `assert_noninterference` needs every listed agent to have a
+  pending decision in the first round, so the `v_i` test uses the committed form (no regulator in round 1) and checks that the
+  helper does catch c0's own information changing. `assert_substitution_equivalent` compares the whole trace including the
+  regulator's decision events, so it cannot be used for the two forms; the test compares the downstream events directly.
+- **Out-of-scope edit.** `tests/llm/test_integration.py::test_nothing_below_the_llm_package_imports_it` has an allow-list of
+  environment modules that may import `gao_idl.llm`; `congestion/llm.py` (required by the brief) is added to it.
+- **Stretch (`revenue_to_pb`) — not done in this task.** It reuses the PB layers inside a stage that does not exist yet; decide at
+  the end of the milestone, only if everything else is green. Recorded as a decision to revisit, not as done.

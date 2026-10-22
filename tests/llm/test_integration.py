@@ -251,7 +251,11 @@ def test_nothing_below_the_llm_package_imports_it() -> None:
     for sub in ("core", "composition", "runtime", "agents", "learning", "testing"):
         for path in (SRC / sub).rglob("*.py"):
             assert not [m for m in imports_of(path) if m.startswith("gao_idl.llm")], path
-    allowed = {SRC / "environments" / "auction" / "llm.py", SRC / "environments" / "pd" / "llm.py"}
+    allowed = {
+        SRC / "environments" / "auction" / "llm.py",
+        SRC / "environments" / "congestion" / "llm.py",
+        SRC / "environments" / "pd" / "llm.py",
+    }
     for path in (SRC / "environments").rglob("*.py"):
         if path not in allowed:
             assert not [m for m in imports_of(path) if m.startswith("gao_idl.llm")], path
