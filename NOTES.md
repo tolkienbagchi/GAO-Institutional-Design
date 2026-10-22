@@ -119,3 +119,52 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   `/ # @ [ ]` (and `:` for agent ids); the code does not enforce that.
 - Sanity-checked that the suite is not vacuous: temporarily emitting `ActionAccepted` at submit time (the
   brief's literal wording) makes 7 tests fail, including the barrier and arrival-invariance tests.
+
+## 2026-10-21 — M0 fix-up tasks 1-2: real gate and wheel build NOT executed (blocked)
+- The fix-up brief assumes network access, but this session's egress policy still denies `pypi.org`
+  (proxy answers 403 to CONNECT; a direct connection fails DNS). `pip install -e ".[dev]"`, the
+  3.11/3.13 gate, `python -m build` and the clean-venv wheel install were therefore **not run**. Python 3.11
+  and 3.13 interpreters exist, but only 3.13 has pydantic/numpy (system-wide); 3.11 has no packages.
+- Changes made for these tasks without being able to execute them: CI is now a `["3.11", "3.13"]` matrix;
+  `tests/core/test_paths_property.py` imports hypothesis directly (no `importorskip`), so a missing dev
+  dependency is a hard failure and "0 skipped" is a real gate. Its strategies already excluded the reserved
+  characters `/ # @ [ ]` from layer/branch names; role/agent strategies still allow `:` and digits (like
+  `bidder:0`) because `decision_id` splits on the first `#` and `report_id` on the first `@` / last `:`, so
+  they are injective regardless. If hypothesis finds a counterexample, report it rather than weaken it.
+- Wheel layout, by inspection only: `[tool.hatch.build.targets.wheel] packages = ["src/gao_idl"]` should ship
+  `gao_idl.testing` and exclude `tests/`; unverified.
+- Local verification here uses `PYTHONPATH` with standalone ruff/mypy/pytest on 3.13, with the hypothesis file
+  excluded (`--ignore=tests/core/test_paths_property.py`) because hypothesis is not installable.
+
+## 2026-10-21 — M0 fix-up task 3: `check_determinism` requires an empty inbox
+- Raises `ValueError("call advance() before check_determinism()")` if inputs are queued; the prefix-only
+  tolerance is gone. Ledger comparison kept. `test_check_determinism_with_unadvanced_inbox` became
+  `test_check_determinism_requires_advance_first` (error case plus advance-then-check case).
+
+## 2026-10-21 — M0 fix-up task 4: `Continue` step result; `advance()` loops
+- Added `Continue(FrozenModel)` to `composition/process.py` (`StepResult = Pending | Continue | Exited |
+  FailedResult`, exported). `Session.advance()` repeats `process.step` while it returns `Continue`; the inbox
+  is consumed by the first step and later steps get `[]`. `Primitive` never returns `Continue`.
+- There is no iteration cap: a process that returns `Continue` forever would hang `advance()`. Composites are
+  expected to make finite progress each time; add a guard in M1 if that proves fragile.
+- Test: stub `ContinueTwice` process (`tests/runtime/envs.py`) → one `advance()` finishes after 3 steps, and
+  every step after the first sees no inputs.
+
+## 2026-10-21 — M0 fix-up task 5: natural role order (changes trace order for >= 11 roles)
+- `core.ids.role_sort_key` splits digit runs and compares them numerically (raw string as final tiebreak, so
+  the order is total). Used wherever roles are ordered: four sites in `primitive.py` (the brief said three:
+  request issue order, settle resolution order, and two over `f.actions`) and `bidding._outcome`.
+- Behaviour change vs M0: with >= 11 roles the order of requests, resolution events and `LayerCompleted.actions`
+  is now `bidder:0 … bidder:11` instead of `0, 1, 10, 11, 2 …`. Traces recorded under M0 with >= 11 roles are
+  not byte-identical. Up to 10 roles nothing changes.
+- Agent ordering is untouched: `build_bidding_only` still numbers roles by `sorted(values)` (lexicographic
+  agent id) and `BidObs.bidders` is still lexicographic; only role order is natural.
+
+## 2026-10-21 — M0 fix-up task 6: README example
+- README has one runnable 17-line example; `tests/test_readme_example.py` extracts and executes it and checks
+  its printed output.
+
+## 2026-10-21 — M0 fix-up task 7: hygiene
+- `.gitignore` now ignores `.venv*/` (plus the existing `.hypothesis/`, `dist/`). No `.Rhistory` or `~$*` files
+  exist in the repository, so nothing was removed.
+- Tasks 3-5 share files (`session.py`, tests), so they are one commit instead of three.
