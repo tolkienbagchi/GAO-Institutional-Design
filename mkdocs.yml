@@ -1,0 +1,52 @@
+site_name: gao_idl
+site_description: Composable multi-agent environments with resumable, replayable sessions.
+docs_dir: docs
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - content.code.copy
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.snippets:
+      base_path: ["."]
+      check_paths: true
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: null
+            show_root_heading: true
+            show_root_full_path: false
+            show_source: false
+            members_order: source
+            filters: ["!^_"]
+nav:
+  - Home: index.md
+  - Concepts: concepts.md
+  - Tutorials:
+      - 1. Define a layer: tutorials/01_define_a_layer.md
+      - 2. Compose: tutorials/02_compose.md
+      - 3. Mixed agents: tutorials/03_mixed_agents.md
+      - 4. Pause and resume: tutorials/04_pause_resume.md
+      - 5. Train and evaluate: tutorials/05_train_and_evaluate.md
+      - 6. Information tests: tutorials/06_information_tests.md
+  - API reference:
+      - Overview: api/index.md
+      - core: api/core.md
+      - composition: api/composition.md
+      - runtime: api/runtime.md
+      - agents: api/agents.md
+      - learning: api/learning.md
+      - llm: api/llm.md
+      - environments: api/environments.md
+      - testing: api/testing.md
+  - Design:
+      - Decisions: design/decisions.md

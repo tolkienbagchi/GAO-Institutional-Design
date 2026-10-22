@@ -1287,3 +1287,49 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   `test_every_public_symbol_is_documented`; nothing needed adding). `SimpleLayer`'s hooks are dataclass fields, documented in its
   class docstring, not individually.
 - `import gao_idl` takes about 0.4 s here (it imports the runtime, composition, agents and learning packages, numpy and pydantic).
+
+## 2026-10-22 — M6 task 3: documentation (`mkdocs.yml`, `docs/`, `examples/01..06`, `tests/test_examples.py`, `tests/test_docs.py`)
+- **The v2 plan was not supplied** (`MATRIX_implementation_plan_v2.md` is quoted, not attached), so the two things the brief says to copy
+  from it are *derived*, not copied: the architecture diagram of `docs/index.md` (§2) is drawn from the code (participants, runner,
+  session, process tree), and `docs/design/decisions.md` (§0 and §14) is compiled from the invariants and amendments of
+  `00_SHARED_CONTEXT.md` plus the deviations in this file. The page says so in an admonition. If the plan's diagram or decision log
+  differs, replace those two pages; nothing else depends on them.
+- **"The four information objects"** (concepts.md) are my reading: `DecisionRequest`, `ParticipantReport`, `Exit`, `UtilityIncrement`
+  (the four things that cross a boundary). The brief does not list them.
+- **Examples are digit-named files** (`01_define_a_layer.py`, as briefed), which cannot be imported with `import`. Later tutorials load
+  earlier ones with `importlib.import_module("01_define_a_layer")` after putting their own directory on `sys.path`, and environment
+  factories are addressed as `"01_define_a_layer:build_public_goods"` / `"02_compose:build_repeated_pg"` / `"02_compose:build_pg_tournament"`.
+  This also makes tutorial 4's restore in a fresh process work (the script's directory is `sys.path[0]` there too).
+- **Tutorial 1 is 150 lines, not "~60"**: five pydantic models, the hooks as named functions and the factory, formatted at line length 100.
+  It defines `action_schema` per call with `create_model(..., amount=(float, Field(ge=0, le=endowment)))` so agents that read the JSON
+  Schema know the cap; `feasible` is therefore not needed and the page mentions it as the place for rules a schema cannot state.
+  Observation carries `round` so a tabular learner can use it (`FieldObsCodec(["round"])`).
+- **Tutorial 2, "substitute it into the PD tournament's Par"** — read as: build a tournament of the same shape as `build_repeated_pd`
+  (`Loop(Par(branches with a layer each))`) whose leaves are public-goods layers, and show with `describe()` that the skeleton is the same
+  kind of object (`loop(seq(par(primitive, primitive), primitive))` vs `loop(par(primitive, primitive))`). The PD's `Seq` + round counter
+  is replaced by a small custom `Joiner` that picks `again`/`done` (this also demonstrates the Joiner protocol). I did not literally
+  re-use `build_repeated_pd`'s `Par` object: its `RoundJoin` schema and splitter are PD-specific, and modifying PD is out of scope.
+  The feedback connector carries the endowments unchanged ("carrying endowments"); earnings are not reinvested.
+- **`build_repeated_pg` gained an optional `layer=` argument** (loop body override) so tutorial 6 can show `assert_substitution_equivalent`
+  on a rewritten layer (different summation, mutation-checked: a 1% change in the share makes the helper fail).
+- **Tutorial 6** exercises `assert_replay_equivalent`, `assert_incremental_equals_fold`, `assert_arrival_invariant`,
+  `assert_noninterference` (team one does not learn team two's endowment) with a *negative control* (the same check fails for `cy`, who is
+  told their own endowment) and `assert_substitution_equivalent`. `assert_branch_rng_independence` is described in the page but not run:
+  the public-goods layer draws no random numbers, so the check would be vacuous.
+- **Tutorials import only public or supporting modules**; `tests/test_examples.py` enforces it (it caught my first draft importing
+  `gao_idl.composition.process`, which is internal; the return annotations now use `Primitive`/`Loop`). `from gao_idl.core.ids import ...`
+  and `core.schemas`, `learning.*`, `composition.contracts` and `testing` are supporting, i.e. documented but allowed to change before 1.0.
+- **`tests/test_examples.py`**: each example runs in a subprocess with `GAO_EXAMPLE_FAST=1`, 20 s limit, and prints an expected line; each is
+  mirrored in `docs/tutorials/<name>.md` by a `--8<--` include. Whole file takes about 6 s here (05 is the slowest, ~2 s fast, ~15 s full).
+  Under fast mode 03 trains 8 episodes, 05 trains 20 / evaluates 10, 04 plays 2 rounds.
+- **`tests/test_docs.py`**: every non-internal module has a `::: module` entry in `docs/api/`, every `__all__` name is listed in
+  `docs/api/index.md` with its defining module's page, the nav and the files agree, `site/` is git-ignored, and `mkdocs build --strict`
+  succeeds (skipped without mkdocs; uses the real config when `mkdocstrings` is importable, otherwise the same config without that plugin).
+- **mkdocstrings could not be run here** (not installed, PyPI unreachable): `mkdocs build --strict` was verified only with the plugin
+  removed (the `::: module` lines then render as text). The mkdocstrings options are the minimal documented ones; `docstring_style: null`
+  because the docstrings are free-form Markdown, not Google/NumPy style, and parse warnings would fail `--strict`. API pages link to pages,
+  not anchors, for the same reason. First thing to check on a machine with PyPI: `mkdocs build --strict` with the real config.
+- API pages are generated once from the module list (`docs/api/*.md` are plain files; a one-off script, not committed); `index.md` lists the
+  public names. `ruff` excludes `docs/` (it tried to format the `--8<--` fences); CI gets a `docs` job (`mkdocs build --strict`) and a
+  `package` job (`python -m build`, `twine check`, `clean_install.sh`), neither of which I could run.
+- Nav does not list `docs/ACCEPTANCE.md` yet (task 5 adds it with its nav entry).

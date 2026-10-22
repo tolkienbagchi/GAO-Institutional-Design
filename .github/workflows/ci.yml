@@ -22,6 +22,26 @@ jobs:
       - run: mypy src/gao_idl
       - run: pytest -q -m "not slow"
       - run: python -c "import gao_idl.core, gao_idl.runtime, sys; assert 'httpx' not in sys.modules"
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -e ".[docs]"
+      - run: mkdocs build --strict
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install build twine
+      - run: python -m build
+      - run: twine check dist/*
+      - run: bash scripts/clean_install.sh
   slow:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest

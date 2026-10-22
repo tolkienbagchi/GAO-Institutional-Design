@@ -52,7 +52,7 @@ markers = ["slow: long-running tests (CI runs them nightly: pytest -m slow)"]
 line-length = 100
 target-version = "py311"
 src = ["src", "tests"]
-extend-exclude = [".venv"]
+extend-exclude = [".venv", "docs"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]
