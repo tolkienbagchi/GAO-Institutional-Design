@@ -655,3 +655,8 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - Tests (in `test_runner.py`): `test_pd_deadline_with_default_action_plays_the_default_move` (two rounds, both defaulted
   to `D`, session completes, JSON snapshot/restore works, utilities 10 / 0), bad-argument cases, and a check that the
   default still fails the session on a deadline.
+
+## 2026-10-21 — M2 fix-up task 5: PyPI still unreachable (skipped)
+- `pip download pytest-timeout` fails ("No matching distribution found"), tried once, not retried. So
+  `pip install -e ".[dev]"`, the full `pytest -q` (3 hypothesis tests), `python -m build` and the wheel-contents check
+  (`gao_idl/agents/`, `gao_idl/environments/pd/`) were NOT run, and `pytest-timeout` itself is unverified.
