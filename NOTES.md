@@ -1361,3 +1361,23 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   entry: random float costs are not whole cents). PB ledgers are all zero by design: funding utilities are not credited, the voter's value
   is only disclosed in `FundingReport.private`; the totals line of the CLI is therefore uninformative for PB.
 - `docs/runs.md` documents the format (nav entry "Reproducible runs"); the CLI modules are not in the API reference.
+
+## 2026-10-22 — M6 task 5: acceptance (`docs/ACCEPTANCE.md`, `examples/acceptance/`, `tests/test_acceptance.py`)
+- **Not executed by a human**, as the brief says; this entry only records what was prepared. `docs/ACCEPTANCE.md` has six timed steps (install
+  5, tutorials 1-4 15, own layer 15, wiring into PD or PB 10, scripted + table + mock-LLM 10, public symbols 5 = 60 minutes), a tick-box
+  checklist per step with the expected output (captured from a real run of the tutorials, selftest and the reference answer), a sign-off
+  table and facilitator notes. It is in the nav as "Acceptance".
+- **A worked answer exists so the exercise is known to be possible:** `examples/acceptance/` (`my_env.py` a `rate` layer played after the
+  repeated PD with `Seq` + `Connector`; `train_table.py`; `run_mixed.py` with a scripted, a table, a mock-LLM and a random agent,
+  `check_determinism` and a snapshot/restore round trip), run by `tests/test_acceptance.py` (train, run, restore; and `check()` on the
+  composition). The page tells the facilitator not to show it unless the participant is stuck for ten minutes.
+- **Sharp edges found while writing the reference answer** (all documented in the page; none is a bug and none was changed):
+  1. `ScriptedAgent` policies and `MockBackend` scripts must answer every layer the agent takes part in; the named `scripted:<name>`
+     policies of `learning.opponents` are PD/auction-only, so the *CLI* (`gao_idl.run`) cannot seat a scripted agent in a composed
+     environment with a third kind of layer. The acceptance run therefore uses a Python script, not the CLI.
+  2. A `FieldObsCodec` field must exist in the observation of every layer the learner plays; with no shared field use
+     `FieldObsCodec([])` (one state). A failure there inside `run` becomes a timeout (and, under `Fail`, a failed session); inside `train` it
+     raises `LearnerError`.
+  3. The PD root `Loop` exits through `done` (record `round_index`, `rounds`, `pairs`) and the reserved `truncated`; an exit port that is not
+     routed in a `Seq` is re-exported by the `Seq`, so the connector only needs the `done` route.
+- Wording in the acceptance page is mine; the brief gave only the list of steps.
