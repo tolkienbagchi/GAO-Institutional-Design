@@ -1333,3 +1333,31 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   public names. `ruff` excludes `docs/` (it tried to format the `--8<--` fences); CI gets a `docs` job (`mkdocs build --strict`) and a
   `package` job (`python -m build`, `twine check`, `clean_install.sh`), neither of which I could run.
 - Nav does not list `docs/ACCEPTANCE.md` yet (task 5 adds it with its nav entry).
+
+## 2026-10-22 — M6 task 4: reproducible demo configs (`gao_idl/run.py`, `gao_idl/replay.py`, `examples/configs/`, `docs/runs.md`)
+- **Brief conflict: a module `gao_idl/run.py` vs the exported function `gao_idl.run`** (task 2 pins `run` in `__all__`; task 4 asks for
+  `python -m gao_idl.run`). Importing a submodule rebinds the package attribute, so `import gao_idl.run` (as a module) turns
+  `gao_idl.run` from the function into the module (checked: `type(gao_idl.run)` goes `function` -> `module`). Conservative reading taken:
+  keep both names as briefed, run the CLI **only** with `-m` (runpy executes it as `__main__` and does not rebind the attribute; the
+  package never imports it; a test checks that `import gao_idl` leaves `gao_idl.run` a function and loads neither entry point), mark
+  both modules *Stability: internal* with the warning in the docstring, and make the test walkers that import every module
+  (`tests/test_public_api.py`, `tests/test_docs.py`) read entry points from source through `tests/modules.py::load_module` instead of
+  importing them. If this is unwanted, the fix is to rename the module (for instance `gao_idl.cli_run`) and change the command in the
+  brief; nothing else depends on the name. `replay` has no clash.
+- **Config** (`gao_idl.run.RunConfig`, pydantic, `extra="forbid"`): `env_ref`, `params`, `seed`, `agents` (agent -> adapter). An adapter is
+  a description string already understood by `learning.opponents.default_opponent_factory` (`"random"`, `"scripted:<name>"`,
+  `"table:<path>"`), or `{"kind": "mock_llm", "reply": {...}}` (my addition, so a demo config can exercise the LLM adapter without a
+  network: `LLMAgent` on a `MockBackend` that always answers with `reply`). Real LLM backends are deliberately not configurable (credentials).
+  Random agents are seeded with `derive_seed(session seed, agent, "random")`, so a config alone fixes the run (test: two runs give
+  byte-identical files).
+- **Output** (`gao_idl.run/1`): `config`, `result` (`finished`, `failed`, `port`, `record`), `ledger` (exact float totals for every agent
+  in the config or the ledger) and `snapshot` (`Session.snapshot()`). Exit status 0 if the session finished without failing, 1 if
+  not, 2 for a bad config or a run that raised `ValueError`/`RuntimeError`/`GaoError` (for example an agent without an adapter: the runner
+  reports a stall). **Replay** restores the snapshot (replay of the log), calls `check_determinism()`, then compares result and totals
+  with the file (exact equality): status 1 and a message on any difference, a wrong `format`, or a log that no longer replays.
+  Tested by editing the ledger, the result port, and one submitted action in the log.
+- Demo configs: `pd.json` (tit-for-tat vs random, 10 rounds), `auction.json` (second price with reserve; truthful, random and mock-LLM
+  bidders), `pb.json` (five random agents, `greedy`, with private values). The PB config cannot use `knapsack` (see the M6 task 0
+  entry: random float costs are not whole cents). PB ledgers are all zero by design: funding utilities are not credited, the voter's value
+  is only disclosed in `FundingReport.private`; the totals line of the CLI is therefore uninformative for PB.
+- `docs/runs.md` documents the format (nav entry "Reproducible runs"); the CLI modules are not in the API reference.

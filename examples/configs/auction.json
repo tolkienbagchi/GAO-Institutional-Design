@@ -1,0 +1,24 @@
+{
+  "env_ref": "gao_idl.environments.auction:build_auction",
+  "params": {
+    "values": {
+      "alice": 10.0,
+      "bob": 7.0,
+      "carol": 4.0
+    },
+    "rule": "second_price",
+    "reveal_bids": false,
+    "reserve": 2.0
+  },
+  "seed": 3,
+  "agents": {
+    "alice": "scripted:truthful_bidder",
+    "bob": "random",
+    "carol": {
+      "kind": "mock_llm",
+      "reply": {
+        "amount": 3.5
+      }
+    }
+  }
+}

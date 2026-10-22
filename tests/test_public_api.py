@@ -2,7 +2,6 @@
 must change the lists below, and every module must say how stable it is."""
 
 import dataclasses
-import importlib
 import inspect
 import os
 import pkgutil
@@ -16,6 +15,7 @@ import pytest
 
 import gao_idl
 import gao_idl.llm
+from tests.modules import load_module
 
 EXPECTED = [
     "Session",
@@ -139,7 +139,7 @@ def test_every_public_symbol_is_documented(name: str) -> None:
 def _all_modules() -> list[types.ModuleType]:
     modules = [gao_idl]
     for info in pkgutil.walk_packages(gao_idl.__path__, prefix="gao_idl."):
-        modules.append(importlib.import_module(info.name))
+        modules.append(load_module(info.name))
     return modules
 
 

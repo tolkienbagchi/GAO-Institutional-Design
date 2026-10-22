@@ -1,0 +1,9 @@
+{
+  "env_ref": "gao_idl.environments.pd:build_repeated_pd",
+  "params": {"agents": ["alice", "bob"], "rounds": 10, "matching": "fixed"},
+  "seed": 7,
+  "agents": {
+    "alice": "scripted:tit_for_tat",
+    "bob": "random"
+  }
+}

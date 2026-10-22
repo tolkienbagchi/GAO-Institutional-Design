@@ -1,0 +1,55 @@
+{
+  "env_ref": "gao_idl.environments.pb:build_pb",
+  "params": {
+    "proposers": [
+      "alice",
+      "bob",
+      "carol"
+    ],
+    "voters": [
+      "alice",
+      "bob",
+      "carol",
+      "dan",
+      "erin"
+    ],
+    "budget": 10,
+    "max_cost": 8,
+    "rule": "greedy",
+    "private_values": {
+      "alice": {
+        "p0": 3,
+        "p1": 1,
+        "p2": 2
+      },
+      "bob": {
+        "p0": 1,
+        "p1": 4,
+        "p2": 2
+      },
+      "carol": {
+        "p0": 2,
+        "p1": 2,
+        "p2": 5
+      },
+      "dan": {
+        "p0": 4,
+        "p1": 1,
+        "p2": 1
+      },
+      "erin": {
+        "p0": 1,
+        "p1": 3,
+        "p2": 3
+      }
+    }
+  },
+  "seed": 5,
+  "agents": {
+    "alice": "random",
+    "bob": "random",
+    "carol": "random",
+    "dan": "random",
+    "erin": "random"
+  }
+}
