@@ -1568,3 +1568,12 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   schemas, delivered reports). That detects a leak of any hidden number; it does not detect a leak in words.
 - **`llms.md` accuracy** is checked mechanically only for the presence of every public name (23 + 24); signatures and prose were
   written from the code and the shared-context amendments and are not machine-checked.
+
+## 2026-10-22 — M7 task 6: designing chapter and integration
+- `docs/designing.md` (nine questions in prose, a text diagram of the four information objects, both tutorials as worked cases),
+  nav entries "Designing an environment" and "For AI agents", README "Tutorials" section, `/skills` added to the sdist include list.
+  `tests/test_examples.py` already runs both new examples under `GAO_EXAMPLE_FAST=1` (tasks 2 and 4).
+- The diagram is a fenced text block, not Mermaid: the docs theme config has no Mermaid support and I did not add a dependency.
+- **Stretch `revenue_to_pb` — not done.** It would need the PB layers reused inside a new stage; the brief forbids forking
+  `environments/pb`, and reuse without a change to `pb` (out of scope) was not possible for me to establish in the time. Skipped, not
+  attempted.
