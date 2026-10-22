@@ -740,3 +740,33 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - Static guard test: `learning/codecs.py` and `learning/qlearning.py` import nothing from `runtime`, `core.ledger`, `core.store`
   or `composition` (invariant 1). Mutation checks (all reverted): no truncation bootstrap, no rollback, reward not accumulated,
   failed episodes decaying ε each make the corresponding tests fail.
+
+## 2026-10-22 — M3 task 3: trainer and evaluator (`learning/trainer.py`, `learning/opponents.py`)
+- **Returns are true ledger utility, read by the trainer, never by the agent.** `train`/`evaluate` report
+  `session.ledger.utility(learner)` per episode (the ground truth); the runner is used with the default policy, so the learner
+  gets no `final_utility` and learns only from report fields. This is the one place outside `Session`/runner/tests that touches
+  the ledger; it is not reachable from adapter code.
+- `opponent_factory` is `factory(agent_id, description, episode_seed) -> adapter`, called once per opponent per episode (so a
+  `RandomAgent` is reproducible from the episode seed alone: `derive_seed` = blake2b of `episode_seed|agent|purpose`).
+  `opponent_factory=None` means `default_opponent_factory()`, which understands the brief's three forms. `scripted:<name>` names
+  come from `opponents.SCRIPTED` (`always_cooperate`, `always_defect`, `tit_for_tat`, `truthful_bidder`; extendable through the
+  factory's argument). `table:<path>` loads a JSON checkpoint, rebuilds the built-in codecs from its codec identifiers
+  (`obs_codec_from_spec` / `act_codec_from_spec`) and seats a frozen `TableAgent` at the opponent's agent id; this needed a
+  keyword-only `agent_id` on `TableAgent.from_checkpoint`.
+- `evaluate(spec, learner_ckpt, opponent_factory, episodes, seed)` follows the brief; extra keyword-only `obs_codec` / `act_codec`
+  are for custom codec classes (the default rebuilds the built-ins from the checkpoint). The table is seated at `spec.learner`
+  whatever agent id the checkpoint carries. `spec.episodes` / `spec.seed` are the *training* values and are ignored by it.
+- **Isolation:** `evaluate` always builds a new `TableAgent` with `learning=False`; `train` refuses a frozen agent and an agent that
+  `evaluate` built (module-level weak sets; explicit `AssertionError`, not a stripped-under-`-O` `assert`). Both wrap the learner in
+  `_Pinned`, which forces `keep_parameters=True` in the `EpisodeContext` (the runner builds the context with that default
+  anyway, so this only guards against a future default change) and records exceptions from `act`.
+- **Why `_Pinned` records errors:** the runner turns an exception in `act` into a timeout (M2). With a misconfigured codec that
+  would make every episode fail with only a log warning. The trainer re-raises the first such error as `LearnerError` (cause
+  attached) after the episode. Exceptions from opponents keep the runner's behaviour (timeout -> failed episode).
+- One `asyncio.run` for the whole training run (not one per episode), so `train`/`evaluate` cannot be called from inside a running
+  event loop. The runner's catch-up delivery is irrelevant here (fresh sessions).
+- `EvalResult.mean` / `std` are over non-failed episodes (population std, `ddof=0`); `None` if all failed. A failed episode's
+  entry in `returns` is the utility accrued before the failure; `terminals` / `failed_episodes` tell them apart.
+- `TrainSpec.episodes >= 1`; the learner may not also be listed as an opponent. `TrainResult` / `EvalResult` round-trip through
+  `model_dump(mode="json")` / `model_validate` (tested for `TrainResult`).
+- Mutation check (reverted): `evaluate` building the agent with `learning=True` fails `test_the_evaluation_agent_is_new_frozen_and_never_updated`.

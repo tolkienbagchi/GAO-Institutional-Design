@@ -274,3 +274,20 @@ def codec_spec(codec: object) -> dict[str, Any]:
     spec: dict[str, Any] = {"type": type(codec).__name__, "args": args}
     json.dumps(spec)  # must be JSON-able: it goes into checkpoints
     return spec
+
+
+def obs_codec_from_spec(spec: dict[str, Any]) -> ObsCodec:
+    """Rebuild a ``FieldObsCodec`` from its ``codec_spec`` (other classes: pass them in)."""
+    if spec.get("type") != "FieldObsCodec":
+        raise ValueError(
+            f"cannot rebuild observation codec {spec.get('type')!r}; pass it explicitly"
+        )
+    args = spec["args"]
+    return FieldObsCodec(args["fields"], args["history"], report_fields=args["report_fields"])
+
+
+def act_codec_from_spec(spec: dict[str, Any]) -> ActCodec:
+    """Rebuild a ``SchemaActCodec`` from its ``codec_spec`` (other classes: pass them in)."""
+    if spec.get("type") != "SchemaActCodec":
+        raise ValueError(f"cannot rebuild action codec {spec.get('type')!r}; pass it explicitly")
+    return SchemaActCodec(grid=spec["args"]["grid"])

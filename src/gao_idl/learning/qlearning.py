@@ -281,11 +281,13 @@ class TableAgent(AgentAdapter):
         *,
         learning: bool = True,
         record_transitions: bool = False,
+        agent_id: AgentId | None = None,
     ) -> "TableAgent":
         """Rebuild an agent from ``checkpoint()`` output; ``d`` is not modified or aliased.
 
         The codecs must be the ones the checkpoint was made with (same class name and constructor
-        arguments), else ``ValueError``.
+        arguments), else ``ValueError``. ``agent_id`` seats the restored table at another agent
+        (the table does not depend on who played it); default: the checkpoint's own.
         """
         if d.get("format") != CHECKPOINT_FORMAT:
             raise ValueError(f"unknown checkpoint format {d.get('format')!r}")
@@ -294,7 +296,7 @@ class TableAgent(AgentAdapter):
             if wanted != given:
                 raise ValueError(f"{field} mismatch: checkpoint has {wanted!r}, given {given!r}")
         agent = cls(
-            AgentId(d["agent_id"]),
+            AgentId(d["agent_id"]) if agent_id is None else agent_id,
             obs_codec,
             act_codec,
             RewardExtractor.model_validate(d["reward"]),
