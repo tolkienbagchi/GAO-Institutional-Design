@@ -79,7 +79,10 @@ def settlement_layer(reserve: float | None = None) -> SimpleLayer:
     """The settlement layer. ``reserve`` is part of the environment, not of the entry state.
 
     Bids below ``reserve`` are ignored; if none remains the layer exits through ``unsold``. Ties go
-    to the lexicographically smallest agent id; second price with one eligible bidder is 0.
+    to the lexicographically smallest agent id. First price charges the winner's own bid. Second
+    price charges the highest other eligible bid, and the reserve acts as a bid by the seller: the
+    price is ``max(reserve, highest other eligible bid)``, so a lone eligible bidder pays the
+    reserve. Without a reserve a lone bidder pays 0.
     """
     if reserve is not None and (math.isnan(reserve) or reserve < 0):
         raise ContractError(f"settlement: reserve must be a non-negative number, got {reserve!r}")
@@ -99,7 +102,8 @@ def settlement_layer(reserve: float | None = None) -> SimpleLayer:
         if state.rule == "first_price":
             price = eligible[winner]
         else:
-            price = max((b for a, b in eligible.items() if a != winner), default=0.0)
+            rival = max((b for a, b in eligible.items() if a != winner), default=0.0)
+            price = rival if reserve is None else max(reserve, rival)  # the seller's bid
         payments = {a: (price if a == winner else 0.0) for a in bidders}
         utilities = {a: (state.values[a] - price if a == winner else 0.0) for a in bidders}
         return SettlementOutcome(winner=winner, price=price, payments=payments, utilities=utilities)

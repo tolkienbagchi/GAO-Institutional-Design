@@ -418,3 +418,12 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - Negative controls (tests): `OrderLeak` (a wrapper that traces arrival order) fails outside any branch and
   inside one; `test_par_global_trace_follows_submission_order_but_projections_do_not` shows exact trace
   equality really does differ for a Par while the projections agree.
+
+## 2026-10-22 — M1 fix-up task 3: textbook reserve semantics
+
+- Second price with a reserve now charges `max(reserve, highest other eligible bid)`; the reserve acts as a
+  seller's bid (layer docstring updated). First price is unchanged (the winner pays their bid) and a
+  setup without a reserve is unchanged (a lone bidder pays 0). This resolves the "Reserve semantics" call
+  in the M1 entry for task 7: the literal pure-filter reading is no longer what the code does.
+- Flipped the assertion in `test_reserve_ignores_low_bids_and_clears_at_equality` (alice now pays 7.0);
+  added `test_reserve_binds_second_price`. Mutation check: reverting the price line fails exactly those two.

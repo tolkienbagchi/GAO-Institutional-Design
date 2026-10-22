@@ -588,14 +588,28 @@ def test_reserve_unsold_port() -> None:
 def test_reserve_ignores_low_bids_and_clears_at_equality() -> None:
     first = play(auction_params(rule="first_price", reserve=7.0), {"alice": 8.0, "bob": 6.0})
     assert (record(first)["winner"], record(first)["price"]) == ("alice", 8.0)
-    # bob's 6 is below the reserve and ignored, so alice is the only eligible bidder and (second
-    # price, brief's literal reading) pays 0 -- see NOTES for the alternative max(reserve, 2nd bid)
+    # bob's 6 is below the reserve and ignored; the reserve is the seller's bid, so alice pays it
     second = play(auction_params(rule="second_price", reserve=7.0), {"alice": 8.0, "bob": 6.0})
-    assert (record(second)["winner"], record(second)["price"]) == ("alice", 0.0)
+    assert (record(second)["winner"], record(second)["price"]) == ("alice", 7.0)
     both = play(auction_params(rule="second_price", reserve=6.0), {"alice": 8.0, "bob": 6.0})
     assert record(both)["price"] == 6.0  # a bid equal to the reserve is eligible
     only_bob = play(auction_params(rule="first_price", reserve=6.5), {"alice": 6.0, "bob": 7.0})
     assert record(only_bob)["winner"] == "bob"
+
+
+def test_reserve_binds_second_price() -> None:
+    """One bidder above the reserve pays the reserve, not 0; a higher rival still sets the price."""
+    lone = play(auction_params(rule="second_price", reserve=4.0), {"alice": 8.0, "bob": 3.0})
+    assert (record(lone)["winner"], record(lone)["price"]) == ("alice", 4.0)
+    assert record(lone)["payments"] == {"alice": 4.0, "bob": 0.0}
+    assert record(lone)["utilities"] == {"alice": 9.0 - 4.0, "bob": 0.0}
+    assert lone.ledger.utility(ALICE) == 5.0
+    rival = play(auction_params(rule="second_price", reserve=4.0), {"alice": 8.0, "bob": 6.0})
+    assert record(rival)["price"] == 6.0  # an eligible rival above the reserve sets the price
+    no_reserve = play(auction_params(rule="second_price"), {"alice": 8.0, "bob": 3.0})
+    assert record(no_reserve)["price"] == 3.0
+    solo = play(auction_params({"solo": 9.0}, rule="second_price", reserve=2.0), {"solo": 5.0})
+    assert record(solo)["price"] == 2.0
 
 
 def test_reserve_is_the_same_structure_with_a_different_committed_rule() -> None:
