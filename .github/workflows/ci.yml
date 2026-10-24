@@ -51,4 +51,4 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install -e ".[dev,llm,docs]"
-      - run: pytest -q -m slow
+      - run: pytest -q -m slow --timeout=900

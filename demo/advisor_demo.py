@@ -20,7 +20,8 @@ Usage (from the repository root, inside the venv with the llm extra installed):
     python demo/advisor_demo.py                    # 6 periods each, ~50 model calls total
     python demo/advisor_demo.py --periods 4        # fewer
     GAO_ANTHROPIC_MODEL=claude-haiku-5-5 python demo/advisor_demo.py
-    GAO_ANTHROPIC_WORKSPACE_ID=wrkspc_... python demo/advisor_demo.py   # only for a non-workspace-scoped key
+    GAO_ANTHROPIC_WORKSPACE_ID=wrkspc_... python demo/advisor_demo.py
+        (the workspace id is only needed for a key that is not scoped to a workspace)
 
 The key is read once into a SecretStr-returning callable and never written anywhere.
 """
