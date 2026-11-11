@@ -59,6 +59,15 @@ gao-idl replay run.json                               # rebuild it from the log,
 
 `python -m gao_idl.cli` does the same. See `docs/runs.md`.
 
+```bash
+gao-idl spec check examples/specs/auction.json --cards examples/cards/auction.json
+gao-idl cards show examples/cards/auction.json --spec examples/specs/auction.json
+```
+
+check that an environment is the institution its designer described: a spec of the design, a page
+rendered from the built environment, and worked scenarios a person confirms or rejects. See
+`docs/verifying.md`.
+
 ## License
 
 Apache License 2.0 (see `LICENSE`). Copyright 2026 Tolkien Bagchi. To cite the software, see

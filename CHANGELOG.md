@@ -25,6 +25,12 @@ Fix-up after M6: single `gao_idl.cli` module and `gao-idl` script, `knapsack` ro
 Apache-2.0 license, author and URL metadata, `py.typed`, `CITATION.cff`, `mkdocs<2` pin, and release
 notes in `docs/releasing.md`.
 
+After M7 (unreleased): **M8, verified authoring.** New supporting package `gao_idl.authoring`: the
+`EnvSpec` model, runs from data (`play`, `script_of`), deterministic rendering (`knowledge_table`,
+`to_mermaid`, `to_outline`, `render_design`), `check_spec`, and scenario cards; `assert_cards` in
+`gao_idl.testing`; `gao-idl spec render|check` and `gao-idl cards show|confirm|reject|verify`; specs
+and proposed cards for the auction, the prisoner's dilemma and the carbon market; `docs/verifying.md`.
+
 Replace "Unreleased" with the date when the tag is cut.
 
 [0.1.0]: https://github.com/tolkienbagchi/GAO-Institutional-Design/releases/tag/v0.1.0

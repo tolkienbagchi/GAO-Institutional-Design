@@ -256,6 +256,24 @@ anyOf, local $ref`) is authoritative; a provider's narrower support is handled b
 request schema, never by relaxing the validator. Failed calls are input events, so replay
 reproduces failures in place.
 
+## Verified authoring (`gao_idl.authoring`)
+
+After building an environment, write its `EnvSpec` (the nine answers as JSON) and propose scenario
+cards. Nothing here calls a model. Workflow and limits: `docs/verifying.md`.
+
+| Name | Purpose |
+| --- | --- |
+| `EnvSpec`, `load_spec(path)` | roles, steps (`sees` / `chooses` / `told` per role kind), `repeats`, `secrets`, `payoffs`, `invariants`, `assumptions` |
+| `play(env_ref, params, seed, script)` | run from data; `script` maps agent to actions in order, `None` = does not act |
+| `script_of(session)` | the script that reproduces a session driven by adapters |
+| `knowledge_table(sessions)`, `to_mermaid(describe(p))`, `render_design(spec, p, table)` | the reviewable page, from the build |
+| `check_spec(spec, runs)` | list of `Mismatch`; empty = spec and build agree on the runs given |
+| `Card`, `freeze`, `render_card`, `verify_cards`, `load_cards`, `save_cards` | scenario cards; `gao_idl.testing.assert_cards(path)` |
+
+Command line: `gao-idl spec render|check SPEC [--cards CARDS]`, `gao-idl cards show|confirm|reject|verify CARDS`.
+A role *kind* is the role id before the first `:`. **Never confirm or reject a card yourself and never
+set an assumption to confirmed**: both record a person's judgement.
+
 ## Test fixtures (`gao_idl.testing`)
 
 They raise `AssertionError`, have no pytest dependency, and assume one pending decision per agent

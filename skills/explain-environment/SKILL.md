@@ -64,6 +64,11 @@ for agent in ("a", "b"):
     print(agent, "is told", sorted(first.payload))
 ```
 
+If the environment has a spec (`examples/specs/` or next to its module), start from
+`gao-idl spec render SPEC --cards CARDS --out design.md`: it produces the structure diagram and the
+who-knows-what table from the build, in the template's order. `gao_idl.authoring.knowledge_table`
+and `to_mermaid(describe(process))` do steps 1 to 3 for an environment without one.
+
 ## Template for the explanation
 
 Keep it to what the person needs. Use these headings, in this order, and drop any that do not apply.
