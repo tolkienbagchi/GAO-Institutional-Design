@@ -155,3 +155,73 @@ def test_installed_script_name_points_at_main() -> None:
 
 def test_no_subcommand_is_a_usage_error(tmp_path: Path) -> None:
     assert _cli(cwd=tmp_path).returncode == 2
+
+
+# ------------------------------------------------------------------ spec and cards (M8)
+
+SPEC = ROOT / "examples" / "specs" / "auction.json"
+CARDS = ROOT / "examples" / "cards" / "auction.json"
+
+
+def test_spec_check_passes_on_the_shipped_auction(tmp_path: Path) -> None:
+    done = _cli("spec", "check", str(SPEC), "--cards", str(CARDS), cwd=tmp_path)
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert "0 mismatches over 13 runs" in done.stdout
+    assert "assumptions not yet confirmed" in done.stdout
+
+
+def test_spec_check_without_cards_claims_nothing(tmp_path: Path) -> None:
+    done = _cli("spec", "check", str(SPEC), cwd=tmp_path)
+    assert done.returncode == 1
+    assert "not_exercised" in done.stdout and "undeclared" not in done.stdout
+
+
+def test_spec_check_reports_a_wrong_spec(tmp_path: Path) -> None:
+    spec = json.loads(SPEC.read_text())
+    spec["steps"][0]["sees"]["bidder"].remove("bidders")
+    path = tmp_path / "spec.json"
+    path.write_text(json.dumps(spec))
+    done = _cli("spec", "check", str(path), "--cards", str(CARDS), cwd=tmp_path)
+    assert done.returncode == 1
+    assert "undeclared_sees" in done.stdout and "bidders" in done.stdout
+
+
+def test_spec_render_writes_the_design(tmp_path: Path) -> None:
+    out = tmp_path / "design.md"
+    done = _cli("spec", "render", str(SPEC), "--cards", str(CARDS), "--out", str(out), cwd=tmp_path)
+    assert done.returncode == 0, done.stderr
+    text = out.read_text()
+    assert text.startswith("# Sealed-bid auction") and "## Who knows what" in text
+    bad = _cli("spec", "render", str(tmp_path / "nope.json"), "--out", str(out), cwd=tmp_path)
+    assert bad.returncode == 2 and "Traceback" not in bad.stderr
+
+
+def test_cards_confirm_reject_verify(tmp_path: Path) -> None:
+    cards = tmp_path / "cards.json"
+    cards.write_text(CARDS.read_text())
+    shown = _cli(
+        "cards", "show", str(cards), "--status", "proposed", "--spec", str(SPEC), cwd=tmp_path
+    )
+    assert shown.returncode == 0 and "### Everyone bids their value" in shown.stdout
+    assert _cli("cards", "verify", str(cards), cwd=tmp_path).returncode == 0
+    done = _cli("cards", "confirm", str(cards), "truthful", "tie-top", cwd=tmp_path)
+    assert done.returncode == 0, done.stderr
+    verified = _cli("cards", "verify", str(cards), cwd=tmp_path)
+    assert (
+        verified.returncode == 0 and "2 confirmed, 0 rejected, 11 still proposed" in verified.stdout
+    )
+    rejected = _cli(
+        "cards",
+        "reject",
+        str(cards),
+        "no-bid",
+        "--note",
+        "a missing bid should be a zero bid",
+        cwd=tmp_path,
+    )
+    assert rejected.returncode == 0
+    verified = _cli("cards", "verify", str(cards), cwd=tmp_path)
+    assert verified.returncode == 1 and "no-bid: rejected outcome is still" in verified.stderr
+    data = {c["id"]: c for c in json.loads(cards.read_text())}
+    assert data["no-bid"]["note"] == "a missing bid should be a zero bid"
+    assert _cli("cards", "confirm", str(cards), "nope", cwd=tmp_path).returncode == 2

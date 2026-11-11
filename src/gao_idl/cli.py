@@ -1,4 +1,4 @@
-"""Command line: ``gao-idl run CONFIG --out FILE`` and ``gao-idl replay FILE``.
+"""Command line: ``gao-idl run``, ``gao-idl replay``, ``gao-idl spec`` and ``gao-idl cards``.
 
 Also available as ``python -m gao_idl.cli``. ``run`` plays an environment from a JSON config and
 writes the session snapshot and ledger totals. The config names the environment factory
@@ -13,6 +13,12 @@ snapshot's input log is replayed from scratch (no adapters are needed: whatever 
 including the replies of a language model, is in the log), the replay is checked against the log's
 own trace, and the result and ledger totals are compared with the ones the file recorded. Exit
 status 0 means identical; 1 means they differ.
+
+``spec render`` writes the reviewable design page of a spec and ``spec check`` compares the spec
+with the environment it names (exit status 1 on any mismatch); with ``--cards`` each card supplies
+one run to draw on. ``cards show`` prints cards in plain language, ``cards confirm`` and
+``cards reject`` record a person's verdict, and ``cards verify`` checks that confirmed cards are
+still reproduced and rejected ones are not (exit status 1 otherwise). See ``docs/verifying.md``.
 
 Stability: internal; the command-line interface is the supported way to use this module.
 """
@@ -145,9 +151,121 @@ def _cmd_replay(args: argparse.Namespace) -> int:
     return 0
 
 
+def _load(args: argparse.Namespace) -> tuple[Any, list[Any], list[Any]]:
+    """The spec, its cards (or none) and one run per card; imported late to keep ``run`` light."""
+    from gao_idl.authoring import Run, load_cards, load_spec
+
+    spec = load_spec(args.spec)
+    cards = load_cards(args.cards) if args.cards is not None else []
+    runs = [Run(params=c.params, seed=c.seed, script=c.script) for c in cards]
+    return spec, cards, runs
+
+
+def _cmd_spec_render(args: argparse.Namespace) -> int:
+    from gao_idl.authoring import knowledge_table, play, render_design
+    from gao_idl.runtime.registry import resolve
+
+    try:
+        spec, _, runs = _load(args)
+        process, _cfg = resolve(spec.env_ref)(**spec.params)
+        sessions = [play(spec.env_ref, r.params, r.seed, r.script) for r in runs]
+        text = render_design(spec, process, knowledge_table(sessions))
+    except (OSError, ValueError, RuntimeError, GaoError) as e:
+        print(f"cannot render the design: {type(e).__name__}: {e}", file=sys.stderr)
+        return 2
+    args.out.write_text(text)
+    print(f"{spec.title}: {len(runs)} runs -> {args.out}")
+    return 0
+
+
+def _cmd_spec_check(args: argparse.Namespace) -> int:
+    from gao_idl.authoring import check_spec
+
+    try:
+        spec, _, runs = _load(args)
+        found = check_spec(spec, runs)
+    except (OSError, ValueError, RuntimeError, GaoError) as e:
+        print(f"cannot check the spec: {type(e).__name__}: {e}", file=sys.stderr)
+        return 2
+    for m in found:
+        print(f"{m.kind:<20} {m.where}: {m.message}")
+    open_items = sum(not a.confirmed for a in spec.assumptions)
+    print(
+        f"{spec.title}: {len(found)} mismatches over {len(runs)} runs; "
+        f"{open_items} assumptions not yet confirmed"
+    )
+    return 1 if found else 0
+
+
+def _cmd_cards_show(args: argparse.Namespace) -> int:
+    from gao_idl.authoring import load_cards, load_spec, render_card
+
+    try:
+        cards = load_cards(args.cards)
+        spec = load_spec(args.spec) if args.spec is not None else None
+    except (OSError, ValueError) as e:
+        print(f"cannot read: {type(e).__name__}: {e}", file=sys.stderr)
+        return 2
+    chosen = [c for c in cards if args.status in (None, c.status)]
+    for card in chosen:
+        print(render_card(card, spec))
+        print("---\n")
+    print(f"{len(chosen)} of {len(cards)} cards shown", file=sys.stderr)
+    return 0
+
+
+def _cmd_cards_mark(args: argparse.Namespace) -> int:
+    from gao_idl.authoring import freeze, load_cards, save_cards
+
+    try:
+        cards = load_cards(args.cards)
+    except (OSError, ValueError) as e:
+        print(f"cannot read {args.cards}: {type(e).__name__}: {e}", file=sys.stderr)
+        return 2
+    wanted = list(args.ids)
+    unknown = sorted(set(wanted) - {c.id for c in cards})
+    if unknown:
+        print(f"no such card: {', '.join(unknown)}", file=sys.stderr)
+        return 2
+    marked = []
+    for card in cards:
+        if card.id in wanted:
+            if card.expect is None:
+                card = freeze(card)
+            update: dict[str, Any] = {"status": args.status}
+            if args.note is not None:
+                update["note"] = args.note
+            card = card.model_copy(update=update)
+        marked.append(card)
+    save_cards(args.cards, marked)
+    print(f"{len(wanted)} cards marked {args.status} in {args.cards}")
+    return 0
+
+
+def _cmd_cards_verify(args: argparse.Namespace) -> int:
+    from gao_idl.authoring import load_cards, verify_cards
+
+    try:
+        cards = load_cards(args.cards)
+    except (OSError, ValueError) as e:
+        print(f"cannot read {args.cards}: {type(e).__name__}: {e}", file=sys.stderr)
+        return 2
+    problems = verify_cards(cards)
+    for problem in problems:
+        print(problem, file=sys.stderr)
+    counts = {s: sum(c.status == s for c in cards) for s in ("confirmed", "rejected", "proposed")}
+    print(
+        f"{counts['confirmed']} confirmed, {counts['rejected']} rejected, "
+        f"{counts['proposed']} still proposed (not checked); {len(problems)} problems"
+    )
+    return 1 if problems else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """Command-line entry point (``gao-idl``); returns the exit status."""
-    parser = argparse.ArgumentParser(prog="gao-idl", description="Run and replay gao_idl sessions.")
+    parser = argparse.ArgumentParser(
+        prog="gao-idl", description="Run and replay gao_idl sessions; check specs and cards."
+    )
     sub = parser.add_subparsers(dest="command", required=True)
     run_p = sub.add_parser("run", help="play a JSON config and write the session file")
     run_p.add_argument("config", type=Path, help="JSON config (see examples/configs/)")
@@ -156,6 +274,37 @@ def main(argv: list[str] | None = None) -> int:
     replay_p = sub.add_parser("replay", help="replay a session file and check it is reproduced")
     replay_p.add_argument("file", type=Path, help="file written by `gao-idl run`")
     replay_p.set_defaults(func=_cmd_replay)
+
+    spec_p = sub.add_parser("spec", help="render or check an environment spec")
+    spec_sub = spec_p.add_subparsers(dest="spec_command", required=True)
+    render_p = spec_sub.add_parser("render", help="write the design page a person reviews")
+    check_p = spec_sub.add_parser("check", help="compare the spec with the built environment")
+    for p, func in ((render_p, _cmd_spec_render), (check_p, _cmd_spec_check)):
+        p.add_argument("spec", type=Path, help="spec JSON file")
+        p.add_argument("--cards", type=Path, default=None, help="cards whose runs to draw on")
+        p.set_defaults(func=func)
+    render_p.add_argument("--out", type=Path, required=True, help="markdown file to write")
+
+    cards_p = sub.add_parser("cards", help="show, confirm, reject or verify scenario cards")
+    cards_sub = cards_p.add_subparsers(dest="cards_command", required=True)
+    show_p = cards_sub.add_parser("show", help="print cards in plain language")
+    show_p.add_argument("cards", type=Path)
+    show_p.add_argument("--status", choices=["proposed", "confirmed", "rejected"], default=None)
+    show_p.add_argument("--spec", type=Path, default=None, help="spec for step descriptions")
+    show_p.set_defaults(func=_cmd_cards_show)
+    confirm_p = cards_sub.add_parser("confirm", help="record that these cards are as intended")
+    confirm_p.add_argument("cards", type=Path)
+    confirm_p.add_argument("ids", nargs="+", metavar="ID")
+    confirm_p.add_argument("--note", default=None)
+    confirm_p.set_defaults(func=_cmd_cards_mark, status="confirmed")
+    reject_p = cards_sub.add_parser("reject", help="record that a card is not what was meant")
+    reject_p.add_argument("cards", type=Path)
+    reject_p.add_argument("ids", nargs=1, metavar="ID")
+    reject_p.add_argument("--note", required=True, help="what should happen instead")
+    reject_p.set_defaults(func=_cmd_cards_mark, status="rejected")
+    verify_p = cards_sub.add_parser("verify", help="check confirmed and rejected cards")
+    verify_p.add_argument("cards", type=Path)
+    verify_p.set_defaults(func=_cmd_cards_verify)
     args = parser.parse_args(argv)
     return int(args.func(args))
 
