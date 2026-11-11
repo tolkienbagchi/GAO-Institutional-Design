@@ -1,0 +1,18 @@
+flowchart TD
+  subgraph n1["repeat: pd (limit 4)"]
+    subgraph n2["in parallel: round"]
+      n3{{"split"}}
+      n5["pd_round: col, row"]
+      n6["pd_round: col, row"]
+      n4{{"join"}}
+    end
+    n7["round_counter"]
+  end
+  n8(["ends: done"])
+  n3 -->|pair_0| n5
+  n5 -->|done| n4
+  n3 -->|pair_1| n6
+  n6 -->|done| n4
+  n4 -->|round_done| n7
+  n7 -->|again| n3
+  n7 -->|done| n8

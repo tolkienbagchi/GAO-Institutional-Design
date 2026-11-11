@@ -1,0 +1,3 @@
+sequence auction -> done, unsold
+  first: step bidding -> settle
+  on settle: step settlement -> done, unsold

@@ -1,0 +1,8 @@
+flowchart TD
+  n1["bidding"]
+  n2["settlement"]
+  n3(["ends: done"])
+  n4(["ends: unsold"])
+  n1 -->|settle| n2
+  n2 -->|done| n3
+  n2 -->|unsold| n4
