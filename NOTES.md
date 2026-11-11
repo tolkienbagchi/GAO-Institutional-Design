@@ -1612,3 +1612,36 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   it. Tests: `test_request_shape` asserts the key is absent; `test_temperature_is_sent_only_on_request` covers the opt-in.
 - Also from the live run: a key not scoped to a workspace needs an `anthropic-workspace-id` header (pass via
   `extra_headers`); a workspace-scoped key needs nothing. The demo script reads `GAO_ANTHROPIC_WORKSPACE_ID` for this.
+
+## 2026-11-11 — M8 task 0: baseline
+- On `main` at `6143584`: `ruff check .`, `ruff format --check .`, `mypy src/gao_idl` clean; `pytest -q -m "not slow"` 806 passed,
+  4 skipped with `tests/core/test_paths_property.py`, `tests/environments/test_pb_rules_property.py` (no `hypothesis`) and
+  `tests/test_packaging.py` (no `build`) ignored and `PYTHONPATH=src` in place of an install. PyPI unreachable: `pip install -e`,
+  `python -m build`, `mkdocstrings` and `pytest-timeout` did not run.
+
+## 2026-11-11 — M8: verified authoring (`gao_idl.authoring`), deviations from the brief
+- **Scripts are keyed by agent, not by role id** (`ActionScript = dict[agent, list[action | None]]`). Role ids are not unique in a run:
+  every `Par` branch of the PD has a `row` and a `col`, so "the i-th decision of role `row`" interleaves pairs. An agent's decisions have
+  one order. Cards read better this way too ("alice bids 8").
+- **`check_spec(spec, runs: Sequence[Run])`** (the brief's amended form). `Run` = params, seed, script.
+- **`SecretSpec` gained `except_agents` and `only_when`.** Without the first, "a bidder's value is hidden from bidders" fails on the
+  bidder who owns it. Without the second, "true quality is revealed only by an audit" cannot be stated: it holds only when `p_audit = 0`.
+- **`StepSpec`**: a decision step must give `on_no_action`; `sees` keys must be deciders. `EnvSpec` and its parts forbid unknown keys.
+- **`describe()` cannot tell an automatic layer from one with undeclared roles.** `Contract.roles` may be empty for dynamic role sets
+  (the auction's `bidder:i`), so the diagram labels a step with roles only where the contract lists them, and "automatic vs decision"
+  is checked from runs (`undeclared_chooses`), not from the tree. `timeout_policy` is checked from the tree.
+- **A layer's name is not in its path under a `Par` branch** (the primitive runs at the branch path). Step order and card narration
+  take the name from `DecisionRequested.request.layer` / `LayerCompleted.layer`, and step order is "first asked or completed".
+- **`knowledge_table` takes sessions only**; timeout kinds come from rebuilding the process from each session's snapshot.
+- **`script_of(session)`** added (not in the brief): turns a run driven by adapters into a script, so cards for the carbon market
+  can start from the scripted policies. `scripts/make_example_cards.py` writes the three card files, always as `proposed`.
+- **`render_card` re-runs the scenario** to narrate it and warns at the top if the recorded outcome is stale. With a spec it lists
+  only the parameters that differ from the spec's. Floats are rounded to 6 decimals for display only.
+- **A rejected card whose run now raises counts as "gone"**; a confirmed one that raises is a problem.
+- **`gao-idl cards show` takes `--spec`** for step descriptions; `cards confirm/reject` freeze an unfrozen card first.
+- **Golden files** for the auction and PD diagram, outline and design page are in `tests/authoring/golden/`
+  (`GAO_UPDATE_GOLDEN=1` rewrites them).
+- **The carbon-market spec covers `market_form="per_project"` only.** A pooled-form card made `check_spec` report four mismatches
+  (buyers choose `price`/`qty` instead of one order per project; clearing reports carry `price`): the two forms are different
+  designs and need a spec each. The pooled card was replaced by an audit-by-chance card.
+- Limits recorded in `docs/verifying.md`: field names not values; secrets must be factory parameters; field names that are data.
