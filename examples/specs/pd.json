@@ -1,0 +1,118 @@
+{
+ "spec_version": 1,
+ "title": "Repeated prisoner's dilemma in pairs",
+ "summary": "Players are paired. In every round both players of a pair choose to cooperate (C) or defect (D) at the same time, learn the other's move and their own payoff, and play again.",
+ "env_ref": "gao_idl.environments.pd:build_repeated_pd",
+ "params": {
+  "agents": [
+   "a",
+   "b",
+   "c",
+   "d"
+  ],
+  "rounds": 3,
+  "matching": "fixed"
+ },
+ "roles": [
+  {
+   "name": "row",
+   "description": "The first player of a pair.",
+   "many": true
+  },
+  {
+   "name": "col",
+   "description": "The second player of a pair.",
+   "many": true
+  }
+ ],
+ "steps": [
+  {
+   "name": "pd_round",
+   "kind": "decision",
+   "description": "Both players of a pair choose C or D without seeing the other's choice.",
+   "sees": {
+    "row": [
+     "own_history",
+     "payoffs",
+     "round_index"
+    ],
+    "col": [
+     "own_history",
+     "payoffs",
+     "round_index"
+    ]
+   },
+   "chooses": {
+    "row": [
+     "move"
+    ],
+    "col": [
+     "move"
+    ]
+   },
+   "told": {
+    "row": [
+     "other_move",
+     "own_move",
+     "own_payoff",
+     "round_index"
+    ],
+    "col": [
+     "other_move",
+     "own_move",
+     "own_payoff",
+     "round_index"
+    ]
+   },
+   "on_no_action": "fail"
+  },
+  {
+   "name": "round_counter",
+   "kind": "automatic",
+   "description": "The round is counted; after the last round the game ends."
+  }
+ ],
+ "repeats": {
+  "what": "The round repeats with the same pairs.",
+  "rounds_param": "rounds",
+  "carries_over": [
+   "Each pair's history of moves, visible only to that pair."
+  ]
+ },
+ "payoffs": [
+  {
+   "role": "row",
+   "description": "The payoff table entry for the two moves, added up over rounds.",
+   "report_field": "own_payoff"
+  },
+  {
+   "role": "col",
+   "description": "The payoff table entry for the two moves, added up over rounds.",
+   "report_field": "own_payoff"
+  }
+ ],
+ "invariants": [
+  {
+   "name": "pairs_are_private",
+   "statement": "A player never learns anything about the moves in another pair."
+  }
+ ],
+ "assumptions": [
+  {
+   "question": 7,
+   "text": "If a player does not move, the whole run stops (unless a default move is configured)."
+  },
+  {
+   "question": 2,
+   "text": "Players see the full payoff table and the round number before each move."
+  },
+  {
+   "question": 5,
+   "text": "Players know the number of the current round but are not told how many rounds remain."
+  },
+  {
+   "question": 6,
+   "text": "With fixed matching the pairs are (a, b) and (c, d), in the order the players are listed."
+  }
+ ]
+}
