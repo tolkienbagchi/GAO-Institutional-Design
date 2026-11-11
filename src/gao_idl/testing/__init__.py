@@ -342,3 +342,16 @@ def assert_branch_rng_independence(
             _information_stripped(alone, agent, True),
             f"information streams of {agent!r}",
         )
+
+
+def assert_cards(path: Any) -> None:
+    """Every confirmed card in the JSON file at ``path`` is reproduced, and no rejected one is.
+
+    See ``gao_idl.authoring.cards``; proposed cards are skipped.
+    """
+    from pathlib import Path
+
+    from gao_idl.authoring.cards import load_cards, verify_cards
+
+    problems = verify_cards(load_cards(Path(path)))
+    assert not problems, "scenario cards are not honoured:\n" + "\n".join(problems)

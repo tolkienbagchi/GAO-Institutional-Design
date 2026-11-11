@@ -1,0 +1,1087 @@
+[
+ {
+  "env_ref": "gao_idl.environments.auction:build_auction",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "alice": [
+     {
+      "own_bid": 10.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 10.0,
+      "own_payment": 7.0,
+      "own_utility": 3.0,
+      "winner": "alice",
+      "winning_payment": 7.0
+     }
+    ],
+    "bob": [
+     {
+      "own_bid": 7.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 7.0,
+      "own_payment": 0.0,
+      "own_utility": 0.0,
+      "winner": "alice",
+      "winning_payment": 7.0
+     }
+    ],
+    "carol": [
+     {
+      "own_bid": 4.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 4.0,
+      "own_payment": 0.0,
+      "own_utility": 0.0,
+      "winner": "alice",
+      "winning_payment": 7.0
+     }
+    ]
+   },
+   "utilities": {
+    "alice": 3.0,
+    "bob": 0.0,
+    "carol": 0.0
+   }
+  },
+  "id": "truthful",
+  "note": "",
+  "params": {
+   "reserve": 2.0,
+   "reveal_bids": false,
+   "rule": "second_price",
+   "values": {
+    "alice": 10.0,
+    "bob": 7.0,
+    "carol": 4.0
+   }
+  },
+  "script": {
+   "alice": [
+    {
+     "amount": 10
+    }
+   ],
+   "bob": [
+    {
+     "amount": 7
+    }
+   ],
+   "carol": [
+    {
+     "amount": 4
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "Everyone bids their value",
+  "why": "The plain case: the highest bidder wins and pays the second-highest bid."
+ },
+ {
+  "env_ref": "gao_idl.environments.auction:build_auction",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "alice": [
+     {
+      "own_bid": 8.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 8.0,
+      "own_payment": 8.0,
+      "own_utility": 2.0,
+      "winner": "alice",
+      "winning_payment": 8.0
+     }
+    ],
+    "bob": [
+     {
+      "own_bid": 8.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 8.0,
+      "own_payment": 0.0,
+      "own_utility": 0.0,
+      "winner": "alice",
+      "winning_payment": 8.0
+     }
+    ],
+    "carol": [
+     {
+      "own_bid": 1.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 1.0,
+      "own_payment": 0.0,
+      "own_utility": 0.0,
+      "winner": "alice",
+      "winning_payment": 8.0
+     }
+    ]
+   },
+   "utilities": {
+    "alice": 2.0,
+    "bob": 0.0,
+    "carol": 0.0
+   }
+  },
+  "id": "tie-top",
+  "note": "",
+  "params": {
+   "reserve": 2.0,
+   "reveal_bids": false,
+   "rule": "second_price",
+   "values": {
+    "alice": 10.0,
+    "bob": 7.0,
+    "carol": 4.0
+   }
+  },
+  "script": {
+   "alice": [
+    {
+     "amount": 8
+    }
+   ],
+   "bob": [
+    {
+     "amount": 8
+    }
+   ],
+   "carol": [
+    {
+     "amount": 1
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "Two bidders tie for the highest bid",
+  "why": "Who wins a tie, and what do they pay? The earlier name wins and pays the tied bid."
+ },
+ {
+  "env_ref": "gao_idl.environments.auction:build_auction",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "alice": [
+     {
+      "own_bid": 1.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 1.0,
+      "own_payment": 0.0,
+      "own_utility": 0.0,
+      "winner": "bob",
+      "winning_payment": 9.0
+     }
+    ],
+    "bob": [
+     {
+      "own_bid": 9.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 9.0,
+      "own_payment": 9.0,
+      "own_utility": -2.0,
+      "winner": "bob",
+      "winning_payment": 9.0
+     }
+    ],
+    "carol": [
+     {
+      "own_bid": 9.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 9.0,
+      "own_payment": 0.0,
+      "own_utility": 0.0,
+      "winner": "bob",
+      "winning_payment": 9.0
+     }
+    ]
+   },
+   "utilities": {
+    "alice": 0.0,
+    "bob": -2.0,
+    "carol": 0.0
+   }
+  },
+  "id": "tie-lower-value-wins",
+  "note": "",
+  "params": {
+   "reserve": 2.0,
+   "reveal_bids": false,
+   "rule": "second_price",
+   "values": {
+    "alice": 10.0,
+    "bob": 7.0,
+    "carol": 4.0
+   }
+  },
+  "script": {
+   "alice": [
+    {
+     "amount": 1
+    }
+   ],
+   "bob": [
+    {
+     "amount": 9
+    }
+   ],
+   "carol": [
+    {
+     "amount": 9
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "A tie that the lower-value bidder wins",
+  "why": "The tie-break goes by name, not by who values the item more."
+ },
+ {
+  "env_ref": "gao_idl.environments.auction:build_auction",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "alice": [
+     {
+      "own_bid": 5.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 5.0,
+      "own_payment": 2.0,
+      "own_utility": 8.0,
+      "winner": "alice",
+      "winning_payment": 2.0
+     }
+    ],
+    "bob": [
+     {
+      "own_bid": 1.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 1.0,
+      "own_payment": 0.0,
+      "own_utility": 0.0,
+      "winner": "alice",
+      "winning_payment": 2.0
+     }
+    ],
+    "carol": [
+     {
+      "own_bid": 1.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 1.0,
+      "own_payment": 0.0,
+      "own_utility": 0.0,
+      "winner": "alice",
+      "winning_payment": 2.0
+     }
+    ]
+   },
+   "utilities": {
+    "alice": 8.0,
+    "bob": 0.0,
+    "carol": 0.0
+   }
+  },
+  "id": "one-above-reserve",
+  "note": "",
+  "params": {
+   "reserve": 2.0,
+   "reveal_bids": false,
+   "rule": "second_price",
+   "values": {
+    "alice": 10.0,
+    "bob": 7.0,
+    "carol": 4.0
+   }
+  },
+  "script": {
+   "alice": [
+    {
+     "amount": 5
+    }
+   ],
+   "bob": [
+    {
+     "amount": 1
+    }
+   ],
+   "carol": [
+    {
+     "amount": 1
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "Only one bid clears the reserve",
+  "why": "Does a lone qualifying bidder pay its own bid, the next bid, or the reserve?"
+ },
+ {
+  "env_ref": "gao_idl.environments.auction:build_auction",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "alice": [
+     {
+      "own_bid": 6.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 6.0,
+      "own_payment": 2.0,
+      "own_utility": 8.0,
+      "winner": "alice",
+      "winning_payment": 2.0
+     }
+    ],
+    "bob": [
+     {
+      "own_bid": 1.5,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 1.5,
+      "own_payment": 0.0,
+      "own_utility": 0.0,
+      "winner": "alice",
+      "winning_payment": 2.0
+     }
+    ],
+    "carol": [
+     {
+      "own_bid": 0.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 0.0,
+      "own_payment": 0.0,
+      "own_utility": 0.0,
+      "winner": "alice",
+      "winning_payment": 2.0
+     }
+    ]
+   },
+   "utilities": {
+    "alice": 8.0,
+    "bob": 0.0,
+    "carol": 0.0
+   }
+  },
+  "id": "second-below-reserve",
+  "note": "",
+  "params": {
+   "reserve": 2.0,
+   "reveal_bids": false,
+   "rule": "second_price",
+   "values": {
+    "alice": 10.0,
+    "bob": 7.0,
+    "carol": 4.0
+   }
+  },
+  "script": {
+   "alice": [
+    {
+     "amount": 6
+    }
+   ],
+   "bob": [
+    {
+     "amount": 1.5
+    }
+   ],
+   "carol": [
+    {
+     "amount": 0
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "The second-highest bid is below the reserve",
+  "why": "The reserve, not the losing bid, sets the price."
+ },
+ {
+  "env_ref": "gao_idl.environments.auction:build_auction",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "alice": [
+     {
+      "own_bid": 2.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 2.0,
+      "own_payment": 2.0,
+      "own_utility": 8.0,
+      "winner": "alice",
+      "winning_payment": 2.0
+     }
+    ],
+    "bob": [
+     {
+      "own_bid": 1.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 1.0,
+      "own_payment": 0.0,
+      "own_utility": 0.0,
+      "winner": "alice",
+      "winning_payment": 2.0
+     }
+    ],
+    "carol": [
+     {
+      "own_bid": 1.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 1.0,
+      "own_payment": 0.0,
+      "own_utility": 0.0,
+      "winner": "alice",
+      "winning_payment": 2.0
+     }
+    ]
+   },
+   "utilities": {
+    "alice": 8.0,
+    "bob": 0.0,
+    "carol": 0.0
+   }
+  },
+  "id": "exactly-reserve",
+  "note": "",
+  "params": {
+   "reserve": 2.0,
+   "reveal_bids": false,
+   "rule": "second_price",
+   "values": {
+    "alice": 10.0,
+    "bob": 7.0,
+    "carol": 4.0
+   }
+  },
+  "script": {
+   "alice": [
+    {
+     "amount": 2
+    }
+   ],
+   "bob": [
+    {
+     "amount": 1
+    }
+   ],
+   "carol": [
+    {
+     "amount": 1
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "A bid exactly equal to the reserve",
+  "why": "Is a bid at the reserve enough to win?"
+ },
+ {
+  "env_ref": "gao_idl.environments.auction:build_auction",
+  "expect": {
+   "exit_port": "unsold",
+   "failed": false,
+   "reports": {
+    "alice": [
+     {
+      "own_bid": 1.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 1.0,
+      "reserve": 2.0,
+      "status": "unsold"
+     }
+    ],
+    "bob": [
+     {
+      "own_bid": 1.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 1.0,
+      "reserve": 2.0,
+      "status": "unsold"
+     }
+    ],
+    "carol": [
+     {
+      "own_bid": 1.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 1.0,
+      "reserve": 2.0,
+      "status": "unsold"
+     }
+    ]
+   },
+   "utilities": {
+    "alice": 0.0,
+    "bob": 0.0,
+    "carol": 0.0
+   }
+  },
+  "id": "all-below-reserve",
+  "note": "",
+  "params": {
+   "reserve": 2.0,
+   "reveal_bids": false,
+   "rule": "second_price",
+   "values": {
+    "alice": 10.0,
+    "bob": 7.0,
+    "carol": 4.0
+   }
+  },
+  "script": {
+   "alice": [
+    {
+     "amount": 1
+    }
+   ],
+   "bob": [
+    {
+     "amount": 1
+    }
+   ],
+   "carol": [
+    {
+     "amount": 1
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "No bid clears the reserve",
+  "why": "The item stays unsold and nobody pays."
+ },
+ {
+  "env_ref": "gao_idl.environments.auction:build_auction",
+  "expect": {
+   "exit_port": null,
+   "failed": true,
+   "reports": {},
+   "utilities": {
+    "alice": 0.0,
+    "bob": 0.0,
+    "carol": 0.0
+   }
+  },
+  "id": "no-bid",
+  "note": "",
+  "params": {
+   "reserve": 2.0,
+   "reveal_bids": false,
+   "rule": "second_price",
+   "values": {
+    "alice": 10.0,
+    "bob": 7.0,
+    "carol": 4.0
+   }
+  },
+  "script": {
+   "alice": [
+    {
+     "amount": 10
+    }
+   ],
+   "bob": [
+    {
+     "amount": 7
+    }
+   ],
+   "carol": [
+    null
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "One bidder sends no bid",
+  "why": "A missing bid stops the whole run; it is not treated as a bid of zero."
+ },
+ {
+  "env_ref": "gao_idl.environments.auction:build_auction",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "alice": [
+     {
+      "own_bid": 10.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 10.0,
+      "own_payment": 0.0,
+      "own_utility": 0.0,
+      "winner": "bob",
+      "winning_payment": 10.0
+     }
+    ],
+    "bob": [
+     {
+      "own_bid": 12.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 12.0,
+      "own_payment": 10.0,
+      "own_utility": -3.0,
+      "winner": "bob",
+      "winning_payment": 10.0
+     }
+    ],
+    "carol": [
+     {
+      "own_bid": 4.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 4.0,
+      "own_payment": 0.0,
+      "own_utility": 0.0,
+      "winner": "bob",
+      "winning_payment": 10.0
+     }
+    ]
+   },
+   "utilities": {
+    "alice": 0.0,
+    "bob": -3.0,
+    "carol": 0.0
+   }
+  },
+  "id": "overbid",
+  "note": "",
+  "params": {
+   "reserve": 2.0,
+   "reveal_bids": false,
+   "rule": "second_price",
+   "values": {
+    "alice": 10.0,
+    "bob": 7.0,
+    "carol": 4.0
+   }
+  },
+  "script": {
+   "alice": [
+    {
+     "amount": 10
+    }
+   ],
+   "bob": [
+    {
+     "amount": 12
+    }
+   ],
+   "carol": [
+    {
+     "amount": 4
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "A bidder bids above its value and wins",
+  "why": "Bids above one's value are allowed and can lose money."
+ },
+ {
+  "env_ref": "gao_idl.environments.auction:build_auction",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "alice": [
+     {
+      "own_bid": 9.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 9.0,
+      "own_payment": 9.0,
+      "own_utility": 1.0,
+      "winner": "alice",
+      "winning_payment": 9.0
+     }
+    ],
+    "bob": [
+     {
+      "own_bid": 7.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 7.0,
+      "own_payment": 0.0,
+      "own_utility": 0.0,
+      "winner": "alice",
+      "winning_payment": 9.0
+     }
+    ],
+    "carol": [
+     {
+      "own_bid": 4.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 4.0,
+      "own_payment": 0.0,
+      "own_utility": 0.0,
+      "winner": "alice",
+      "winning_payment": 9.0
+     }
+    ]
+   },
+   "utilities": {
+    "alice": 1.0,
+    "bob": 0.0,
+    "carol": 0.0
+   }
+  },
+  "id": "first-price",
+  "note": "",
+  "params": {
+   "reserve": 2.0,
+   "reveal_bids": false,
+   "rule": "first_price",
+   "values": {
+    "alice": 10.0,
+    "bob": 7.0,
+    "carol": 4.0
+   }
+  },
+  "script": {
+   "alice": [
+    {
+     "amount": 9
+    }
+   ],
+   "bob": [
+    {
+     "amount": 7
+    }
+   ],
+   "carol": [
+    {
+     "amount": 4
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "First-price rule",
+  "why": "Under first_price the winner pays its own bid."
+ },
+ {
+  "env_ref": "gao_idl.environments.auction:build_auction",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "alice": [
+     {
+      "own_bid": 10.0,
+      "status": "bid accepted"
+     },
+     {
+      "all_bids": {
+       "alice": 10.0,
+       "bob": 7.0,
+       "carol": 4.0
+      },
+      "own_bid": 10.0,
+      "own_payment": 7.0,
+      "own_utility": 3.0,
+      "winner": "alice",
+      "winning_payment": 7.0
+     }
+    ],
+    "bob": [
+     {
+      "own_bid": 7.0,
+      "status": "bid accepted"
+     },
+     {
+      "all_bids": {
+       "alice": 10.0,
+       "bob": 7.0,
+       "carol": 4.0
+      },
+      "own_bid": 7.0,
+      "own_payment": 0.0,
+      "own_utility": 0.0,
+      "winner": "alice",
+      "winning_payment": 7.0
+     }
+    ],
+    "carol": [
+     {
+      "own_bid": 4.0,
+      "status": "bid accepted"
+     },
+     {
+      "all_bids": {
+       "alice": 10.0,
+       "bob": 7.0,
+       "carol": 4.0
+      },
+      "own_bid": 4.0,
+      "own_payment": 0.0,
+      "own_utility": 0.0,
+      "winner": "alice",
+      "winning_payment": 7.0
+     }
+    ]
+   },
+   "utilities": {
+    "alice": 3.0,
+    "bob": 0.0,
+    "carol": 0.0
+   }
+  },
+  "id": "reveal-bids",
+  "note": "",
+  "params": {
+   "reserve": 2.0,
+   "reveal_bids": true,
+   "rule": "second_price",
+   "values": {
+    "alice": 10.0,
+    "bob": 7.0,
+    "carol": 4.0
+   }
+  },
+  "script": {
+   "alice": [
+    {
+     "amount": 10
+    }
+   ],
+   "bob": [
+    {
+     "amount": 7
+    }
+   ],
+   "carol": [
+    {
+     "amount": 4
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "Bids are revealed afterwards",
+  "why": "With reveal_bids on, every bidder is told every bid after settlement."
+ },
+ {
+  "env_ref": "gao_idl.environments.auction:build_auction",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "alice": [
+     {
+      "own_bid": 5.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 5.0,
+      "own_payment": 0.0,
+      "own_utility": 10.0,
+      "winner": "alice",
+      "winning_payment": 0.0
+     }
+    ],
+    "bob": [
+     {
+      "own_bid": 0.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 0.0,
+      "own_payment": 0.0,
+      "own_utility": 0.0,
+      "winner": "alice",
+      "winning_payment": 0.0
+     }
+    ],
+    "carol": [
+     {
+      "own_bid": 0.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 0.0,
+      "own_payment": 0.0,
+      "own_utility": 0.0,
+      "winner": "alice",
+      "winning_payment": 0.0
+     }
+    ]
+   },
+   "utilities": {
+    "alice": 10.0,
+    "bob": 0.0,
+    "carol": 0.0
+   }
+  },
+  "id": "no-reserve-lone-bid",
+  "note": "",
+  "params": {
+   "reserve": null,
+   "reveal_bids": false,
+   "rule": "second_price",
+   "values": {
+    "alice": 10.0,
+    "bob": 7.0,
+    "carol": 4.0
+   }
+  },
+  "script": {
+   "alice": [
+    {
+     "amount": 5
+    }
+   ],
+   "bob": [
+    {
+     "amount": 0
+    }
+   ],
+   "carol": [
+    {
+     "amount": 0
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "No reserve and only one positive bid",
+  "why": "Without a reserve the winner pays the highest other bid, here zero."
+ },
+ {
+  "env_ref": "gao_idl.environments.auction:build_auction",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "alice": [
+     {
+      "own_bid": 0.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 0.0,
+      "own_payment": 0.0,
+      "own_utility": 10.0,
+      "winner": "alice",
+      "winning_payment": 0.0
+     }
+    ],
+    "bob": [
+     {
+      "own_bid": 0.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 0.0,
+      "own_payment": 0.0,
+      "own_utility": 0.0,
+      "winner": "alice",
+      "winning_payment": 0.0
+     }
+    ],
+    "carol": [
+     {
+      "own_bid": 0.0,
+      "status": "bid accepted"
+     },
+     {
+      "own_bid": 0.0,
+      "own_payment": 0.0,
+      "own_utility": 0.0,
+      "winner": "alice",
+      "winning_payment": 0.0
+     }
+    ]
+   },
+   "utilities": {
+    "alice": 10.0,
+    "bob": 0.0,
+    "carol": 0.0
+   }
+  },
+  "id": "no-reserve-all-zero",
+  "note": "",
+  "params": {
+   "reserve": null,
+   "reveal_bids": false,
+   "rule": "second_price",
+   "values": {
+    "alice": 10.0,
+    "bob": 7.0,
+    "carol": 4.0
+   }
+  },
+  "script": {
+   "alice": [
+    {
+     "amount": 0
+    }
+   ],
+   "bob": [
+    {
+     "amount": 0
+    }
+   ],
+   "carol": [
+    {
+     "amount": 0
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "No reserve and everyone bids zero",
+  "why": "The item is still sold: the first name wins and pays nothing."
+ }
+]
