@@ -44,6 +44,11 @@ Beyond the brief's mutants I weakened the shipped specs by hand and the secret c
   - Carbon market: a verifier that *understates* quality is penalized exactly like one that overstates (`understated`); a project that does not trade cannot be audited (`no-trade-no-audit`); sellers are told revenue, never profit.
 - **Assumptions written into the specs:** 7 (auction), 4 (PD), 6 (carbon market); every one has `confirmed: false`.
 
+## After the first CI run
+
+- CI ran the full gate. `package`, `docs` (with mkdocstrings) and `test (3.13)` passed; `test (3.11)` failed one test: a carbon-market card frozen on 3.13 differed from 3.11 in the last bits of two utilities. Card outcomes are now compared to within 1e-9 (`same_outcome`).
+- **The cause is in the environment, not the cards.** Built-in `sum` over floats is compensated from Python 3.12, and `environments/vcm` uses it, so a session's ledger totals are not bit-identical across Python versions. `gao-idl replay` compares totals exactly and would flag a 3.11 recording replayed on 3.13. Not fixed here (out of scope); `math.fsum` in the carbon market would fix it.
+
 ## Not done
 
 - The full gate, as listed in the first line.

@@ -1645,3 +1645,12 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   (buyers choose `price`/`qty` instead of one order per project; clearing reports carry `price`): the two forms are different
   designs and need a spec each. The pooled card was replaced by an audit-by-chance card.
 - Limits recorded in `docs/verifying.md`: field names not values; secrets must be factory parameters; field names that are data.
+
+## 2026-11-11 — M8 fix after first CI run: card outcomes are compared to within 1e-9, not exactly
+- CI on Python 3.11 failed `test_shipped_cards_are_proposed_frozen_and_current[vcm]` (card `buyer-stays-out`): utilities frozen on 3.13
+  differed in the last bits (`0.07499999999998863` vs `0.07500000000000284`). Built-in `sum` over floats is compensated from Python
+  3.12 on, and the carbon market sums floats with it. `cards.same_outcome` now compares numbers with `math.isclose` (rel and abs 1e-9);
+  `verify_cards`, the stale-outcome warning in `render_card` and the shipped-cards test use it.
+- **Not fixed, and wider than cards:** a carbon-market session recorded on Python 3.11 does not replay to bit-identical ledger totals on
+  3.12+, so `gao-idl replay` (which compares totals with `!=`) would report a difference across interpreters. Determinism holds within
+  one Python version. `environments/vcm` was out of scope for M8; using `math.fsum` there would remove the dependence.

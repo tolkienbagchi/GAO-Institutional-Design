@@ -10,6 +10,7 @@ from gao_idl.authoring import (
     load_cards,
     render_card,
     run_card,
+    same_outcome,
     save_cards,
     verify_cards,
 )
@@ -57,6 +58,19 @@ def test_a_rejected_card_fails_until_the_behaviour_changes(
     assert "still" in problem
     monkeypatch.setattr(envs, "TIE", "last")
     assert verify_cards([card]) == []
+
+
+def test_outcomes_are_compared_up_to_float_noise_not_exactly() -> None:
+    card = freeze(_tie()).model_copy(update={"status": "confirmed"})
+    assert card.expect is not None
+    noisy = card.expect.model_copy(update={"utilities": {"alice": 4.0 + 3e-14, "bob": 0.0}})
+    assert same_outcome(card.expect, noisy)
+    assert verify_cards([card.model_copy(update={"expect": noisy})]) == []
+    off = card.expect.model_copy(update={"utilities": {"alice": 4.001, "bob": 0.0}})
+    assert not same_outcome(card.expect, off)
+    assert len(verify_cards([card.model_copy(update={"expect": off})])) == 1
+    flipped = card.expect.model_copy(update={"failed": True})
+    assert not same_outcome(card.expect, flipped)
 
 
 def test_proposed_cards_are_ignored_and_ids_are_unique() -> None:
@@ -113,4 +127,4 @@ def test_shipped_cards_are_proposed_frozen_and_current(name: str) -> None:
     for card in cards:
         assert card.status == "proposed", "only a person confirms or rejects a card"
         assert card.why and card.expect is not None
-        assert run_card(card) == card.expect, card.id
+        assert same_outcome(run_card(card), card.expect), card.id

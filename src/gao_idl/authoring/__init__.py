@@ -19,6 +19,7 @@ from gao_idl.authoring.cards import (
     load_cards,
     render_card,
     run_card,
+    same_outcome,
     save_cards,
     verify_cards,
 )
@@ -71,6 +72,7 @@ __all__ = [
     "render_design",
     "role_kind",
     "run_card",
+    "same_outcome",
     "save_cards",
     "script_of",
     "to_mermaid",

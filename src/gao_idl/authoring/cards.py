@@ -10,6 +10,7 @@ Stability: supporting API: documented in the API reference, but not re-exported 
 """
 
 import json
+import math
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Literal
@@ -75,6 +76,31 @@ def _expect(session: Session, script: ActionScript) -> CardExpect:
     )
 
 
+TOLERANCE = 1e-9
+
+
+def _close(a: Any, b: Any) -> bool:
+    """Equal as JSON, with numbers compared to within ``TOLERANCE`` (absolute and relative)."""
+    if isinstance(a, bool) or isinstance(b, bool):
+        return a is b
+    if isinstance(a, int | float) and isinstance(b, int | float):
+        return math.isclose(a, b, rel_tol=TOLERANCE, abs_tol=TOLERANCE)
+    if isinstance(a, dict) and isinstance(b, dict):
+        return a.keys() == b.keys() and all(_close(a[k], b[k]) for k in a)
+    if isinstance(a, list) and isinstance(b, list):
+        return len(a) == len(b) and all(_close(x, y) for x, y in zip(a, b, strict=True))
+    return bool(a == b)
+
+
+def same_outcome(a: CardExpect, b: CardExpect) -> bool:
+    """Whether two outcomes agree, with numbers compared to within ``TOLERANCE``.
+
+    Exact equality would be wrong here: a recorded outcome must hold on every supported Python,
+    and the last bits of a float sum differ between them (``sum`` is compensated from 3.12 on).
+    """
+    return _close(a.model_dump(mode="json"), b.model_dump(mode="json"))
+
+
 def run_card(card: Card) -> CardExpect:
     """Play the card's scenario and return what happened."""
     return _expect(play(card.env_ref, card.params, card.seed, card.script), card.script)
@@ -88,7 +114,8 @@ def freeze(card: Card) -> Card:
 def verify_cards(cards: Sequence[Card]) -> list[str]:
     """Problems, one line each; empty means every confirmed and rejected card is honoured.
 
-    A confirmed card must reproduce its ``expect`` exactly. A rejected card must not: the
+    A confirmed card must reproduce its ``expect`` (numbers to within ``TOLERANCE``, see
+    ``same_outcome``). A rejected card must not: the
     behaviour a person rejected has to be gone (a run that now raises counts as gone). Proposed
     cards are skipped. Ids must be unique.
     """
@@ -103,16 +130,16 @@ def verify_cards(cards: Sequence[Card]) -> list[str]:
             problems.append(f"{card.id}: {card.status} but has no recorded outcome")
             continue
         try:
-            now: CardExpect | None = run_card(card)
+            now = run_card(card)
         except (GaoError, ValueError, RuntimeError) as e:
             if card.status == "confirmed":
                 problems.append(f"{card.id}: confirmed, but the run raised {type(e).__name__}: {e}")
             continue
-        if card.status == "confirmed" and now != card.expect:
+        if card.status == "confirmed" and not same_outcome(now, card.expect):
             problems.append(
                 f"{card.id}: confirmed outcome is no longer reproduced ({_diff(card.expect, now)})"
             )
-        if card.status == "rejected" and now == card.expect:
+        if card.status == "rejected" and same_outcome(now, card.expect):
             problems.append(f"{card.id}: rejected outcome is still what the environment does")
     return problems
 
@@ -122,10 +149,12 @@ def _diff(a: CardExpect, b: CardExpect | None) -> str:
         return "no outcome"
     x, y = a.model_dump(), b.model_dump()
     for key in ("failed", "exit_port", "utilities", "reports"):
-        if x[key] != y[key]:
+        if not _close(x[key], y[key]):
             if isinstance(x[key], dict):
                 inner = next(
-                    k for k in sorted(set(x[key]) | set(y[key])) if x[key].get(k) != y[key].get(k)
+                    k
+                    for k in sorted(set(x[key]) | set(y[key]))
+                    if not _close(x[key].get(k), y[key].get(k))
                 )
                 return (
                     f"{key} of {inner}: recorded {x[key].get(inner)!r}, now {y[key].get(inner)!r}"
@@ -218,7 +247,7 @@ def render_card(card: Card, spec: EnvSpec | None = None) -> str:
         out += [f"**This scenario cannot be played:** {type(e).__name__}: {e}", ""]
         return "\n".join(out)
     now = _expect(session, card.script)
-    if card.expect is not None and card.expect != now:
+    if card.expect is not None and not same_outcome(card.expect, now):
         out += [
             "**Warning: the recorded outcome is not what happens now** "
             f"({_diff(card.expect, now)}). What follows is what happens now.",
