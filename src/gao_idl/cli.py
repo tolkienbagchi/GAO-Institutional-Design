@@ -16,7 +16,8 @@ status 0 means identical; 1 means they differ.
 
 ``spec render`` writes the reviewable design page of a spec and ``spec check`` compares the spec
 with the environment it names (exit status 1 on any mismatch); with ``--cards`` each card supplies
-one run to draw on. ``cards show`` prints cards in plain language, ``cards confirm`` and
+one run to draw on. ``cards review`` shows cards one at a time and asks for a verdict after each,
+saving as it goes. ``cards show`` prints cards in plain language, ``cards confirm`` and
 ``cards reject`` record a person's verdict, and ``cards verify`` checks that confirmed cards are
 still reproduced and rejected ones are not (exit status 1 otherwise). ``spec check --fuzz N`` adds
 N edge-biased runs and checks the spec's invariants on all runs. ``diverge SPEC REF...`` replays
@@ -289,6 +290,68 @@ def _cmd_cards_mark(args: argparse.Namespace) -> int:
     return 0
 
 
+_REVIEW_KEYS = "[c] yes, this is what I meant   [r] no, reject   [s] skip   [b] back   [q] stop"
+
+
+def _cmd_cards_review(args: argparse.Namespace) -> int:
+    """Show cards one at a time and record a verdict after each; saves after every answer."""
+    from gao_idl.authoring import freeze, load_cards, load_spec, render_card, save_cards
+
+    try:
+        cards = load_cards(args.cards)
+        spec = load_spec(args.spec) if args.spec is not None else None
+    except (OSError, ValueError) as e:
+        print(f"cannot read: {type(e).__name__}: {e}", file=sys.stderr)
+        return 2
+    queue = [i for i, c in enumerate(cards) if args.status in ("all", c.status)]
+    if not queue:
+        print(f"no {args.status} cards in {args.cards}")
+        return 0
+
+    def ask(prompt: str) -> str | None:
+        try:
+            return input(prompt).strip()
+        except EOFError:
+            return None
+
+    at = 0
+    decided = 0
+    while at < len(queue):
+        card = cards[queue[at]]
+        print(f"\n{'=' * 72}\nCard {at + 1} of {len(queue)}\n")
+        print(render_card(card, spec))
+        answer = ask(f"{_REVIEW_KEYS}\n> ")
+        if answer is None or answer.lower() in ("q", "quit", "stop"):
+            break
+        key = answer.lower()[:1]
+        if key == "b":
+            at = max(0, at - 1)
+            continue
+        if key == "s" or answer == "":
+            at += 1
+            continue
+        if key not in ("c", "y", "r", "n"):
+            print(f"did not understand {answer!r}")
+            continue
+        update: dict[str, Any] = {"status": "confirmed" if key in ("c", "y") else "rejected"}
+        if update["status"] == "rejected":
+            note = ask("What should happen instead? > ")
+            if not note:
+                print("a rejected card needs a note; nothing recorded")
+                continue
+            update["note"] = note
+        if card.expect is None:
+            card = freeze(card)
+        cards[queue[at]] = card.model_copy(update=update)
+        save_cards(args.cards, cards)
+        decided += 1
+        print(f"recorded: {card.id} {update['status']}")
+        at += 1
+    left = sum(c.status == "proposed" for c in cards)
+    print(f"\n{decided} cards decided this time; {left} still proposed in {args.cards}")
+    return 0
+
+
 def _cmd_cards_verify(args: argparse.Namespace) -> int:
     from gao_idl.authoring import load_cards, verify_cards
 
@@ -353,6 +416,15 @@ def main(argv: list[str] | None = None) -> int:
     show_p.add_argument("--status", choices=["proposed", "confirmed", "rejected"], default=None)
     show_p.add_argument("--spec", type=Path, default=None, help="spec for step descriptions")
     show_p.set_defaults(func=_cmd_cards_show)
+    review_p = cards_sub.add_parser(
+        "review", help="go through cards one at a time and confirm or reject each"
+    )
+    review_p.add_argument("cards", type=Path)
+    review_p.add_argument("--spec", type=Path, default=None, help="spec for step descriptions")
+    review_p.add_argument(
+        "--status", choices=["proposed", "confirmed", "rejected", "all"], default="proposed"
+    )
+    review_p.set_defaults(func=_cmd_cards_review)
     confirm_p = cards_sub.add_parser("confirm", help="record that these cards are as intended")
     confirm_p.add_argument("cards", type=Path)
     confirm_p.add_argument("ids", nargs="+", metavar="ID")

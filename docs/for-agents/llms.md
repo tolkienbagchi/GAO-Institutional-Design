@@ -276,7 +276,7 @@ cards. Nothing here calls a model. Workflow and limits: `docs/verifying.md`.
 | `check_invariants(spec, runs)` | runs `InvariantSpec.predicate(session, **args)` and the secrets over many runs; `gao_idl.authoring.predicates` |
 | `diverge(env_refs, params, seeds, scripts)`, `to_choice_cards`, `render_choice` | where implementations of one spec disagree, as questions |
 
-Command line: `gao-idl spec render|check SPEC [--cards CARDS] [--fuzz N]`, `gao-idl cards show|confirm|reject|verify CARDS`,
+Command line: `gao-idl spec render|check SPEC [--cards CARDS] [--fuzz N]`, `gao-idl cards review|show|confirm|reject|verify CARDS` (`review` is the interactive, one-at-a-time one for the person),
 `gao-idl diverge SPEC REF... --out choices.json`.
 A role *kind* is the role id before the first `:`. **Never confirm or reject a card, answer a choice card, or set
 an assumption to confirmed**: both record a person's judgement.
