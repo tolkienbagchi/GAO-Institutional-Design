@@ -8,7 +8,7 @@ to stand in for "the behaviour changed after a card was confirmed".
 from typing import Any
 
 from numpy.random import Generator
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from gao_idl import (
     Config,
@@ -268,3 +268,171 @@ def build_tiny_auction(values: dict[str, float]) -> tuple[Process, Config]:
         report=lambda cfg, out, recipient, rng: out,
     )
     return Primitive(layer), Config(state={"values": dict(values)}, roles=roles)
+
+
+# ------------------------------------------------- M9: candidates that disagree, a budget
+
+AUCTION_A = "tests.authoring.envs:build_auction_a"  # tie: first name; reserve acts as a bid
+AUCTION_A2 = "tests.authoring.envs:build_auction_a2"  # the same rules, written again
+AUCTION_B = "tests.authoring.envs:build_auction_b"  # tie: a random draw
+AUCTION_C = "tests.authoring.envs:build_auction_c"  # reserve is a floor that never sets the price
+AUCTION_D = "tests.authoring.envs:build_auction_d"  # the action field has another name
+GRANTS = "tests.authoring.envs:build_grants"
+UNSOLD = Port("unsold")
+
+
+class ReserveState(BaseModel):
+    values: dict[str, float]
+    reserve: float
+
+
+class NonNegativeBid(BaseModel):
+    amount: float = Field(ge=0)
+
+
+class OtherBid(BaseModel):
+    bid: float = Field(ge=0)
+
+
+class Result(BaseModel):
+    winner: str | None
+    price: float
+
+
+def _reserve_auction(
+    values: dict[str, float], reserve: float, tie: str, reserve_rule: str, field: str = "amount"
+) -> tuple[Process, Config]:
+    roles = {RoleId(f"bidder:{i}"): AgentId(a) for i, a in enumerate(sorted(values))}
+
+    def outcome(
+        cfg: Config, actions: dict[RoleId, BaseModel], rng: Generator, store: StoreView
+    ) -> BaseModel:
+        bids = {str(cfg.roles[r]): float(getattr(a, field)) for r, a in actions.items()}
+        live = {a: b for a, b in bids.items() if b >= reserve}
+        if not live:
+            return Result(winner=None, price=0.0)
+        top = max(live.values())
+        tied = sorted(a for a, b in live.items() if b == top)
+        winner = tied[0] if tie == "first" else tied[int(rng.integers(len(tied)))]
+        if reserve_rule == "bid":  # the seller's reserve competes like a bid
+            others = [b for a, b in live.items() if a != winner]
+            price = max([reserve, *others])
+        else:  # the reserve only decides who may win; the next bid sets the price, however low
+            others = [b for a, b in bids.items() if a != winner]
+            price = max(others, default=0.0)
+        return Result(winner=winner, price=price)
+
+    def utilities(cfg: Config, out: Any) -> dict[AgentId, float]:
+        return {} if out.winner is None else {AgentId(out.winner): values[out.winner] - out.price}
+
+    def export(cfg: Config, out: Any) -> Exit:
+        return Exit(port=UNSOLD if out.winner is None else DONE, record=out.model_dump(mode="json"))
+
+    layer = SimpleLayer(
+        name="bidding",
+        entry=Contract(state_schema=ReserveState),
+        exits={DONE: Result, UNSOLD: Result},
+        action_schema=lambda cfg, role: NonNegativeBid if field == "amount" else OtherBid,
+        outcome=outcome,
+        utilities=utilities,
+        export=export,
+        report=lambda cfg, out, recipient, rng: out,
+    )
+    cfg = Config(state={"values": dict(values), "reserve": reserve}, roles=roles)
+    return Primitive(layer), cfg
+
+
+def build_auction_a(values: dict[str, float], reserve: float) -> tuple[Process, Config]:
+    return _reserve_auction(values, reserve, "first", "bid")
+
+
+def build_auction_a2(values: dict[str, float], reserve: float) -> tuple[Process, Config]:
+    return _reserve_auction(values, reserve, "first", "bid")
+
+
+def build_auction_b(values: dict[str, float], reserve: float) -> tuple[Process, Config]:
+    return _reserve_auction(values, reserve, "rng", "bid")
+
+
+def build_auction_c(values: dict[str, float], reserve: float) -> tuple[Process, Config]:
+    return _reserve_auction(values, reserve, "first", "floor")
+
+
+def build_auction_d(values: dict[str, float], reserve: float) -> tuple[Process, Config]:
+    return _reserve_auction(values, reserve, "first", "bid", field="bid")
+
+
+class GrantState(BaseModel):
+    budget: float
+    overspend: bool
+
+
+class Request(BaseModel):
+    amount: float = Field(ge=0)
+
+
+class Granted(BaseModel):
+    grants: dict[str, float]
+    spent: float
+
+
+def build_grants(budget: float = 10.0, overspend: bool = False) -> tuple[Process, Config]:
+    """Two applicants ask for money; requests are met in name order until ``budget`` runs out.
+    With ``overspend`` every request is met in full (the defect the invariant must catch)."""
+    roles = {RoleId("applicant:0"): AgentId("ann"), RoleId("applicant:1"): AgentId("ben")}
+
+    def outcome(
+        cfg: Config, actions: dict[RoleId, BaseModel], rng: Generator, store: StoreView
+    ) -> BaseModel:
+        left = budget
+        grants: dict[str, float] = {}
+        for role in sorted(actions):
+            asked = actions[role].amount  # type: ignore[attr-defined]
+            grants[str(cfg.roles[role])] = asked if overspend else min(asked, left)
+            left -= grants[str(cfg.roles[role])]
+        return Granted(grants=grants, spent=sum(grants.values()))
+
+    layer = SimpleLayer(
+        name="requests",
+        entry=Contract(state_schema=GrantState),
+        exits={DONE: Granted},
+        action_schema=lambda cfg, role: Request,
+        outcome=outcome,
+        utilities=lambda cfg, out: {AgentId(a): g for a, g in out.grants.items()},  # type: ignore[attr-defined]
+        export=lambda cfg, out: Exit(port=DONE, record=out.model_dump(mode="json")),
+        report=lambda cfg, out, recipient, rng: out,
+    )
+    cfg = Config(state={"budget": budget, "overspend": overspend}, roles=roles)
+    return Primitive(layer), cfg
+
+
+def grants_spec(overspend: bool = False) -> EnvSpec:
+    """The spec of the grants round, with the budget invariant as a checked predicate."""
+    return EnvSpec.model_validate(
+        {
+            "title": "Grants round",
+            "summary": "Two applicants ask for money from a fixed budget.",
+            "env_ref": GRANTS,
+            "params": {"budget": 10.0, "overspend": overspend},
+            "roles": [{"name": "applicant", "description": "Asks for money.", "many": True}],
+            "steps": [
+                {
+                    "name": "requests",
+                    "kind": "decision",
+                    "description": "Both applicants name an amount.",
+                    "chooses": {"applicant": ["amount"]},
+                    "told": {"applicant": ["grants", "spent"]},
+                    "on_no_action": "fail",
+                }
+            ],
+            "invariants": [
+                {
+                    "name": "within_budget",
+                    "statement": "The total granted never exceeds the budget.",
+                    "predicate": "gao_idl.authoring.predicates:report_field_at_most_param",
+                    "args": {"field": "spent", "param": "budget"},
+                },
+                {"name": "fair", "statement": "Nobody is favoured."},
+            ],
+        }
+    )
