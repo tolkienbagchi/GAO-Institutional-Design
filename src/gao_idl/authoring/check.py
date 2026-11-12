@@ -307,20 +307,15 @@ def _payoffs(spec: EnvSpec, sessions: Sequence[Session]) -> list[Mismatch]:
     return out
 
 
-def check_spec(spec: EnvSpec, runs: Sequence[Run]) -> list[Mismatch]:
-    """Every difference found between ``spec`` and the environment it names.
+def check_secrets(
+    spec: EnvSpec, runs: Sequence[Run], sessions: Sequence[Session]
+) -> list[Mismatch]:
+    """Test every secret of ``spec`` on every run (``sessions[i]`` is ``runs[i]`` played).
 
-    The structure (steps, timeout policies, repetition) is checked on the process built from
-    ``spec.env_ref`` and ``spec.params``. Each run is then played with its own parameters and
-    seed; what roles saw, chose and were told is compared with the spec in both directions, each
-    secret is tested on each run by changing its parameter and comparing what the roles it is
-    hidden from were shown, and each declared payoff field is looked for in reports. With no
-    runs, everything that needs one is reported as ``not_exercised``.
+    One ``secret_leak`` per agent that was shown something different when the secret changed; one
+    ``not_exercised`` for a secret that no run could test.
     """
-    process, _ = resolve(spec.env_ref)(**spec.params)
-    out = _structure(spec, describe(process))
-    sessions = [play(spec.env_ref, run.params, run.seed, run.script) for run in runs]
-    out += _knowledge(spec, knowledge_table(sessions))
+    out: list[Mismatch] = []
     for index, secret in enumerate(spec.secrets):
         found: list[Mismatch] = []
         for run, session in zip(runs, sessions, strict=True):
@@ -338,5 +333,23 @@ def check_spec(spec: EnvSpec, runs: Sequence[Run]) -> list[Mismatch]:
             )
         elif len(skipped) == len(runs):  # no run could test it
             out.append(skipped[0])
+    return out
+
+
+def check_spec(spec: EnvSpec, runs: Sequence[Run]) -> list[Mismatch]:
+    """Every difference found between ``spec`` and the environment it names.
+
+    The structure (steps, timeout policies, repetition) is checked on the process built from
+    ``spec.env_ref`` and ``spec.params``. Each run is then played with its own parameters and
+    seed; what roles saw, chose and were told is compared with the spec in both directions, each
+    secret is tested on each run by changing its parameter and comparing what the roles it is
+    hidden from were shown, and each declared payoff field is looked for in reports. With no
+    runs, everything that needs one is reported as ``not_exercised``.
+    """
+    process, _ = resolve(spec.env_ref)(**spec.params)
+    out = _structure(spec, describe(process))
+    sessions = [play(spec.env_ref, run.params, run.seed, run.script) for run in runs]
+    out += _knowledge(spec, knowledge_table(sessions))
+    out += check_secrets(spec, runs, sessions)
     out += _payoffs(spec, sessions)
     return out

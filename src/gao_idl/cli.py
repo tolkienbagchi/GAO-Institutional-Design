@@ -1,4 +1,4 @@
-"""Command line: ``gao-idl run``, ``gao-idl replay``, ``gao-idl spec`` and ``gao-idl cards``.
+"""Command line: ``gao-idl run``, ``replay``, ``spec``, ``cards`` and ``diverge``.
 
 Also available as ``python -m gao_idl.cli``. ``run`` plays an environment from a JSON config and
 writes the session snapshot and ledger totals. The config names the environment factory
@@ -18,7 +18,10 @@ status 0 means identical; 1 means they differ.
 with the environment it names (exit status 1 on any mismatch); with ``--cards`` each card supplies
 one run to draw on. ``cards show`` prints cards in plain language, ``cards confirm`` and
 ``cards reject`` record a person's verdict, and ``cards verify`` checks that confirmed cards are
-still reproduced and rejected ones are not (exit status 1 otherwise). See ``docs/verifying.md``.
+still reproduced and rejected ones are not (exit status 1 otherwise). ``spec check --fuzz N`` adds
+N edge-biased runs and checks the spec's invariants on all runs. ``diverge SPEC REF...`` replays
+edge-biased scripts on other implementations of the spec and writes one question per distinct
+disagreement (exit status 1 if there is any). See ``docs/verifying.md``.
 
 Stability: internal; the command-line interface is the supported way to use this module.
 """
@@ -179,22 +182,66 @@ def _cmd_spec_render(args: argparse.Namespace) -> int:
 
 
 def _cmd_spec_check(args: argparse.Namespace) -> int:
-    from gao_idl.authoring import check_spec
+    from gao_idl.authoring import Run, check_invariants, check_spec, edge_scripts
 
     try:
         spec, _, runs = _load(args)
-        found = check_spec(spec, runs)
+        if args.fuzz:
+            scripts = edge_scripts(spec.env_ref, spec.params, args.seed, args.fuzz)
+            runs += [Run(params=spec.params, seed=args.seed, script=s) for s in scripts]
+        found = check_spec(spec, runs) + check_invariants(spec, runs, secrets=False)
     except (OSError, ValueError, RuntimeError, GaoError) as e:
         print(f"cannot check the spec: {type(e).__name__}: {e}", file=sys.stderr)
         return 2
+    notes = [m for m in found if m.kind == "invariant_unchecked"]
+    found = [m for m in found if m.kind != "invariant_unchecked"]
     for m in found:
         print(f"{m.kind:<20} {m.where}: {m.message}")
+    for m in notes:
+        print(f"note                 {m.where}: {m.message}")
     open_items = sum(not a.confirmed for a in spec.assumptions)
     print(
         f"{spec.title}: {len(found)} mismatches over {len(runs)} runs; "
-        f"{open_items} assumptions not yet confirmed"
+        f"{open_items} assumptions not yet confirmed; {len(notes)} invariants not checked"
     )
     return 1 if found else 0
+
+
+def _cmd_diverge(args: argparse.Namespace) -> int:
+    from gao_idl.authoring import (
+        diverge,
+        edge_scripts,
+        load_spec,
+        render_choice,
+        save_choices,
+        to_choice_cards,
+    )
+
+    try:
+        spec = load_spec(args.spec)
+        refs = [spec.env_ref, *args.refs]
+        scripts = edge_scripts(spec.env_ref, spec.params, args.seed, args.n)
+        found = diverge(refs, spec.params, [args.seed], scripts)
+        cards = to_choice_cards(found)
+    except (OSError, ValueError, RuntimeError, GaoError) as e:
+        print(f"cannot compare the candidates: {type(e).__name__}: {e}", file=sys.stderr)
+        return 2
+    save_choices(args.out, cards)
+    for card in cards:
+        print(render_choice(card, spec))
+        print("---\n")
+    deep = sorted({d.kind for d in found} - {"information"})
+    agree = (
+        f"they disagree on {', '.join(deep)}"
+        if deep
+        else "endings and payoffs agreed on every script"
+    )
+    print(
+        f"{len(refs)} candidates, {args.n} scripts: {len(cards)} distinct disagreements; "
+        f"{agree} -> {args.out}",
+        file=sys.stderr,
+    )
+    return 1 if cards else 0
 
 
 def _cmd_cards_show(args: argparse.Namespace) -> int:
@@ -284,6 +331,20 @@ def main(argv: list[str] | None = None) -> int:
         p.add_argument("--cards", type=Path, default=None, help="cards whose runs to draw on")
         p.set_defaults(func=func)
     render_p.add_argument("--out", type=Path, required=True, help="markdown file to write")
+    check_p.add_argument("--fuzz", type=int, default=0, metavar="N", help="add N edge-biased runs")
+    check_p.add_argument("--seed", type=int, default=0, help="seed for the fuzzed runs")
+
+    diverge_p = sub.add_parser(
+        "diverge", help="find situations where other implementations of a spec disagree"
+    )
+    diverge_p.add_argument("spec", type=Path, help="spec JSON file (its env_ref is candidate one)")
+    diverge_p.add_argument(
+        "refs", nargs="+", metavar="REF", help="other factories, module:function"
+    )
+    diverge_p.add_argument("--n", type=int, default=200, help="number of edge-biased scripts")
+    diverge_p.add_argument("--seed", type=int, default=0)
+    diverge_p.add_argument("--out", type=Path, required=True, help="choice cards JSON to write")
+    diverge_p.set_defaults(func=_cmd_diverge)
 
     cards_p = sub.add_parser("cards", help="show, confirm, reject or verify scenario cards")
     cards_sub = cards_p.add_subparsers(dest="cards_command", required=True)

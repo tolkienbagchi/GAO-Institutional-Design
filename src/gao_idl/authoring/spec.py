@@ -113,11 +113,17 @@ class PayoffSpec(_Strict):
 
 
 class InvariantSpec(_Strict):
-    """A property that must hold in every run; ``predicate`` is ``"module:function"`` or None."""
+    """A property that must hold in every run.
+
+    ``predicate`` is ``"module:function"`` or None (stated but not checked). The function is
+    called as ``function(session, **args)`` on a finished session and raises ``AssertionError``
+    when the property fails; ``gao_idl.authoring.predicates`` has generic ones.
+    """
 
     name: str
     statement: str
     predicate: str | None = None
+    args: dict[str, Any] = {}
 
 
 class Assumption(_Strict):

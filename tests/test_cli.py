@@ -225,3 +225,66 @@ def test_cards_confirm_reject_verify(tmp_path: Path) -> None:
     data = {c["id"]: c for c in json.loads(cards.read_text())}
     assert data["no-bid"]["note"] == "a missing bid should be a zero bid"
     assert _cli("cards", "confirm", str(cards), "nope", cwd=tmp_path).returncode == 2
+
+
+# ------------------------------------------------------------- fuzzing and divergence (M9)
+
+
+def test_spec_check_with_fuzzing_runs_the_invariants(tmp_path: Path) -> None:
+    done = _cli("spec", "check", str(SPEC), "--cards", str(CARDS), "--fuzz", "40", cwd=tmp_path)
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert "0 mismatches over 53 runs" in done.stdout
+    assert "note" in done.stdout and "2 invariants not checked" in done.stdout
+
+
+def test_diverge_writes_one_question_per_disagreement(tmp_path: Path) -> None:
+    spec = {
+        "title": "Tiny reserve auction",
+        "summary": "x",
+        "env_ref": "tests.authoring.envs:build_auction_a",
+        "params": {"values": {"alice": 10.0, "bob": 7.0, "carol": 4.0}, "reserve": 2.0},
+        "roles": [{"name": "bidder", "description": "bids", "many": True}],
+        "steps": [
+            {
+                "name": "bidding",
+                "kind": "decision",
+                "description": "Everyone bids.",
+                "chooses": {"bidder": ["amount"]},
+                "told": {"bidder": ["winner", "price"]},
+                "on_no_action": "fail",
+            }
+        ],
+    }
+    path = tmp_path / "spec.json"
+    path.write_text(json.dumps(spec))
+    out = tmp_path / "choices.json"
+    same = _cli(
+        "diverge",
+        str(path),
+        "tests.authoring.envs:build_auction_a2",
+        "--n",
+        "60",
+        "--out",
+        str(out),
+        cwd=ROOT,
+    )
+    assert same.returncode == 0, same.stderr
+    assert json.loads(out.read_text()) == []
+    assert "endings and payoffs agreed on every script" in same.stderr
+    differ = _cli(
+        "diverge",
+        str(path),
+        "tests.authoring.envs:build_auction_c",
+        "--n",
+        "200",
+        "--seed",
+        "11",
+        "--out",
+        str(out),
+        cwd=ROOT,
+    )
+    assert differ.returncode == 1, differ.stderr
+    assert "they disagree on utilities" in differ.stderr
+    assert "Which did you mean?" in differ.stdout and "build_auction" not in differ.stdout
+    (card,) = json.loads(out.read_text())
+    assert [o["label"] for o in card["options"]] == ["A", "B"] and card["chosen"] is None

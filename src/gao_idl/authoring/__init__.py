@@ -3,7 +3,10 @@
 Four deterministic pieces, none of which calls a language model: a structured ``EnvSpec`` of the
 designer's intent (``spec``), runs described by data (``play``), a diagram and a who-knows-what
 table generated from the built process and its runs (``render``), a mechanical comparison of the
-two (``check``), and worked scenarios a person confirms or rejects (``cards``).
+two (``check``), and worked scenarios a person confirms or rejects (``cards``). On top of
+these: edge-biased runs (``fuzz``), invariants and secrets checked over many runs
+(``invariants``, ``predicates``), and the search for situations where two implementations of one
+design disagree (``diverge``).
 
 These tools check that the code matches the designer's intent. They say nothing about whether
 the intended institution is an adequate model of a real one.
@@ -23,7 +26,19 @@ from gao_idl.authoring.cards import (
     save_cards,
     verify_cards,
 )
-from gao_idl.authoring.check import Mismatch, Run, check_spec
+from gao_idl.authoring.check import Mismatch, Run, check_secrets, check_spec
+from gao_idl.authoring.diverge import (
+    ChoiceCard,
+    ChoiceOption,
+    Divergence,
+    diverge,
+    load_choices,
+    render_choice,
+    save_choices,
+    to_choice_cards,
+)
+from gao_idl.authoring.fuzz import edge_scripts, sample_action
+from gao_idl.authoring.invariants import check_invariants
 from gao_idl.authoring.play import ActionScript, play, script_of
 from gao_idl.authoring.render import (
     KnowledgeRow,
@@ -47,6 +62,18 @@ from gao_idl.authoring.spec import (
 )
 
 __all__ = [
+    "to_choice_cards",
+    "save_choices",
+    "sample_action",
+    "render_choice",
+    "load_choices",
+    "edge_scripts",
+    "diverge",
+    "check_secrets",
+    "check_invariants",
+    "Divergence",
+    "ChoiceOption",
+    "ChoiceCard",
     "ActionScript",
     "Assumption",
     "Card",
