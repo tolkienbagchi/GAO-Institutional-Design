@@ -23,12 +23,17 @@ comes from the process tree, the table and the cards from real runs.
    The section "Who knows what" is what the built environment actually showed each role in the
    runs. The last section lists choices the author made that you never stated. Each is a
    modelling decision that is currently nobody's.
-2. **Go through the cards.** `gao-idl cards show cards.json --spec spec.json`. Each card is one
-   concrete case: "alice bids 8, bob bids 8, carol bids 1", then what everyone is told and paid.
-   The line under the title says which readings of your description the case tells apart.
-3. **Confirm or reject each card.** `gao-idl cards confirm cards.json tie-top` if that is what you
-   meant; `gao-idl cards reject cards.json no-bid --note "a missing bid should count as zero"` if
-   it is not. Only you do this. A card its author confirms is not evidence.
+2. **Go through the cards, one at a time.** `gao-idl cards review cards.json --spec spec.json`
+   shows one card, waits for your verdict, saves it, and shows the next. Each card is one concrete
+   case: "alice bids 8, bob bids 8, carol bids 1", then what everyone is told and paid. The line
+   under the title says which readings of your description the case tells apart.
+3. **Answer each card.** `c` if that is what you meant; `r` if it is not, followed by one line on
+   what should happen instead; `s` to skip, `b` to go back, `q` to stop. You can stop at any time
+   and continue later: only cards without a verdict come up again. Only you do this. A card its
+   author confirms is not evidence.
+
+`gao-idl cards show` prints all cards at once, and `gao-idl cards confirm` / `reject` record a
+verdict by card id, for use from scripts.
 
 A confirmed card is from then on a regression test: the environment must keep doing exactly that.
 A rejected card is one too: `gao-idl cards verify` fails until the environment stops doing it.

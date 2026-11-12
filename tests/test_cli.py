@@ -16,7 +16,7 @@ CONFIGS = sorted((ROOT / "examples" / "configs").glob("*.json"))
 LIMIT_SECONDS = 20
 
 
-def _cli(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
+def _cli(*args: str, cwd: Path, stdin: str | None = None) -> subprocess.CompletedProcess[str]:
     package_root = str(Path(gao_idl.__file__).resolve().parents[1])
     path = os.pathsep.join(p for p in (package_root, os.environ.get("PYTHONPATH", "")) if p)
     return subprocess.run(
@@ -26,6 +26,7 @@ def _cli(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
         capture_output=True,
         text=True,
         timeout=LIMIT_SECONDS,
+        input=stdin,
     )
 
 
@@ -288,3 +289,34 @@ def test_diverge_writes_one_question_per_disagreement(tmp_path: Path) -> None:
     assert "Which did you mean?" in differ.stdout and "build_auction" not in differ.stdout
     (card,) = json.loads(out.read_text())
     assert [o["label"] for o in card["options"]] == ["A", "B"] and card["chosen"] is None
+
+
+def test_cards_review_goes_one_card_at_a_time_and_saves_each_answer(tmp_path: Path) -> None:
+    cards = tmp_path / "cards.json"
+    cards.write_text(CARDS.read_text())
+    # confirm the first, reject the second with a note, skip one, go back, confirm it, garbage, stop
+    typed = "c\nr\nthe later name should win\ns\nb\ny\nwhat\nq\n"
+    done = _cli("cards", "review", str(cards), "--spec", str(SPEC), cwd=tmp_path, stdin=typed)
+    assert done.returncode == 0, done.stderr
+    out = done.stdout
+    assert "Card 1 of 13" in out and "Card 2 of 13" in out and "Card 5 of 13" not in out
+    assert out.index("Card 1 of 13") < out.index("### Everyone bids their value")
+    assert out.index("### Everyone bids their value") < out.index("Card 2 of 13")
+    assert "did not understand 'what'" in out
+    assert "3 cards decided this time; 10 still proposed" in out
+    data = json.loads(cards.read_text())
+    assert [c["status"] for c in data[:4]] == ["confirmed", "rejected", "confirmed", "proposed"]
+    assert data[1]["note"] == "the later name should win"
+    # a second sitting picks up where the first stopped; end of input stops without losing answers
+    again = _cli("cards", "review", str(cards), cwd=tmp_path, stdin="c\n")
+    assert again.returncode == 0 and "Card 1 of 10" in again.stdout
+    assert "1 cards decided this time; 9 still proposed" in again.stdout
+    # a rejection without a note records nothing
+    empty = _cli("cards", "review", str(cards), cwd=tmp_path, stdin="r\n\nq\n")
+    assert "a rejected card needs a note" in empty.stdout and "9 still proposed" in empty.stdout
+    assert (
+        _cli(
+            "cards", "review", str(cards), "--status", "rejected", cwd=tmp_path, stdin="q\n"
+        ).returncode
+        == 0
+    )

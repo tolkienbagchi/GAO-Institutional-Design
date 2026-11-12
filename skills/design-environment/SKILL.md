@@ -175,4 +175,5 @@ Fixture list in `gao_idl.testing`, and when each applies:
 7. 10 to 15 scenario cards exist, each with a `why`, chosen to separate plausible readings (ties,
    boundaries, nobody acting, the last round). Leave every card `proposed` and every assumption
    unconfirmed: only the person who described the institution confirms or rejects
-   (`docs/verifying.md`). Hand them the rendered design and `gao-idl cards show`.
+   (`docs/verifying.md`). Hand them the rendered design and
+   `gao-idl cards review cards.json --spec spec.json`, which shows one card at a time.

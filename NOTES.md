@@ -1691,3 +1691,14 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - `tests/environments/test_vcm_portability.py` pins the exact bits of one run's payoffs (the run that differed in M8's first CI run);
   CI runs it on 3.11 and 3.13. On 3.13 no existing number changed: the shipped cards regenerate byte-identically.
 - Card outcomes are still compared to within 1e-9. Other environments were not audited for float `sum`.
+
+## 2026-11-20 — M10 task 0: baseline and the missing `cards review` commit
+- PyPI is unreachable in this sandbox (network off): `pip install -e ".[dev,llm,docs]"`, `python -m build`, `mkdocstrings`,
+  `hypothesis` and `pytest-timeout` are absent. Tests run with `PYTHONPATH=src` on Python 3.13 (3.11 and 3.12 exist here but
+  have no pydantic). `tests/core/test_paths_property.py`, `tests/environments/test_pb_rules_property.py` (no `hypothesis`) and
+  `tests/test_packaging.py` (no `build`) are ignored; the 30 s `timeout` option is unknown to pytest here and not enforced.
+- On `main` at `5453d93`: `ruff check .` and `ruff format --check .` clean (214 files), `mypy src/gao_idl` clean (92 files),
+  `pytest -q -m "not slow"` 880 passed, 4 skipped, 12 deselected in 72 s.
+- Applied `0001-cards-review.patch` with `git am` on `m10-review-page`, then amended its message to `M10 task 0: ...` (author and
+  content unchanged) so the branch follows the one-commit-per-task convention. Gate again: same clean lint/types,
+  881 passed (the new `test_cards_review_goes_one_card_at_a_time_and_saves_each_answer`), 4 skipped.
