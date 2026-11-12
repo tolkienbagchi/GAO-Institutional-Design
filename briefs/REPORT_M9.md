@@ -41,7 +41,7 @@ PyPI was unreachable in the build sandbox, so the same gate commands as in M8 di
 
 - No predicate was written for the shipped specs' invariants.
 - No choice card is answered and no card or assumption is confirmed.
-- The carbon market's float sums still differ between Python 3.11 and 3.12+ (found in M8; untouched).
+- The carbon market's float sums differed between Python 3.11 and 3.12+ (found in M8). Fixed after this report was first written: they use `math.fsum`, with a bit-exact test that CI runs on both versions. Other environments were not audited for the same pattern.
 - No independent second implementation by a separate session, and no user trial.
 
 ## Where the brief underdetermined the design, and what I chose

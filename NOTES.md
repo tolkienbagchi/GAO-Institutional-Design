@@ -1683,3 +1683,11 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   fixes. `EnvSpec` has no place to say what a field contains or when an optional field appears.
 - 200 fuzzed runs per shipped spec (`--fuzz 200 --seed 1`): 0 mismatches for auction, PD and carbon market. The carbon-market
   secret (true quality hidden from buyers and sellers without audits) is now tested on 200 runs instead of one. Takes 66 s.
+
+## 2026-11-12 — carbon market: float sums use `math.fsum` (cross-Python determinism)
+- `ClearingRecord.paid` (what a buyer pays across projects), the audit's `sum_error`, and the weight total in the scripted buyers'
+  `split_demand` used built-in `sum` over floats, whose last bits differ between Python 3.11 and 3.12+ (compensated summation).
+  They now use `math.fsum`, which is correctly rounded everywhere. The other `sum` calls in `environments/vcm` add ints.
+- `tests/environments/test_vcm_portability.py` pins the exact bits of one run's payoffs (the run that differed in M8's first CI run);
+  CI runs it on 3.11 and 3.13. On 3.13 no existing number changed: the shipped cards regenerate byte-identically.
+- Card outcomes are still compared to within 1e-9. Other environments were not audited for float `sum`.

@@ -7,6 +7,7 @@ Stability: supporting API: documented in the API reference, but not re-exported 
 ``gao_idl``; it may change in a minor release before 1.0 (see NOTES.md).
 """
 
+import math
 from typing import Any
 
 from gao_idl.core.schemas import DecisionRequest, ParticipantReport
@@ -59,7 +60,7 @@ def split_demand(obs: dict[str, Any], weights: dict[str, float] | None = None) -
     projects = [p["project"] for p in obs["projects"]]
     demand = int(obs["demand"])
     w = {p: 1.0 for p in projects} if weights is None else {p: weights[p] for p in projects}
-    total = sum(w.values())
+    total = math.fsum(w.values())
     if total <= 0:
         return {p: 0 for p in projects}
     exact = {p: demand * w[p] / total for p in projects}
