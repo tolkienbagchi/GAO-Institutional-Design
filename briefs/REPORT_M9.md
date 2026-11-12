@@ -67,3 +67,7 @@ PyPI was unreachable in the build sandbox, so the same gate commands as in M8 di
 - **Feasibility by rejection.** Where few random actions are feasible the sampler falls back to plain ones, and coverage of the interesting region may be thin. I did not measure acceptance rates per environment.
 - **Shared misreadings are invisible** to divergence search by construction.
 - **Choice cards for the carbon market** will have the same length problem as its scenario cards.
+
+## CI
+
+Run on `dd01f9a` (branch `m9-verified-authoring`): `test (3.11)`, `test (3.13)`, `docs` (with mkdocstrings) and `package` all pass. The `slow` job runs only on the nightly schedule, so the five 200-script tests have run locally on Python 3.13 only.
