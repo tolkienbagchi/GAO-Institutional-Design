@@ -31,6 +31,11 @@ After M7 (unreleased): **M8, verified authoring.** New supporting package `gao_i
 `gao_idl.testing`; `gao-idl spec render|check` and `gao-idl cards show|confirm|reject|verify`; specs
 and proposed cards for the auction, the prisoner's dilemma and the carbon market; `docs/verifying.md`.
 
+**M9, more evidence.** `gao_idl.authoring.fuzz` (`edge_scripts`, `sample_action`), `invariants`
+(`check_invariants`), `predicates`, and `diverge` (`diverge`, choice cards); `InvariantSpec.args`;
+`gao-idl spec check --fuzz N` and `gao-idl diverge`; skills `second-implementation` and
+`write-spec-tests`; `examples/candidates/auction_second.py`.
+
 Replace "Unreleased" with the date when the tag is cut.
 
 [0.1.0]: https://github.com/tolkienbagchi/GAO-Institutional-Design/releases/tag/v0.1.0

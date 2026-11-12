@@ -60,6 +60,38 @@ Cards are data: a script maps each agent to its actions in the order its decisio
 `null` means the agent does not act. To make a card from a run driven by policies, play it and
 call `gao_idl.authoring.script_of(session)`. `scripts/make_example_cards.py` shows both.
 
+## More evidence than a handful of cards
+
+Cards are few and chosen by the author. Two tools widen the net; neither needs a person until it
+finds something.
+
+**Fuzzing.** `gao-idl spec check spec.json --cards cards.json --fuzz 200` adds 200 runs whose
+actions lean on the edges: the smallest and largest allowed number, zero, a number another
+participant just chose (a tie), a number the participant was just shown (bidding exactly the
+reserve), an empty selection, and silence. Every check above runs on all of them, so a secret is
+tested 200 times instead of once, and each invariant of the spec that names a predicate is checked
+on every run. An invariant without a predicate is printed as a note: nothing checks it.
+`gao_idl.authoring.predicates` has three generic predicates (payoffs of some roles sum to zero, no
+role ends below zero, a reported number never exceeds a parameter); write others with the
+signature `(session, **args) -> None`.
+
+**A second implementation.** Have a different agent session build the environment again from the
+spec and its design page only (`skills/second-implementation`), then
+
+```bash
+gao-idl diverge spec.json other.module:build_x --n 200 --out choices.json
+```
+
+replays the same edge-biased scripts on both and writes one question per distinct disagreement:
+the situation, what every reading agrees on, and where they part. Each disagreement is a place the
+spec left open. The designer answers "which did you mean?"; the answer becomes a confirmed
+assumption in the spec. `examples/candidates/auction_second.py` is a worked example: it agrees with
+the shipped auction on every ending and payoff and differs only in what some text fields say.
+
+A third agent can write tests from the spec without reading the code
+(`skills/write-spec-tests`). None of this is proof: a few hundred runs that find nothing are
+better evidence than thirteen cards, and no more than that.
+
 ## What the check cannot see
 
 - **Values, only field names.** The who-knows-what table compares field names. A report field
@@ -71,5 +103,7 @@ call `gao_idl.authoring.script_of(session)`. `scripts/make_example_cards.py` sho
   market's `market_form`) needs its own spec.
 - **Field names that are data.** Where an action has one field per project, the spec lists the
   project names and holds only for that population.
-- **Anything no card exercises.** A branch of the rules that no scenario reaches is reported as
-  not exercised, never as correct.
+- **Anything no run exercises.** A branch of the rules that no card and no fuzzed run reaches is
+  reported as not exercised, never as correct.
+- **Shared misreadings.** Divergence search finds what two implementations read differently. Where
+  both read the spec the same wrong way, it is silent.

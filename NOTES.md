@@ -1654,3 +1654,32 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - **Not fixed, and wider than cards:** a carbon-market session recorded on Python 3.11 does not replay to bit-identical ledger totals on
   3.12+, so `gao-idl replay` (which compares totals with `!=`) would report a difference across interpreters. Determinism holds within
   one Python version. `environments/vcm` was out of scope for M8; using `math.fsum` there would remove the dependence.
+
+## 2026-11-12 — M9: fuzzing, invariants, divergence search; deviations from the brief
+- **Silence is per script, not per decision.** The brief asked for "no action" with probability 0.1 per decision. Most shipped layers
+  stop the run on a missing action, so that would end most carbon-market runs in the first step. One script in five allows silence
+  (0.1 per decision); the rest have none. Over 200 scripts: 9 failed auction runs, 44 failed carbon-market runs.
+- **A rejected draw is re-drawn** up to 24 times, the last two "plain" (lower bounds, empty selections, optional parts omitted); if
+  nothing is accepted the participant stays silent. Rejections emit `ActionRejected` but are not logged, so scripts replay exactly.
+- **The number pool** for a decision is the numbers in its own observation plus numbers chosen earlier in the same batch. That is what
+  produces bids exactly at the reserve and ties. The sampler lives in `authoring.fuzz`; `RandomAgent` is unchanged.
+- **Divergences are deduplicated by `(kind, grouping of candidates)`**, not by `(kind, first_difference)`: the latter gave one entry
+  per agent whose payoff differed. With three candidates a script can separate all three at once; that is a third grouping, so the
+  exit test asserts the tie and reserve groupings are found and nothing outside {tie, reserve, both}, and that each found script has
+  the property that explains it (a tie at the top; a runner-up below the reserve).
+- **A script that cannot be played on a candidate is the `interface` divergence**; there is no separate up-front schema comparison.
+- **Comparison ignores `path`, `decision_id`, `layer` and `t`** in requests and reports, so candidates may be structured differently
+  (one layer or two) as long as participants are shown and told the same things in the same order.
+- **`Divergence` has `groups` and `problems`; `ChoiceCard`/`ChoiceOption` are new** (the brief named `ChoiceCard` without fields).
+  `render_choice` lists facts shared by all options once and, per option, only what is particular to it.
+- **`InvariantSpec.args`** added: generic predicates need arguments (`roles`, `field`, `param`). Predicates are called
+  `predicate(session, **args)`.
+- **`check_invariants(spec, runs, secrets=True)`**; the CLI passes `secrets=False` because `check_spec` already ran them.
+  `invariant_unchecked` is printed as a note and does not change the exit status (the shipped specs have five such statements).
+- **`gao-idl diverge` exits 1 when there is any disagreement** and says whether endings and payoffs agreed.
+- **`examples/candidates/auction_second.py`**: a second auction written from the spec. I had read the shipped auction during M8, so
+  it is an illustration of the mechanics, not an independent implementation. Endings and payoffs agree on 200 scripts; the two
+  differ in the text of `status`, `tie_break`, `bid_disclosure` and in which settlement fields are present, none of which the spec
+  fixes. `EnvSpec` has no place to say what a field contains or when an optional field appears.
+- 200 fuzzed runs per shipped spec (`--fuzz 200 --seed 1`): 0 mismatches for auction, PD and carbon market. The carbon-market
+  secret (true quality hidden from buyers and sellers without audits) is now tested on 200 runs instead of one. Takes 66 s.

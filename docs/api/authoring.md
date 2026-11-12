@@ -26,3 +26,19 @@ Check that a built environment is the institution its designer described. See
 ## `gao_idl.authoring.cards`
 
 ::: gao_idl.authoring.cards
+
+## `gao_idl.authoring.fuzz`
+
+::: gao_idl.authoring.fuzz
+
+## `gao_idl.authoring.invariants`
+
+::: gao_idl.authoring.invariants
+
+## `gao_idl.authoring.predicates`
+
+::: gao_idl.authoring.predicates
+
+## `gao_idl.authoring.diverge`
+
+::: gao_idl.authoring.diverge

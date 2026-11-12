@@ -10,7 +10,13 @@ from gao_idl import testing
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = sorted((ROOT / "skills").glob("*/SKILL.md"))
 MAX_LINES = 400
-EXPECTED = {"design-environment", "write-llm-codec", "explain-environment"}
+EXPECTED = {
+    "design-environment",
+    "write-llm-codec",
+    "explain-environment",
+    "second-implementation",
+    "write-spec-tests",
+}
 
 
 def _runnable_blocks(text: str) -> list[str]:
@@ -18,7 +24,7 @@ def _runnable_blocks(text: str) -> list[str]:
     return blocks
 
 
-def test_the_three_skills_exist() -> None:
+def test_the_skills_exist() -> None:
     assert {p.parent.name for p in SKILLS} == EXPECTED
 
 
@@ -69,3 +75,12 @@ def test_llms_md_mentions_every_public_symbol() -> None:
     assert not missing, missing
     for skill in EXPECTED:
         assert f"skills/{skill}/SKILL.md" in text
+
+
+def test_the_blind_skills_do_not_import_the_environment() -> None:
+    """Blind tests reach an environment through its env_ref only; so does the comparison."""
+    for name in ("write-spec-tests", "second-implementation"):
+        text = (ROOT / "skills" / name / "SKILL.md").read_text()
+        for block in _runnable_blocks(text):
+            assert "gao_idl.environments" not in block, name
+        assert "Do not" in text  # each states its one rule
