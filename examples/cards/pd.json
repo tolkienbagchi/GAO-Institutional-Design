@@ -1,0 +1,914 @@
+[
+ {
+  "env_ref": "gao_idl.environments.pd:build_repeated_pd",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "a": [
+     {
+      "other_move": "C",
+      "own_move": "C",
+      "own_payoff": 3.0,
+      "round_index": 0
+     },
+     {
+      "other_move": "C",
+      "own_move": "C",
+      "own_payoff": 3.0,
+      "round_index": 1
+     }
+    ],
+    "b": [
+     {
+      "other_move": "C",
+      "own_move": "C",
+      "own_payoff": 3.0,
+      "round_index": 0
+     },
+     {
+      "other_move": "C",
+      "own_move": "C",
+      "own_payoff": 3.0,
+      "round_index": 1
+     }
+    ]
+   },
+   "utilities": {
+    "a": 6.0,
+    "b": 6.0
+   }
+  },
+  "id": "both-cooperate",
+  "note": "",
+  "params": {
+   "agents": [
+    "a",
+    "b"
+   ],
+   "matching": "fixed",
+   "rounds": 2
+  },
+  "script": {
+   "a": [
+    {
+     "move": "C"
+    }
+   ],
+   "b": [
+    {
+     "move": "C"
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "Both cooperate in both rounds",
+  "why": "The mutual-cooperation payoff, added over rounds."
+ },
+ {
+  "env_ref": "gao_idl.environments.pd:build_repeated_pd",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "a": [
+     {
+      "other_move": "D",
+      "own_move": "D",
+      "own_payoff": 1.0,
+      "round_index": 0
+     },
+     {
+      "other_move": "D",
+      "own_move": "D",
+      "own_payoff": 1.0,
+      "round_index": 1
+     }
+    ],
+    "b": [
+     {
+      "other_move": "D",
+      "own_move": "D",
+      "own_payoff": 1.0,
+      "round_index": 0
+     },
+     {
+      "other_move": "D",
+      "own_move": "D",
+      "own_payoff": 1.0,
+      "round_index": 1
+     }
+    ]
+   },
+   "utilities": {
+    "a": 2.0,
+    "b": 2.0
+   }
+  },
+  "id": "both-defect",
+  "note": "",
+  "params": {
+   "agents": [
+    "a",
+    "b"
+   ],
+   "matching": "fixed",
+   "rounds": 2
+  },
+  "script": {
+   "a": [
+    {
+     "move": "D"
+    }
+   ],
+   "b": [
+    {
+     "move": "D"
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "Both defect in both rounds",
+  "why": "The mutual-defection payoff."
+ },
+ {
+  "env_ref": "gao_idl.environments.pd:build_repeated_pd",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "a": [
+     {
+      "other_move": "D",
+      "own_move": "C",
+      "own_payoff": 0.0,
+      "round_index": 0
+     },
+     {
+      "other_move": "D",
+      "own_move": "C",
+      "own_payoff": 0.0,
+      "round_index": 1
+     }
+    ],
+    "b": [
+     {
+      "other_move": "C",
+      "own_move": "D",
+      "own_payoff": 5.0,
+      "round_index": 0
+     },
+     {
+      "other_move": "C",
+      "own_move": "D",
+      "own_payoff": 5.0,
+      "round_index": 1
+     }
+    ]
+   },
+   "utilities": {
+    "a": 0.0,
+    "b": 10.0
+   }
+  },
+  "id": "one-defects",
+  "note": "",
+  "params": {
+   "agents": [
+    "a",
+    "b"
+   ],
+   "matching": "fixed",
+   "rounds": 2
+  },
+  "script": {
+   "a": [
+    {
+     "move": "C"
+    }
+   ],
+   "b": [
+    {
+     "move": "D"
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "One cooperates, the other defects",
+  "why": "Who gets the temptation payoff and who gets nothing."
+ },
+ {
+  "env_ref": "gao_idl.environments.pd:build_repeated_pd",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "a": [
+     {
+      "other_move": "D",
+      "own_move": "C",
+      "own_payoff": 0.0,
+      "round_index": 0
+     },
+     {
+      "other_move": "C",
+      "own_move": "D",
+      "own_payoff": 5.0,
+      "round_index": 1
+     }
+    ],
+    "b": [
+     {
+      "other_move": "C",
+      "own_move": "D",
+      "own_payoff": 5.0,
+      "round_index": 0
+     },
+     {
+      "other_move": "D",
+      "own_move": "C",
+      "own_payoff": 0.0,
+      "round_index": 1
+     }
+    ]
+   },
+   "utilities": {
+    "a": 5.0,
+    "b": 5.0
+   }
+  },
+  "id": "alternate",
+  "note": "",
+  "params": {
+   "agents": [
+    "a",
+    "b"
+   ],
+   "matching": "fixed",
+   "rounds": 2
+  },
+  "script": {
+   "a": [
+    {
+     "move": "C"
+    },
+    {
+     "move": "D"
+    }
+   ],
+   "b": [
+    {
+     "move": "D"
+    },
+    {
+     "move": "C"
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "The players swap roles between rounds",
+  "why": "Each player is told the other's move after every round and totals add up."
+ },
+ {
+  "env_ref": "gao_idl.environments.pd:build_repeated_pd",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "a": [
+     {
+      "other_move": "C",
+      "own_move": "D",
+      "own_payoff": 5.0,
+      "round_index": 0
+     }
+    ],
+    "b": [
+     {
+      "other_move": "D",
+      "own_move": "C",
+      "own_payoff": 0.0,
+      "round_index": 0
+     }
+    ]
+   },
+   "utilities": {
+    "a": 5.0,
+    "b": 0.0
+   }
+  },
+  "id": "single-round",
+  "note": "",
+  "params": {
+   "agents": [
+    "a",
+    "b"
+   ],
+   "matching": "fixed",
+   "rounds": 1
+  },
+  "script": {
+   "a": [
+    {
+     "move": "D"
+    }
+   ],
+   "b": [
+    {
+     "move": "C"
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "A single round",
+  "why": "With one round the game ends after the first pair of moves."
+ },
+ {
+  "env_ref": "gao_idl.environments.pd:build_repeated_pd",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "a": [
+     {
+      "other_move": "C",
+      "own_move": "C",
+      "own_payoff": 3.0,
+      "round_index": 0
+     },
+     {
+      "other_move": "C",
+      "own_move": "C",
+      "own_payoff": 3.0,
+      "round_index": 1
+     },
+     {
+      "other_move": "C",
+      "own_move": "C",
+      "own_payoff": 3.0,
+      "round_index": 2
+     }
+    ],
+    "b": [
+     {
+      "other_move": "C",
+      "own_move": "C",
+      "own_payoff": 3.0,
+      "round_index": 0
+     },
+     {
+      "other_move": "C",
+      "own_move": "C",
+      "own_payoff": 3.0,
+      "round_index": 1
+     },
+     {
+      "other_move": "C",
+      "own_move": "C",
+      "own_payoff": 3.0,
+      "round_index": 2
+     }
+    ],
+    "c": [
+     {
+      "other_move": "D",
+      "own_move": "D",
+      "own_payoff": 1.0,
+      "round_index": 0
+     },
+     {
+      "other_move": "D",
+      "own_move": "D",
+      "own_payoff": 1.0,
+      "round_index": 1
+     },
+     {
+      "other_move": "D",
+      "own_move": "D",
+      "own_payoff": 1.0,
+      "round_index": 2
+     }
+    ],
+    "d": [
+     {
+      "other_move": "D",
+      "own_move": "D",
+      "own_payoff": 1.0,
+      "round_index": 0
+     },
+     {
+      "other_move": "D",
+      "own_move": "D",
+      "own_payoff": 1.0,
+      "round_index": 1
+     },
+     {
+      "other_move": "D",
+      "own_move": "D",
+      "own_payoff": 1.0,
+      "round_index": 2
+     }
+    ]
+   },
+   "utilities": {
+    "a": 9.0,
+    "b": 9.0,
+    "c": 3.0,
+    "d": 3.0
+   }
+  },
+  "id": "two-pairs",
+  "note": "",
+  "params": {
+   "agents": [
+    "a",
+    "b",
+    "c",
+    "d"
+   ],
+   "matching": "fixed",
+   "rounds": 3
+  },
+  "script": {
+   "a": [
+    {
+     "move": "C"
+    }
+   ],
+   "b": [
+    {
+     "move": "C"
+    }
+   ],
+   "c": [
+    {
+     "move": "D"
+    }
+   ],
+   "d": [
+    {
+     "move": "D"
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "Two pairs side by side",
+  "why": "A pair is told nothing about the other pair's moves."
+ },
+ {
+  "env_ref": "gao_idl.environments.pd:build_repeated_pd",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "a": [
+     {
+      "other_move": "D",
+      "own_move": "C",
+      "own_payoff": 0.0,
+      "round_index": 0
+     },
+     {
+      "other_move": "C",
+      "own_move": "C",
+      "own_payoff": 3.0,
+      "round_index": 1
+     },
+     {
+      "other_move": "D",
+      "own_move": "C",
+      "own_payoff": 0.0,
+      "round_index": 2
+     }
+    ],
+    "b": [
+     {
+      "other_move": "C",
+      "own_move": "D",
+      "own_payoff": 5.0,
+      "round_index": 0
+     },
+     {
+      "other_move": "D",
+      "own_move": "D",
+      "own_payoff": 1.0,
+      "round_index": 1
+     },
+     {
+      "other_move": "C",
+      "own_move": "D",
+      "own_payoff": 5.0,
+      "round_index": 2
+     }
+    ],
+    "c": [
+     {
+      "other_move": "D",
+      "own_move": "C",
+      "own_payoff": 0.0,
+      "round_index": 0
+     },
+     {
+      "other_move": "C",
+      "own_move": "C",
+      "own_payoff": 3.0,
+      "round_index": 1
+     },
+     {
+      "other_move": "D",
+      "own_move": "C",
+      "own_payoff": 0.0,
+      "round_index": 2
+     }
+    ],
+    "d": [
+     {
+      "other_move": "C",
+      "own_move": "D",
+      "own_payoff": 5.0,
+      "round_index": 0
+     },
+     {
+      "other_move": "D",
+      "own_move": "D",
+      "own_payoff": 1.0,
+      "round_index": 1
+     },
+     {
+      "other_move": "C",
+      "own_move": "D",
+      "own_payoff": 5.0,
+      "round_index": 2
+     }
+    ]
+   },
+   "utilities": {
+    "a": 3.0,
+    "b": 11.0,
+    "c": 3.0,
+    "d": 11.0
+   }
+  },
+  "id": "round-robin",
+  "note": "",
+  "params": {
+   "agents": [
+    "a",
+    "b",
+    "c",
+    "d"
+   ],
+   "matching": "round_robin",
+   "rounds": 3
+  },
+  "script": {
+   "a": [
+    {
+     "move": "C"
+    }
+   ],
+   "b": [
+    {
+     "move": "D"
+    }
+   ],
+   "c": [
+    {
+     "move": "C"
+    }
+   ],
+   "d": [
+    {
+     "move": "D"
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "Four players, a new partner every round",
+  "why": "With round_robin matching each player meets each other player once."
+ },
+ {
+  "env_ref": "gao_idl.environments.pd:build_repeated_pd",
+  "expect": {
+   "exit_port": null,
+   "failed": true,
+   "reports": {
+    "a": [
+     {
+      "other_move": "C",
+      "own_move": "C",
+      "own_payoff": 3.0,
+      "round_index": 0
+     }
+    ],
+    "b": [
+     {
+      "other_move": "C",
+      "own_move": "C",
+      "own_payoff": 3.0,
+      "round_index": 0
+     }
+    ],
+    "c": [
+     {
+      "other_move": "C",
+      "own_move": "C",
+      "own_payoff": 3.0,
+      "round_index": 0
+     }
+    ],
+    "d": [
+     {
+      "other_move": "C",
+      "own_move": "C",
+      "own_payoff": 3.0,
+      "round_index": 0
+     }
+    ]
+   },
+   "utilities": {
+    "a": 3.0,
+    "b": 3.0,
+    "c": 3.0,
+    "d": 3.0
+   }
+  },
+  "id": "no-move-stops",
+  "note": "",
+  "params": {
+   "agents": [
+    "a",
+    "b",
+    "c",
+    "d"
+   ],
+   "matching": "fixed",
+   "rounds": 3
+  },
+  "script": {
+   "a": [
+    {
+     "move": "C"
+    }
+   ],
+   "b": [
+    {
+     "move": "C"
+    },
+    null
+   ],
+   "c": [
+    {
+     "move": "C"
+    }
+   ],
+   "d": [
+    {
+     "move": "C"
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "A player does not move",
+  "why": "By default a missing move stops the whole run, for both pairs."
+ },
+ {
+  "env_ref": "gao_idl.environments.pd:build_repeated_pd",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "a": [
+     {
+      "other_move": "C",
+      "own_move": "C",
+      "own_payoff": 3.0,
+      "round_index": 0
+     },
+     {
+      "other_move": "D",
+      "own_move": "C",
+      "own_payoff": 0.0,
+      "round_index": 1
+     }
+    ],
+    "b": [
+     {
+      "other_move": "C",
+      "own_move": "C",
+      "own_payoff": 3.0,
+      "round_index": 0
+     },
+     {
+      "other_move": "C",
+      "own_move": "D",
+      "own_payoff": 5.0,
+      "round_index": 1
+     }
+    ]
+   },
+   "utilities": {
+    "a": 3.0,
+    "b": 8.0
+   }
+  },
+  "id": "no-move-default",
+  "note": "",
+  "params": {
+   "agents": [
+    "a",
+    "b"
+   ],
+   "default_move": "D",
+   "matching": "fixed",
+   "rounds": 2,
+   "timeout": {
+    "kind": "default"
+   }
+  },
+  "script": {
+   "a": [
+    {
+     "move": "C"
+    }
+   ],
+   "b": [
+    {
+     "move": "C"
+    },
+    null
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "A player does not move and a default is configured",
+  "why": "With a default move of D configured, silence counts as defecting."
+ },
+ {
+  "env_ref": "gao_idl.environments.pd:build_repeated_pd",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "a": [
+     {
+      "other_move": "D",
+      "own_move": "C",
+      "own_payoff": 0.0,
+      "round_index": 0
+     },
+     {
+      "other_move": "D",
+      "own_move": "C",
+      "own_payoff": 0.0,
+      "round_index": 1
+     }
+    ],
+    "b": [
+     {
+      "other_move": "C",
+      "own_move": "D",
+      "own_payoff": 5.0,
+      "round_index": 0
+     },
+     {
+      "other_move": "C",
+      "own_move": "D",
+      "own_payoff": 5.0,
+      "round_index": 1
+     }
+    ]
+   },
+   "utilities": {
+    "a": 0.0,
+    "b": 10.0
+   }
+  },
+  "id": "payoffs-hidden",
+  "note": "",
+  "params": {
+   "agents": [
+    "a",
+    "b"
+   ],
+   "disclose_payoffs": false,
+   "matching": "fixed",
+   "rounds": 2
+  },
+  "script": {
+   "a": [
+    {
+     "move": "C"
+    }
+   ],
+   "b": [
+    {
+     "move": "D"
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "The payoff table is not shown",
+  "why": "With disclose_payoffs off, players see no table and learn payoffs only from reports."
+ },
+ {
+  "env_ref": "gao_idl.environments.pd:build_repeated_pd",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "a": [
+     {
+      "other_move": "D",
+      "own_move": "C",
+      "own_payoff": -1.0,
+      "round_index": 0
+     },
+     {
+      "other_move": "D",
+      "own_move": "D",
+      "own_payoff": 0.0,
+      "round_index": 1
+     }
+    ],
+    "b": [
+     {
+      "other_move": "C",
+      "own_move": "D",
+      "own_payoff": 4.0,
+      "round_index": 0
+     },
+     {
+      "other_move": "D",
+      "own_move": "D",
+      "own_payoff": 0.0,
+      "round_index": 1
+     }
+    ]
+   },
+   "utilities": {
+    "a": -1.0,
+    "b": 4.0
+   }
+  },
+  "id": "custom-payoffs",
+  "note": "",
+  "params": {
+   "agents": [
+    "a",
+    "b"
+   ],
+   "matching": "fixed",
+   "payoffs": {
+    "CC": [
+     2,
+     2
+    ],
+    "CD": [
+     -1,
+     4
+    ],
+    "DC": [
+     4,
+     -1
+    ],
+    "DD": [
+     0,
+     0
+    ]
+   },
+   "rounds": 2
+  },
+  "script": {
+   "a": [
+    {
+     "move": "C"
+    },
+    {
+     "move": "D"
+    }
+   ],
+   "b": [
+    {
+     "move": "D"
+    },
+    {
+     "move": "D"
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "A different payoff table",
+  "why": "Payoffs come from the configured table, row player first."
+ }
+]

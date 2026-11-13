@@ -1,0 +1,133 @@
+{
+ "spec_version": 1,
+ "title": "Sealed-bid auction with a public reserve price",
+ "summary": "One item is sold. Every bidder knows its own value and sends one sealed bid; the highest bid at or above the reserve wins and, under the second-price rule, pays the larger of the reserve and the highest other bid.",
+ "env_ref": "gao_idl.environments.auction:build_auction",
+ "params": {
+  "values": {
+   "alice": 10.0,
+   "bob": 7.0,
+   "carol": 4.0
+  },
+  "rule": "second_price",
+  "reveal_bids": false,
+  "reserve": 2.0
+ },
+ "roles": [
+  {
+   "name": "bidder",
+   "description": "Wants the item and knows what it is worth to them.",
+   "many": true
+  }
+ ],
+ "steps": [
+  {
+   "name": "bidding",
+   "kind": "decision",
+   "description": "All bidders send a sealed bid without seeing any other bid.",
+   "sees": {
+    "bidder": [
+     "value",
+     "rule",
+     "bidders",
+     "tie_break",
+     "bid_disclosure",
+     "reserve"
+    ]
+   },
+   "chooses": {
+    "bidder": [
+     "amount"
+    ]
+   },
+   "told": {
+    "bidder": [
+     "status",
+     "own_bid"
+    ]
+   },
+   "on_no_action": "fail"
+  },
+  {
+   "name": "settlement",
+   "kind": "automatic",
+   "description": "The rule picks the winner and the price, or declares the item unsold.",
+   "told": {
+    "bidder": [
+     "winner",
+     "winning_payment",
+     "own_bid",
+     "own_payment",
+     "own_utility",
+     "all_bids",
+     "status",
+     "reserve"
+    ]
+   }
+  }
+ ],
+ "secrets": [
+  {
+   "what": "A bidder's value is known only to that bidder.",
+   "param": "values",
+   "alt_value": {
+    "alice": 9.0,
+    "bob": 7.0,
+    "carol": 4.0
+   },
+   "hidden_from": [
+    "bidder"
+   ],
+   "except_agents": [
+    "alice"
+   ]
+  }
+ ],
+ "payoffs": [
+  {
+   "role": "bidder",
+   "description": "The winner gets its value minus the price; everyone else gets 0.",
+   "report_field": "own_utility"
+  }
+ ],
+ "invariants": [
+  {
+   "name": "losers_pay_nothing",
+   "statement": "A bidder who does not win pays nothing."
+  },
+  {
+   "name": "price_at_least_reserve",
+   "statement": "If the item is sold, the price is at least the reserve."
+  }
+ ],
+ "assumptions": [
+  {
+   "question": 1,
+   "text": "If two bidders tie for the highest bid, the one whose name comes first alphabetically wins."
+  },
+  {
+   "question": 3,
+   "text": "Under the second-price rule the reserve acts like a bid by the seller: the winner pays the larger of the reserve and the highest other bid."
+  },
+  {
+   "question": 3,
+   "text": "A bid exactly equal to the reserve can win; bids below the reserve are ignored, and if none clears it the item is unsold and nobody pays."
+  },
+  {
+   "question": 2,
+   "text": "The reserve, the pricing rule, the tie-break rule and the names of all bidders are shown to every bidder before bidding."
+  },
+  {
+   "question": 7,
+   "text": "If any bidder sends no bid, the whole run stops; a missing bid is not treated as a bid of zero."
+  },
+  {
+   "question": 9,
+   "text": "A bidder may bid more than its value and can end with a negative payoff."
+  },
+  {
+   "question": 8,
+   "text": "After settlement every bidder is told the winner's name and what the winner paid, and its own bid, payment and payoff; other bids are shown only when reveal_bids is on."
+  }
+ ]
+}

@@ -68,3 +68,4 @@ The other pages document **supporting** modules: reachable and described, but no
 - [`llm`](llm.md): Language-model agents and backends. Requires the `llm` extra for the HTTP backends.
 - [`environments`](environments.md): Ready-made environments: auction, participatory budgeting, repeated prisoner's dilemma, toy tasks.
 - [`testing`](testing.md): Invariant checks to run on your own environments.
+- [`authoring`](authoring.md): Specs, design pages, the spec check and scenario cards.

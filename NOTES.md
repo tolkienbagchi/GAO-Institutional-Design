@@ -1612,3 +1612,82 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   it. Tests: `test_request_shape` asserts the key is absent; `test_temperature_is_sent_only_on_request` covers the opt-in.
 - Also from the live run: a key not scoped to a workspace needs an `anthropic-workspace-id` header (pass via
   `extra_headers`); a workspace-scoped key needs nothing. The demo script reads `GAO_ANTHROPIC_WORKSPACE_ID` for this.
+
+## 2026-11-11 — M8 task 0: baseline
+- On `main` at `6143584`: `ruff check .`, `ruff format --check .`, `mypy src/gao_idl` clean; `pytest -q -m "not slow"` 806 passed,
+  4 skipped with `tests/core/test_paths_property.py`, `tests/environments/test_pb_rules_property.py` (no `hypothesis`) and
+  `tests/test_packaging.py` (no `build`) ignored and `PYTHONPATH=src` in place of an install. PyPI unreachable: `pip install -e`,
+  `python -m build`, `mkdocstrings` and `pytest-timeout` did not run.
+
+## 2026-11-11 — M8: verified authoring (`gao_idl.authoring`), deviations from the brief
+- **Scripts are keyed by agent, not by role id** (`ActionScript = dict[agent, list[action | None]]`). Role ids are not unique in a run:
+  every `Par` branch of the PD has a `row` and a `col`, so "the i-th decision of role `row`" interleaves pairs. An agent's decisions have
+  one order. Cards read better this way too ("alice bids 8").
+- **`check_spec(spec, runs: Sequence[Run])`** (the brief's amended form). `Run` = params, seed, script.
+- **`SecretSpec` gained `except_agents` and `only_when`.** Without the first, "a bidder's value is hidden from bidders" fails on the
+  bidder who owns it. Without the second, "true quality is revealed only by an audit" cannot be stated: it holds only when `p_audit = 0`.
+- **`StepSpec`**: a decision step must give `on_no_action`; `sees` keys must be deciders. `EnvSpec` and its parts forbid unknown keys.
+- **`describe()` cannot tell an automatic layer from one with undeclared roles.** `Contract.roles` may be empty for dynamic role sets
+  (the auction's `bidder:i`), so the diagram labels a step with roles only where the contract lists them, and "automatic vs decision"
+  is checked from runs (`undeclared_chooses`), not from the tree. `timeout_policy` is checked from the tree.
+- **A layer's name is not in its path under a `Par` branch** (the primitive runs at the branch path). Step order and card narration
+  take the name from `DecisionRequested.request.layer` / `LayerCompleted.layer`, and step order is "first asked or completed".
+- **`knowledge_table` takes sessions only**; timeout kinds come from rebuilding the process from each session's snapshot.
+- **`script_of(session)`** added (not in the brief): turns a run driven by adapters into a script, so cards for the carbon market
+  can start from the scripted policies. `scripts/make_example_cards.py` writes the three card files, always as `proposed`.
+- **`render_card` re-runs the scenario** to narrate it and warns at the top if the recorded outcome is stale. With a spec it lists
+  only the parameters that differ from the spec's. Floats are rounded to 6 decimals for display only.
+- **A rejected card whose run now raises counts as "gone"**; a confirmed one that raises is a problem.
+- **`gao-idl cards show` takes `--spec`** for step descriptions; `cards confirm/reject` freeze an unfrozen card first.
+- **Golden files** for the auction and PD diagram, outline and design page are in `tests/authoring/golden/`
+  (`GAO_UPDATE_GOLDEN=1` rewrites them).
+- **The carbon-market spec covers `market_form="per_project"` only.** A pooled-form card made `check_spec` report four mismatches
+  (buyers choose `price`/`qty` instead of one order per project; clearing reports carry `price`): the two forms are different
+  designs and need a spec each. The pooled card was replaced by an audit-by-chance card.
+- Limits recorded in `docs/verifying.md`: field names not values; secrets must be factory parameters; field names that are data.
+
+## 2026-11-11 — M8 fix after first CI run: card outcomes are compared to within 1e-9, not exactly
+- CI on Python 3.11 failed `test_shipped_cards_are_proposed_frozen_and_current[vcm]` (card `buyer-stays-out`): utilities frozen on 3.13
+  differed in the last bits (`0.07499999999998863` vs `0.07500000000000284`). Built-in `sum` over floats is compensated from Python
+  3.12 on, and the carbon market sums floats with it. `cards.same_outcome` now compares numbers with `math.isclose` (rel and abs 1e-9);
+  `verify_cards`, the stale-outcome warning in `render_card` and the shipped-cards test use it.
+- **Not fixed, and wider than cards:** a carbon-market session recorded on Python 3.11 does not replay to bit-identical ledger totals on
+  3.12+, so `gao-idl replay` (which compares totals with `!=`) would report a difference across interpreters. Determinism holds within
+  one Python version. `environments/vcm` was out of scope for M8; using `math.fsum` there would remove the dependence.
+
+## 2026-11-12 — M9: fuzzing, invariants, divergence search; deviations from the brief
+- **Silence is per script, not per decision.** The brief asked for "no action" with probability 0.1 per decision. Most shipped layers
+  stop the run on a missing action, so that would end most carbon-market runs in the first step. One script in five allows silence
+  (0.1 per decision); the rest have none. Over 200 scripts: 9 failed auction runs, 44 failed carbon-market runs.
+- **A rejected draw is re-drawn** up to 24 times, the last two "plain" (lower bounds, empty selections, optional parts omitted); if
+  nothing is accepted the participant stays silent. Rejections emit `ActionRejected` but are not logged, so scripts replay exactly.
+- **The number pool** for a decision is the numbers in its own observation plus numbers chosen earlier in the same batch. That is what
+  produces bids exactly at the reserve and ties. The sampler lives in `authoring.fuzz`; `RandomAgent` is unchanged.
+- **Divergences are deduplicated by `(kind, grouping of candidates)`**, not by `(kind, first_difference)`: the latter gave one entry
+  per agent whose payoff differed. With three candidates a script can separate all three at once; that is a third grouping, so the
+  exit test asserts the tie and reserve groupings are found and nothing outside {tie, reserve, both}, and that each found script has
+  the property that explains it (a tie at the top; a runner-up below the reserve).
+- **A script that cannot be played on a candidate is the `interface` divergence**; there is no separate up-front schema comparison.
+- **Comparison ignores `path`, `decision_id`, `layer` and `t`** in requests and reports, so candidates may be structured differently
+  (one layer or two) as long as participants are shown and told the same things in the same order.
+- **`Divergence` has `groups` and `problems`; `ChoiceCard`/`ChoiceOption` are new** (the brief named `ChoiceCard` without fields).
+  `render_choice` lists facts shared by all options once and, per option, only what is particular to it.
+- **`InvariantSpec.args`** added: generic predicates need arguments (`roles`, `field`, `param`). Predicates are called
+  `predicate(session, **args)`.
+- **`check_invariants(spec, runs, secrets=True)`**; the CLI passes `secrets=False` because `check_spec` already ran them.
+  `invariant_unchecked` is printed as a note and does not change the exit status (the shipped specs have five such statements).
+- **`gao-idl diverge` exits 1 when there is any disagreement** and says whether endings and payoffs agreed.
+- **`examples/candidates/auction_second.py`**: a second auction written from the spec. I had read the shipped auction during M8, so
+  it is an illustration of the mechanics, not an independent implementation. Endings and payoffs agree on 200 scripts; the two
+  differ in the text of `status`, `tie_break`, `bid_disclosure` and in which settlement fields are present, none of which the spec
+  fixes. `EnvSpec` has no place to say what a field contains or when an optional field appears.
+- 200 fuzzed runs per shipped spec (`--fuzz 200 --seed 1`): 0 mismatches for auction, PD and carbon market. The carbon-market
+  secret (true quality hidden from buyers and sellers without audits) is now tested on 200 runs instead of one. Takes 66 s.
+
+## 2026-11-12 — carbon market: float sums use `math.fsum` (cross-Python determinism)
+- `ClearingRecord.paid` (what a buyer pays across projects), the audit's `sum_error`, and the weight total in the scripted buyers'
+  `split_demand` used built-in `sum` over floats, whose last bits differ between Python 3.11 and 3.12+ (compensated summation).
+  They now use `math.fsum`, which is correctly rounded everywhere. The other `sum` calls in `environments/vcm` add ints.
+- `tests/environments/test_vcm_portability.py` pins the exact bits of one run's payoffs (the run that differed in M8's first CI run);
+  CI runs it on 3.11 and 3.13. On 3.13 no existing number changed: the shipped cards regenerate byte-identically.
+- Card outcomes are still compared to within 1e-9. Other environments were not audited for float `sum`.

@@ -1,0 +1,6 @@
+repeat pd (limit 4): again on again; stop on finished (as done) -> done, truncated
+  body: sequence round_seq -> again, finished
+    first: parallel round -> round_done
+      branch pair_0: step pd_round (roles: col, row; if no action: fail) -> done
+      branch pair_1: step pd_round (roles: col, row; if no action: fail) -> done
+    on round_done: step round_counter -> again, finished

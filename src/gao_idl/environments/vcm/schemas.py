@@ -4,6 +4,7 @@ Stability: internal; it may change without notice. Use the names exported by ``g
 there is one.
 """
 
+import math
 from typing import Any
 
 from pydantic import model_serializer
@@ -75,7 +76,9 @@ class ClearingRecord(FrozenModel):
         """What ``buyer`` pays in total for its fills."""
         if self.projects is None:
             return self.fills.get(buyer, 0.0) * (self.price or 0.0)
-        return sum(
+        # fsum, not sum: built-in sum over floats is compensated from Python 3.12 on, so its last
+        # bits differ between interpreters; fsum is correctly rounded on all of them.
+        return math.fsum(
             c.fills.get(buyer, 0.0) * c.price for c in self.projects.values() if c.price is not None
         )
 

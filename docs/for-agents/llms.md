@@ -2,7 +2,7 @@
 
 One file to paste into an agent's context. It states the invariants, the API as it is now (all
 amendments folded in, no history), the four information objects, the test fixtures, the environment
-factories and the three skills. The longer prose is in the other docs; the protocols are in the
+factories and the five skills. The longer prose is in the other docs; the protocols are in the
 skills. Python 3.11 or later; package `gao_idl`, version 0.1.0.
 
 Skills (read the one that matches the job):
@@ -10,6 +10,8 @@ Skills (read the one that matches the job):
 - `skills/design-environment/SKILL.md`: a person describes an institution; you build an environment.
 - `skills/write-llm-codec/SKILL.md`: a language model must play a role of an existing layer.
 - `skills/explain-environment/SKILL.md`: a person wants an existing environment explained.
+- `skills/second-implementation/SKILL.md`: build the same spec again, blind, and find where the two disagree.
+- `skills/write-spec-tests/SKILL.md`: write tests from a spec without reading the environment.
 
 ## What it is
 
@@ -255,6 +257,29 @@ validation (`strict types, enum/const, bounds, required, additionalProperties: f
 anyOf, local $ref`) is authoritative; a provider's narrower support is handled by transforming the
 request schema, never by relaxing the validator. Failed calls are input events, so replay
 reproduces failures in place.
+
+## Verified authoring (`gao_idl.authoring`)
+
+After building an environment, write its `EnvSpec` (the nine answers as JSON) and propose scenario
+cards. Nothing here calls a model. Workflow and limits: `docs/verifying.md`.
+
+| Name | Purpose |
+| --- | --- |
+| `EnvSpec`, `load_spec(path)` | roles, steps (`sees` / `chooses` / `told` per role kind), `repeats`, `secrets`, `payoffs`, `invariants`, `assumptions` |
+| `play(env_ref, params, seed, script)` | run from data; `script` maps agent to actions in order, `None` = does not act |
+| `script_of(session)` | the script that reproduces a session driven by adapters |
+| `knowledge_table(sessions)`, `to_mermaid(describe(p))`, `render_design(spec, p, table)` | the reviewable page, from the build |
+| `check_spec(spec, runs)` | list of `Mismatch`; empty = spec and build agree on the runs given |
+| `Card`, `freeze`, `render_card`, `verify_cards`, `load_cards`, `save_cards` | scenario cards; `gao_idl.testing.assert_cards(path)` |
+
+| `edge_scripts(env_ref, params, seed, n)` | n replayable scripts biased to bounds, ties, shown numbers, empty choices, silence |
+| `check_invariants(spec, runs)` | runs `InvariantSpec.predicate(session, **args)` and the secrets over many runs; `gao_idl.authoring.predicates` |
+| `diverge(env_refs, params, seeds, scripts)`, `to_choice_cards`, `render_choice` | where implementations of one spec disagree, as questions |
+
+Command line: `gao-idl spec render|check SPEC [--cards CARDS] [--fuzz N]`, `gao-idl cards show|confirm|reject|verify CARDS`,
+`gao-idl diverge SPEC REF... --out choices.json`.
+A role *kind* is the role id before the first `:`. **Never confirm or reject a card, answer a choice card, or set
+an assumption to confirmed**: both record a person's judgement.
 
 ## Test fixtures (`gao_idl.testing`)
 

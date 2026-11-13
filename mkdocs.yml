@@ -41,6 +41,7 @@ nav:
       - 10. Congestion pricing: tutorials/congestion.md
       - 11. Carbon market with verifiers: tutorials/vcm.md
   - Designing an environment: designing.md
+  - Verifying an environment: verifying.md
   - Reproducible runs: runs.md
   - For AI agents: for-agents/llms.md
   - API reference:
@@ -53,6 +54,7 @@ nav:
       - llm: api/llm.md
       - environments: api/environments.md
       - testing: api/testing.md
+      - authoring: api/authoring.md
   - Design:
       - Decisions: design/decisions.md
   - Acceptance: ACCEPTANCE.md

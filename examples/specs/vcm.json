@@ -1,0 +1,309 @@
+{
+ "spec_version": 1,
+ "title": "Carbon credit market with paid verifiers and audits",
+ "summary": "Verifiers, paid a fee per report, tell the market how good each project is. Sellers and buyers then send sealed orders to a call auction per project. Afterwards some traded projects are audited: the true quality is made public and a verifier whose report was far off pays a penalty.",
+ "env_ref": "gao_idl.environments.vcm:build_vcm",
+ "params": {
+  "rounds": 2,
+  "fee": 1.0,
+  "penalty": 5.0,
+  "tol": 0.1,
+  "p_audit": 0.0,
+  "settle_on": "reported",
+  "reputation_visible": true,
+  "market_form": "per_project",
+  "sigma": 0.03,
+  "sellers": [
+   {
+    "agent": "s0",
+    "quantity": 10,
+    "theta": 0.9,
+    "cost": 8.0
+   },
+   {
+    "agent": "s1",
+    "quantity": 10,
+    "theta": 0.8,
+    "cost": 7.0
+   },
+   {
+    "agent": "s2",
+    "quantity": 10,
+    "theta": 0.4,
+    "cost": 3.0
+   },
+   {
+    "agent": "s3",
+    "quantity": 10,
+    "theta": 0.3,
+    "cost": 2.5
+   }
+  ],
+  "buyers": [
+   {
+    "agent": "b0",
+    "demand": 10,
+    "value": 10.0
+   },
+   {
+    "agent": "b1",
+    "demand": 10,
+    "value": 10.5
+   },
+   {
+    "agent": "b2",
+    "demand": 10,
+    "value": 11.0
+   }
+  ],
+  "verifiers": [
+   {
+    "agent": "v0",
+    "projects": [
+     "s0",
+     "s1"
+    ],
+    "bias": 0.0,
+    "sigma": 0.03
+   },
+   {
+    "agent": "v1",
+    "projects": [
+     "s2",
+     "s3"
+    ],
+    "bias": 0.3,
+    "sigma": 0.03
+   }
+  ]
+ },
+ "roles": [
+  {
+   "name": "verifier",
+   "description": "Measures the quality of its assigned projects and publishes a report on each.",
+   "many": true
+  },
+  {
+   "name": "seller",
+   "description": "Owns one project and offers its credits.",
+   "many": true
+  },
+  {
+   "name": "buyer",
+   "description": "Wants credits; a credit is worth more to it the higher the project's true quality.",
+   "many": true
+  }
+ ],
+ "steps": [
+  {
+   "name": "verification",
+   "kind": "decision",
+   "description": "Each verifier sees its own noisy measurement of its projects and reports one number per project.",
+   "sees": {
+    "verifier": [
+     "audit_probability",
+     "fee",
+     "measurements",
+     "penalty",
+     "round",
+     "tolerance"
+    ]
+   },
+   "chooses": {
+    "verifier": [
+     "s0",
+     "s1",
+     "s2",
+     "s3"
+    ]
+   },
+   "on_no_action": "fail"
+  },
+  {
+   "name": "market",
+   "kind": "decision",
+   "description": "Sellers post an ask for their project and buyers send one optional order per project, all sealed.",
+   "sees": {
+    "seller": [
+     "cost",
+     "last_price",
+     "last_volume",
+     "project",
+     "quantity",
+     "round",
+     "verified_quality"
+    ],
+    "buyer": [
+     "demand",
+     "last_volume",
+     "projects",
+     "reputation",
+     "round",
+     "value"
+    ]
+   },
+   "chooses": {
+    "seller": [
+     "price",
+     "qty"
+    ],
+    "buyer": [
+     "s0",
+     "s1",
+     "s2",
+     "s3"
+    ]
+   },
+   "on_no_action": "fail"
+  },
+  {
+   "name": "clearing",
+   "kind": "automatic",
+   "description": "Each project's orders clear in a uniform-price call auction.",
+   "told": {
+    "buyer": [
+     "projects",
+     "round",
+     "volume",
+     "own_fills",
+     "own_payment"
+    ],
+    "seller": [
+     "projects",
+     "round",
+     "volume",
+     "own_fill",
+     "own_revenue"
+    ],
+    "verifier": [
+     "projects",
+     "round",
+     "volume"
+    ]
+   }
+  },
+  {
+   "name": "audit",
+   "kind": "automatic",
+   "description": "Each traded project is audited with a fixed probability; an audit reveals its true quality to everyone and penalizes a verifier whose report was off by more than the tolerance.",
+   "told": {
+    "buyer": [
+     "own_net",
+     "own_value",
+     "revealed",
+     "round"
+    ],
+    "seller": [
+     "revealed",
+     "round"
+    ],
+    "verifier": [
+     "fees",
+     "penalties",
+     "revealed",
+     "round"
+    ]
+   }
+  }
+ ],
+ "repeats": {
+  "what": "The four steps repeat each round with the same participants.",
+  "rounds_param": "rounds",
+  "carries_over": [
+   "Each verifier's audit record (shown to buyers only if reputation_visible is on).",
+   "Last round's public prices and volumes."
+  ]
+ },
+ "secrets": [
+  {
+   "what": "A project's true quality is revealed to buyers and sellers only by an audit.",
+   "param": "sellers",
+   "alt_value": [
+    {
+     "agent": "s0",
+     "quantity": 10,
+     "theta": 0.1,
+     "cost": 8.0
+    },
+    {
+     "agent": "s1",
+     "quantity": 10,
+     "theta": 0.2,
+     "cost": 7.0
+    },
+    {
+     "agent": "s2",
+     "quantity": 10,
+     "theta": 0.6,
+     "cost": 3.0
+    },
+    {
+     "agent": "s3",
+     "quantity": 10,
+     "theta": 0.7,
+     "cost": 2.5
+    }
+   ],
+   "hidden_from": [
+    "buyer",
+    "seller"
+   ],
+   "only_when": {
+    "p_audit": 0.0
+   }
+  }
+ ],
+ "payoffs": [
+  {
+   "role": "buyer",
+   "description": "Value times quality of the credits bought, minus what was paid.",
+   "report_field": "own_net"
+  },
+  {
+   "role": "seller",
+   "description": "Revenue minus cost of the credits sold.",
+   "report_field": "own_revenue"
+  },
+  {
+   "role": "verifier",
+   "description": "A fee per report, minus a penalty per audited report that was off by more than the tolerance.",
+   "report_field": "fees"
+  }
+ ],
+ "invariants": [
+  {
+   "name": "audit_only_traded",
+   "statement": "Only projects that traded in the round can be audited."
+  },
+  {
+   "name": "no_overselling",
+   "statement": "A seller never sells more credits than it has."
+  }
+ ],
+ "assumptions": [
+  {
+   "question": 7,
+   "text": "If a verifier, seller or buyer does not act, the whole run stops."
+  },
+  {
+   "question": 9,
+   "text": "A buyer's credits are valued at the true quality if the project was audited that round, and at the reported quality otherwise (settle_on = reported)."
+  },
+  {
+   "question": 2,
+   "text": "Sellers do not see their project's true quality as a number; they see its cost and the verifier's report."
+  },
+  {
+   "question": 8,
+   "text": "Audit results are public: every participant is told each audited project's verifier, report and true quality."
+  },
+  {
+   "question": 9,
+   "text": "A seller is not told its profit, only its revenue."
+  },
+  {
+   "question": 1,
+   "text": "The clearing price of a project is the midpoint between the last accepted bid and ask; ties at the margin are rationed in proportion to quantity."
+  }
+ ]
+}

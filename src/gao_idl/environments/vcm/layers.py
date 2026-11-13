@@ -8,6 +8,7 @@ Stability: internal; it may change without notice. Use the names exported by ``g
 there is one.
 """
 
+import math
 from collections.abc import Sequence
 from typing import Literal
 
@@ -517,7 +518,7 @@ def audit_layer(
             stat = RepStat(
                 audited=stat.audited + len(mine),
                 wrong=stat.wrong + sum(1 for r in mine if abs(r.report - r.true_quality) > tol),
-                sum_error=stat.sum_error + sum(r.report - r.true_quality for r in mine),
+                sum_error=stat.sum_error + math.fsum(r.report - r.true_quality for r in mine),
             )
             store.set(f"rep:{v}", stat.model_dump(mode="json"))
         store.set(

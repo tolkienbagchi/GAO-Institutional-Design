@@ -36,7 +36,10 @@ second column is what the answer decides.
 | 8 | What are participants told afterwards, and is it the same for everyone? | A report is the only way information reaches a participant after a layer. | `report`, `audience`, the reporting regime |
 | 9 | What is each participant's payoff and when is it realized? | The ledger holds utility; a learner or a language model sees it only if a report carries it. | `utilities`, and a payoff field in the report |
 
-After the nine, restate the design as a table (role, sees, chooses, learns) and get a yes.
+After the nine, write the design down as an `EnvSpec` (`gao_idl.authoring`, JSON; see
+`examples/specs/auction.json`) and show the person its rendering, not a table you typed:
+`gao-idl spec render spec.json --out design.md`. Every choice the person did not make goes into the
+spec's `assumptions` with `confirmed: false`. Get a yes on the rendering before writing layers.
 
 ### A short elicitation
 
@@ -140,6 +143,8 @@ Fixture list in `gao_idl.testing`, and when each applies:
   committed/chosen from Q3; deterministic layers only.
 - `assert_branch_rng_independence(build_par_env, seed)`: for any `Par` whose layers draw
   randomness.
+- `assert_cards(path)`: once a person has confirmed or rejected scenario cards; confirmed ones
+  must still be reproduced, rejected ones must not.
 
 ## Anti-patterns
 
@@ -165,4 +170,9 @@ Fixture list in `gao_idl.testing`, and when each applies:
 4. **Mutation checks**: temporarily leak a secret into a report, and swap an arrival-dependent
    write in; each named fixture must fail. If a fixture still passes, it is not testing that.
 5. `ruff check`, `ruff format --check`, `mypy`, `pytest -q -m "not slow"` are green.
-6. A short human explanation exists (see `skills/explain-environment`).
+6. `gao-idl spec check spec.json --cards cards.json` exits 0. Fix the environment or the spec,
+   whichever is wrong, and say which in `NOTES.md`; never edit the spec just to make it pass.
+7. 10 to 15 scenario cards exist, each with a `why`, chosen to separate plausible readings (ties,
+   boundaries, nobody acting, the last round). Leave every card `proposed` and every assumption
+   unconfirmed: only the person who described the institution confirms or rejects
+   (`docs/verifying.md`). Hand them the rendered design and `gao-idl cards show`.

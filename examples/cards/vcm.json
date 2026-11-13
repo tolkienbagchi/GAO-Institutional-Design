@@ -1,0 +1,9011 @@
+[
+ {
+  "env_ref": "gao_idl.environments.vcm:build_vcm",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "b0": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": -1.25,
+      "own_value": 65.0,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "b1": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": 2.0,
+      "own_value": 68.25,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "b2": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": 5.25,
+      "own_value": 71.5,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s0": [
+     {
+      "own_fill": 9.0,
+      "own_revenue": 75.78,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s1": [
+     {
+      "own_fill": 9.0,
+      "own_revenue": 65.97,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s2": [
+     {
+      "own_fill": 6.0,
+      "own_revenue": 30.240000000000002,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s3": [
+     {
+      "own_fill": 6.0,
+      "own_revenue": 26.759999999999998,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "v0": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "fees": 2.0,
+      "penalties": 0.0,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "v1": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "fees": 2.0,
+      "penalties": 10.0,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ]
+   },
+   "utilities": {
+    "b0": -1.25,
+    "b1": 2.0,
+    "b2": 5.25,
+    "s0": 3.7799999999999994,
+    "s1": 2.9700000000000006,
+    "s2": 12.24,
+    "s3": 11.76,
+    "v0": 2.0,
+    "v1": -8.0
+   }
+  },
+  "id": "audited",
+  "note": "",
+  "params": {
+   "buyers": [
+    {
+     "agent": "b0",
+     "demand": 10,
+     "value": 10.0
+    },
+    {
+     "agent": "b1",
+     "demand": 10,
+     "value": 10.5
+    },
+    {
+     "agent": "b2",
+     "demand": 10,
+     "value": 11.0
+    }
+   ],
+   "fee": 1.0,
+   "market_form": "per_project",
+   "p_audit": 1.0,
+   "penalty": 5.0,
+   "reputation_visible": true,
+   "rounds": 1,
+   "sellers": [
+    {
+     "agent": "s0",
+     "cost": 8.0,
+     "quantity": 10,
+     "theta": 0.9
+    },
+    {
+     "agent": "s1",
+     "cost": 7.0,
+     "quantity": 10,
+     "theta": 0.8
+    },
+    {
+     "agent": "s2",
+     "cost": 3.0,
+     "quantity": 10,
+     "theta": 0.4
+    },
+    {
+     "agent": "s3",
+     "cost": 2.5,
+     "quantity": 10,
+     "theta": 0.3
+    }
+   ],
+   "settle_on": "reported",
+   "sigma": 0.03,
+   "tol": 0.1,
+   "verifiers": [
+    {
+     "agent": "v0",
+     "bias": 0.0,
+     "projects": [
+      "s0",
+      "s1"
+     ],
+     "sigma": 0.03
+    },
+    {
+     "agent": "v1",
+     "bias": 0.3,
+     "projects": [
+      "s2",
+      "s3"
+     ],
+     "sigma": 0.03
+    }
+   ]
+  },
+  "script": {
+   "b0": [
+    {
+     "s0": {
+      "price": 8.84,
+      "qty": 3
+     },
+     "s1": {
+      "price": 7.66,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.08,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.42,
+      "qty": 2
+     }
+    }
+   ],
+   "b1": [
+    {
+     "s0": {
+      "price": 9.28,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.05,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.44,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.74,
+      "qty": 2
+     }
+    }
+   ],
+   "b2": [
+    {
+     "s0": {
+      "price": 9.72,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.43,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.79,
+      "qty": 2
+     },
+     "s3": {
+      "price": 7.06,
+      "qty": 2
+     }
+    }
+   ],
+   "s0": [
+    {
+     "price": 8.0,
+     "qty": 10
+    }
+   ],
+   "s1": [
+    {
+     "price": 7.0,
+     "qty": 10
+    }
+   ],
+   "s2": [
+    {
+     "price": 3.0,
+     "qty": 10
+    }
+   ],
+   "s3": [
+    {
+     "price": 2.5,
+     "qty": 10
+    }
+   ],
+   "v0": [
+    {
+     "s0": 0.88,
+     "s1": 0.77
+    }
+   ],
+   "v1": [
+    {
+     "s2": 0.71,
+     "s3": 0.64
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "One round, every traded project audited",
+  "why": "The biased verifier's reports are found out: who pays what, and who is told what."
+ },
+ {
+  "env_ref": "gao_idl.environments.vcm:build_vcm",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "b0": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": 10.25,
+      "own_value": 76.5,
+      "revealed": {},
+      "round": 0
+     }
+    ],
+    "b1": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": 14.074999999999989,
+      "own_value": 80.32499999999999,
+      "revealed": {},
+      "round": 0
+     }
+    ],
+    "b2": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": 17.900000000000006,
+      "own_value": 84.15,
+      "revealed": {},
+      "round": 0
+     }
+    ],
+    "s0": [
+     {
+      "own_fill": 9.0,
+      "own_revenue": 75.78,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {},
+      "round": 0
+     }
+    ],
+    "s1": [
+     {
+      "own_fill": 9.0,
+      "own_revenue": 65.97,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {},
+      "round": 0
+     }
+    ],
+    "s2": [
+     {
+      "own_fill": 6.0,
+      "own_revenue": 30.240000000000002,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {},
+      "round": 0
+     }
+    ],
+    "s3": [
+     {
+      "own_fill": 6.0,
+      "own_revenue": 26.759999999999998,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {},
+      "round": 0
+     }
+    ],
+    "v0": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "fees": 2.0,
+      "penalties": 0.0,
+      "revealed": {},
+      "round": 0
+     }
+    ],
+    "v1": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "fees": 2.0,
+      "penalties": 0.0,
+      "revealed": {},
+      "round": 0
+     }
+    ]
+   },
+   "utilities": {
+    "b0": 10.25,
+    "b1": 14.074999999999989,
+    "b2": 17.900000000000006,
+    "s0": 3.7799999999999994,
+    "s1": 2.9700000000000006,
+    "s2": 12.24,
+    "s3": 11.76,
+    "v0": 2.0,
+    "v1": 2.0
+   }
+  },
+  "id": "never-audited",
+  "note": "",
+  "params": {
+   "buyers": [
+    {
+     "agent": "b0",
+     "demand": 10,
+     "value": 10.0
+    },
+    {
+     "agent": "b1",
+     "demand": 10,
+     "value": 10.5
+    },
+    {
+     "agent": "b2",
+     "demand": 10,
+     "value": 11.0
+    }
+   ],
+   "fee": 1.0,
+   "market_form": "per_project",
+   "p_audit": 0.0,
+   "penalty": 5.0,
+   "reputation_visible": true,
+   "rounds": 1,
+   "sellers": [
+    {
+     "agent": "s0",
+     "cost": 8.0,
+     "quantity": 10,
+     "theta": 0.9
+    },
+    {
+     "agent": "s1",
+     "cost": 7.0,
+     "quantity": 10,
+     "theta": 0.8
+    },
+    {
+     "agent": "s2",
+     "cost": 3.0,
+     "quantity": 10,
+     "theta": 0.4
+    },
+    {
+     "agent": "s3",
+     "cost": 2.5,
+     "quantity": 10,
+     "theta": 0.3
+    }
+   ],
+   "settle_on": "reported",
+   "sigma": 0.03,
+   "tol": 0.1,
+   "verifiers": [
+    {
+     "agent": "v0",
+     "bias": 0.0,
+     "projects": [
+      "s0",
+      "s1"
+     ],
+     "sigma": 0.03
+    },
+    {
+     "agent": "v1",
+     "bias": 0.3,
+     "projects": [
+      "s2",
+      "s3"
+     ],
+     "sigma": 0.03
+    }
+   ]
+  },
+  "script": {
+   "b0": [
+    {
+     "s0": {
+      "price": 8.84,
+      "qty": 3
+     },
+     "s1": {
+      "price": 7.66,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.08,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.42,
+      "qty": 2
+     }
+    }
+   ],
+   "b1": [
+    {
+     "s0": {
+      "price": 9.28,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.05,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.44,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.74,
+      "qty": 2
+     }
+    }
+   ],
+   "b2": [
+    {
+     "s0": {
+      "price": 9.72,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.43,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.79,
+      "qty": 2
+     },
+     "s3": {
+      "price": 7.06,
+      "qty": 2
+     }
+    }
+   ],
+   "s0": [
+    {
+     "price": 8.0,
+     "qty": 10
+    }
+   ],
+   "s1": [
+    {
+     "price": 7.0,
+     "qty": 10
+    }
+   ],
+   "s2": [
+    {
+     "price": 3.0,
+     "qty": 10
+    }
+   ],
+   "s3": [
+    {
+     "price": 2.5,
+     "qty": 10
+    }
+   ],
+   "v0": [
+    {
+     "s0": 0.88,
+     "s1": 0.77
+    }
+   ],
+   "v1": [
+    {
+     "s2": 0.71,
+     "s3": 0.64
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "One round, no audits",
+  "why": "Without audits nobody learns the true qualities and no verifier is penalized."
+ },
+ {
+  "env_ref": "gao_idl.environments.vcm:build_vcm",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "b0": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": -1.25,
+      "own_value": 65.0,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "b1": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": 2.0,
+      "own_value": 68.25,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "b2": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": 5.25,
+      "own_value": 71.5,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s0": [
+     {
+      "own_fill": 9.0,
+      "own_revenue": 75.78,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s1": [
+     {
+      "own_fill": 9.0,
+      "own_revenue": 65.97,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s2": [
+     {
+      "own_fill": 6.0,
+      "own_revenue": 30.240000000000002,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s3": [
+     {
+      "own_fill": 6.0,
+      "own_revenue": 26.759999999999998,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "v0": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "fees": 2.0,
+      "penalties": 0.0,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "v1": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "fees": 2.0,
+      "penalties": 0.0,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ]
+   },
+   "utilities": {
+    "b0": -1.25,
+    "b1": 2.0,
+    "b2": 5.25,
+    "s0": 3.7799999999999994,
+    "s1": 2.9700000000000006,
+    "s2": 12.24,
+    "s3": 11.76,
+    "v0": 2.0,
+    "v1": 2.0
+   }
+  },
+  "id": "verifier-reports-truth",
+  "note": "",
+  "params": {
+   "buyers": [
+    {
+     "agent": "b0",
+     "demand": 10,
+     "value": 10.0
+    },
+    {
+     "agent": "b1",
+     "demand": 10,
+     "value": 10.5
+    },
+    {
+     "agent": "b2",
+     "demand": 10,
+     "value": 11.0
+    }
+   ],
+   "fee": 1.0,
+   "market_form": "per_project",
+   "p_audit": 1.0,
+   "penalty": 5.0,
+   "reputation_visible": true,
+   "rounds": 1,
+   "sellers": [
+    {
+     "agent": "s0",
+     "cost": 8.0,
+     "quantity": 10,
+     "theta": 0.9
+    },
+    {
+     "agent": "s1",
+     "cost": 7.0,
+     "quantity": 10,
+     "theta": 0.8
+    },
+    {
+     "agent": "s2",
+     "cost": 3.0,
+     "quantity": 10,
+     "theta": 0.4
+    },
+    {
+     "agent": "s3",
+     "cost": 2.5,
+     "quantity": 10,
+     "theta": 0.3
+    }
+   ],
+   "settle_on": "reported",
+   "sigma": 0.03,
+   "tol": 0.1,
+   "verifiers": [
+    {
+     "agent": "v0",
+     "bias": 0.0,
+     "projects": [
+      "s0",
+      "s1"
+     ],
+     "sigma": 0.03
+    },
+    {
+     "agent": "v1",
+     "bias": 0.3,
+     "projects": [
+      "s2",
+      "s3"
+     ],
+     "sigma": 0.03
+    }
+   ]
+  },
+  "script": {
+   "b0": [
+    {
+     "s0": {
+      "price": 8.84,
+      "qty": 3
+     },
+     "s1": {
+      "price": 7.66,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.08,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.42,
+      "qty": 2
+     }
+    }
+   ],
+   "b1": [
+    {
+     "s0": {
+      "price": 9.28,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.05,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.44,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.74,
+      "qty": 2
+     }
+    }
+   ],
+   "b2": [
+    {
+     "s0": {
+      "price": 9.72,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.43,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.79,
+      "qty": 2
+     },
+     "s3": {
+      "price": 7.06,
+      "qty": 2
+     }
+    }
+   ],
+   "s0": [
+    {
+     "price": 8.0,
+     "qty": 10
+    }
+   ],
+   "s1": [
+    {
+     "price": 7.0,
+     "qty": 10
+    }
+   ],
+   "s2": [
+    {
+     "price": 3.0,
+     "qty": 10
+    }
+   ],
+   "s3": [
+    {
+     "price": 2.5,
+     "qty": 10
+    }
+   ],
+   "v0": [
+    {
+     "s0": 0.88,
+     "s1": 0.77
+    }
+   ],
+   "v1": [
+    {
+     "s2": 0.4,
+     "s3": 0.3
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "The biased verifier reports the true qualities anyway",
+  "why": "A verifier is judged on what it reports, not on what it measured."
+ },
+ {
+  "env_ref": "gao_idl.environments.vcm:build_vcm",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "b0": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": -1.25,
+      "own_value": 65.0,
+      "revealed": {
+       "s0": {
+        "report": 0.98,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.88,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "b1": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": 2.0,
+      "own_value": 68.25,
+      "revealed": {
+       "s0": {
+        "report": 0.98,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.88,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "b2": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": 5.25,
+      "own_value": 71.5,
+      "revealed": {
+       "s0": {
+        "report": 0.98,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.88,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s0": [
+     {
+      "own_fill": 9.0,
+      "own_revenue": 75.78,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.98,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.88,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s1": [
+     {
+      "own_fill": 9.0,
+      "own_revenue": 65.97,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.98,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.88,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s2": [
+     {
+      "own_fill": 6.0,
+      "own_revenue": 30.240000000000002,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.98,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.88,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s3": [
+     {
+      "own_fill": 6.0,
+      "own_revenue": 26.759999999999998,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.98,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.88,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "v0": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "fees": 2.0,
+      "penalties": 0.0,
+      "revealed": {
+       "s0": {
+        "report": 0.98,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.88,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "v1": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "fees": 2.0,
+      "penalties": 0.0,
+      "revealed": {
+       "s0": {
+        "report": 0.98,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.88,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ]
+   },
+   "utilities": {
+    "b0": -1.25,
+    "b1": 2.0,
+    "b2": 5.25,
+    "s0": 3.7799999999999994,
+    "s1": 2.9700000000000006,
+    "s2": 12.24,
+    "s3": 11.76,
+    "v0": 2.0,
+    "v1": 2.0
+   }
+  },
+  "id": "within-tolerance",
+  "note": "",
+  "params": {
+   "buyers": [
+    {
+     "agent": "b0",
+     "demand": 10,
+     "value": 10.0
+    },
+    {
+     "agent": "b1",
+     "demand": 10,
+     "value": 10.5
+    },
+    {
+     "agent": "b2",
+     "demand": 10,
+     "value": 11.0
+    }
+   ],
+   "fee": 1.0,
+   "market_form": "per_project",
+   "p_audit": 1.0,
+   "penalty": 5.0,
+   "reputation_visible": true,
+   "rounds": 1,
+   "sellers": [
+    {
+     "agent": "s0",
+     "cost": 8.0,
+     "quantity": 10,
+     "theta": 0.9
+    },
+    {
+     "agent": "s1",
+     "cost": 7.0,
+     "quantity": 10,
+     "theta": 0.8
+    },
+    {
+     "agent": "s2",
+     "cost": 3.0,
+     "quantity": 10,
+     "theta": 0.4
+    },
+    {
+     "agent": "s3",
+     "cost": 2.5,
+     "quantity": 10,
+     "theta": 0.3
+    }
+   ],
+   "settle_on": "reported",
+   "sigma": 0.03,
+   "tol": 0.1,
+   "verifiers": [
+    {
+     "agent": "v0",
+     "bias": 0.0,
+     "projects": [
+      "s0",
+      "s1"
+     ],
+     "sigma": 0.03
+    },
+    {
+     "agent": "v1",
+     "bias": 0.3,
+     "projects": [
+      "s2",
+      "s3"
+     ],
+     "sigma": 0.03
+    }
+   ]
+  },
+  "script": {
+   "b0": [
+    {
+     "s0": {
+      "price": 8.84,
+      "qty": 3
+     },
+     "s1": {
+      "price": 7.66,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.08,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.42,
+      "qty": 2
+     }
+    }
+   ],
+   "b1": [
+    {
+     "s0": {
+      "price": 9.28,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.05,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.44,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.74,
+      "qty": 2
+     }
+    }
+   ],
+   "b2": [
+    {
+     "s0": {
+      "price": 9.72,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.43,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.79,
+      "qty": 2
+     },
+     "s3": {
+      "price": 7.06,
+      "qty": 2
+     }
+    }
+   ],
+   "s0": [
+    {
+     "price": 8.0,
+     "qty": 10
+    }
+   ],
+   "s1": [
+    {
+     "price": 7.0,
+     "qty": 10
+    }
+   ],
+   "s2": [
+    {
+     "price": 3.0,
+     "qty": 10
+    }
+   ],
+   "s3": [
+    {
+     "price": 2.5,
+     "qty": 10
+    }
+   ],
+   "v0": [
+    {
+     "s0": 0.98,
+     "s1": 0.88
+    }
+   ],
+   "v1": [
+    {
+     "s2": 0.4,
+     "s3": 0.3
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "A report that is off by less than the tolerance",
+  "why": "An audited report 0.08 too high is not penalized (tolerance 0.1)."
+ },
+ {
+  "env_ref": "gao_idl.environments.vcm:build_vcm",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "b0": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": -1.25,
+      "own_value": 65.0,
+      "revealed": {
+       "s0": {
+        "report": 0.95,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.95,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "b1": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": 2.0,
+      "own_value": 68.25,
+      "revealed": {
+       "s0": {
+        "report": 0.95,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.95,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "b2": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": 5.25,
+      "own_value": 71.5,
+      "revealed": {
+       "s0": {
+        "report": 0.95,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.95,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s0": [
+     {
+      "own_fill": 9.0,
+      "own_revenue": 75.78,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.95,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.95,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s1": [
+     {
+      "own_fill": 9.0,
+      "own_revenue": 65.97,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.95,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.95,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s2": [
+     {
+      "own_fill": 6.0,
+      "own_revenue": 30.240000000000002,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.95,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.95,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s3": [
+     {
+      "own_fill": 6.0,
+      "own_revenue": 26.759999999999998,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.95,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.95,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "v0": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "fees": 2.0,
+      "penalties": 5.0,
+      "revealed": {
+       "s0": {
+        "report": 0.95,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.95,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "v1": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "fees": 2.0,
+      "penalties": 0.0,
+      "revealed": {
+       "s0": {
+        "report": 0.95,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.95,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.4,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.3,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ]
+   },
+   "utilities": {
+    "b0": -1.25,
+    "b1": 2.0,
+    "b2": 5.25,
+    "s0": 3.7799999999999994,
+    "s1": 2.9700000000000006,
+    "s2": 12.24,
+    "s3": 11.76,
+    "v0": -3.0,
+    "v1": 2.0
+   }
+  },
+  "id": "beyond-tolerance",
+  "note": "",
+  "params": {
+   "buyers": [
+    {
+     "agent": "b0",
+     "demand": 10,
+     "value": 10.0
+    },
+    {
+     "agent": "b1",
+     "demand": 10,
+     "value": 10.5
+    },
+    {
+     "agent": "b2",
+     "demand": 10,
+     "value": 11.0
+    }
+   ],
+   "fee": 1.0,
+   "market_form": "per_project",
+   "p_audit": 1.0,
+   "penalty": 5.0,
+   "reputation_visible": true,
+   "rounds": 1,
+   "sellers": [
+    {
+     "agent": "s0",
+     "cost": 8.0,
+     "quantity": 10,
+     "theta": 0.9
+    },
+    {
+     "agent": "s1",
+     "cost": 7.0,
+     "quantity": 10,
+     "theta": 0.8
+    },
+    {
+     "agent": "s2",
+     "cost": 3.0,
+     "quantity": 10,
+     "theta": 0.4
+    },
+    {
+     "agent": "s3",
+     "cost": 2.5,
+     "quantity": 10,
+     "theta": 0.3
+    }
+   ],
+   "settle_on": "reported",
+   "sigma": 0.03,
+   "tol": 0.1,
+   "verifiers": [
+    {
+     "agent": "v0",
+     "bias": 0.0,
+     "projects": [
+      "s0",
+      "s1"
+     ],
+     "sigma": 0.03
+    },
+    {
+     "agent": "v1",
+     "bias": 0.3,
+     "projects": [
+      "s2",
+      "s3"
+     ],
+     "sigma": 0.03
+    }
+   ]
+  },
+  "script": {
+   "b0": [
+    {
+     "s0": {
+      "price": 8.84,
+      "qty": 3
+     },
+     "s1": {
+      "price": 7.66,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.08,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.42,
+      "qty": 2
+     }
+    }
+   ],
+   "b1": [
+    {
+     "s0": {
+      "price": 9.28,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.05,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.44,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.74,
+      "qty": 2
+     }
+    }
+   ],
+   "b2": [
+    {
+     "s0": {
+      "price": 9.72,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.43,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.79,
+      "qty": 2
+     },
+     "s3": {
+      "price": 7.06,
+      "qty": 2
+     }
+    }
+   ],
+   "s0": [
+    {
+     "price": 8.0,
+     "qty": 10
+    }
+   ],
+   "s1": [
+    {
+     "price": 7.0,
+     "qty": 10
+    }
+   ],
+   "s2": [
+    {
+     "price": 3.0,
+     "qty": 10
+    }
+   ],
+   "s3": [
+    {
+     "price": 2.5,
+     "qty": 10
+    }
+   ],
+   "v0": [
+    {
+     "s0": 0.95,
+     "s1": 0.95
+    }
+   ],
+   "v1": [
+    {
+     "s2": 0.4,
+     "s3": 0.3
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "A report that is off by more than the tolerance",
+  "why": "An audited report 0.15 too high costs the verifier one penalty per project."
+ },
+ {
+  "env_ref": "gao_idl.environments.vcm:build_vcm",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "b0": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": -1.25,
+      "own_value": 65.0,
+      "revealed": {
+       "s0": {
+        "report": 0.6,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.5,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "b1": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": 2.0,
+      "own_value": 68.25,
+      "revealed": {
+       "s0": {
+        "report": 0.6,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.5,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "b2": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": 5.25,
+      "own_value": 71.5,
+      "revealed": {
+       "s0": {
+        "report": 0.6,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.5,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s0": [
+     {
+      "own_fill": 9.0,
+      "own_revenue": 75.78,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.6,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.5,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s1": [
+     {
+      "own_fill": 9.0,
+      "own_revenue": 65.97,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.6,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.5,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s2": [
+     {
+      "own_fill": 6.0,
+      "own_revenue": 30.240000000000002,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.6,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.5,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s3": [
+     {
+      "own_fill": 6.0,
+      "own_revenue": 26.759999999999998,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.6,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.5,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "v0": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "fees": 2.0,
+      "penalties": 10.0,
+      "revealed": {
+       "s0": {
+        "report": 0.6,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.5,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "v1": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "fees": 2.0,
+      "penalties": 10.0,
+      "revealed": {
+       "s0": {
+        "report": 0.6,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.5,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ]
+   },
+   "utilities": {
+    "b0": -1.25,
+    "b1": 2.0,
+    "b2": 5.25,
+    "s0": 3.7799999999999994,
+    "s1": 2.9700000000000006,
+    "s2": 12.24,
+    "s3": 11.76,
+    "v0": -8.0,
+    "v1": -8.0
+   }
+  },
+  "id": "understated",
+  "note": "",
+  "params": {
+   "buyers": [
+    {
+     "agent": "b0",
+     "demand": 10,
+     "value": 10.0
+    },
+    {
+     "agent": "b1",
+     "demand": 10,
+     "value": 10.5
+    },
+    {
+     "agent": "b2",
+     "demand": 10,
+     "value": 11.0
+    }
+   ],
+   "fee": 1.0,
+   "market_form": "per_project",
+   "p_audit": 1.0,
+   "penalty": 5.0,
+   "reputation_visible": true,
+   "rounds": 1,
+   "sellers": [
+    {
+     "agent": "s0",
+     "cost": 8.0,
+     "quantity": 10,
+     "theta": 0.9
+    },
+    {
+     "agent": "s1",
+     "cost": 7.0,
+     "quantity": 10,
+     "theta": 0.8
+    },
+    {
+     "agent": "s2",
+     "cost": 3.0,
+     "quantity": 10,
+     "theta": 0.4
+    },
+    {
+     "agent": "s3",
+     "cost": 2.5,
+     "quantity": 10,
+     "theta": 0.3
+    }
+   ],
+   "settle_on": "reported",
+   "sigma": 0.03,
+   "tol": 0.1,
+   "verifiers": [
+    {
+     "agent": "v0",
+     "bias": 0.0,
+     "projects": [
+      "s0",
+      "s1"
+     ],
+     "sigma": 0.03
+    },
+    {
+     "agent": "v1",
+     "bias": 0.3,
+     "projects": [
+      "s2",
+      "s3"
+     ],
+     "sigma": 0.03
+    }
+   ]
+  },
+  "script": {
+   "b0": [
+    {
+     "s0": {
+      "price": 8.84,
+      "qty": 3
+     },
+     "s1": {
+      "price": 7.66,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.08,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.42,
+      "qty": 2
+     }
+    }
+   ],
+   "b1": [
+    {
+     "s0": {
+      "price": 9.28,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.05,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.44,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.74,
+      "qty": 2
+     }
+    }
+   ],
+   "b2": [
+    {
+     "s0": {
+      "price": 9.72,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.43,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.79,
+      "qty": 2
+     },
+     "s3": {
+      "price": 7.06,
+      "qty": 2
+     }
+    }
+   ],
+   "s0": [
+    {
+     "price": 8.0,
+     "qty": 10
+    }
+   ],
+   "s1": [
+    {
+     "price": 7.0,
+     "qty": 10
+    }
+   ],
+   "s2": [
+    {
+     "price": 3.0,
+     "qty": 10
+    }
+   ],
+   "s3": [
+    {
+     "price": 2.5,
+     "qty": 10
+    }
+   ],
+   "v0": [
+    {
+     "s0": 0.6,
+     "s1": 0.5
+    }
+   ],
+   "v1": [
+    {
+     "s2": 0.71,
+     "s3": 0.64
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "A verifier understates quality",
+  "why": "Is a report that is too low penalized like one that is too high?"
+ },
+ {
+  "env_ref": "gao_idl.environments.vcm:build_vcm",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "b0": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 0.0,
+       "s3": 2.0
+      },
+      "own_payment": 56.17,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "volume": 0
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 24
+     },
+     {
+      "own_net": 0.8299999999999983,
+      "own_value": 57.0,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "b1": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 0.0,
+       "s3": 2.0
+      },
+      "own_payment": 56.17,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "volume": 0
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 24
+     },
+     {
+      "own_net": 3.6799999999999997,
+      "own_value": 59.85,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "b2": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 0.0,
+       "s3": 2.0
+      },
+      "own_payment": 56.17,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "volume": 0
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 24
+     },
+     {
+      "own_net": 6.530000000000001,
+      "own_value": 62.7,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s0": [
+     {
+      "own_fill": 9.0,
+      "own_revenue": 75.78,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "volume": 0
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 24
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s1": [
+     {
+      "own_fill": 9.0,
+      "own_revenue": 65.97,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "volume": 0
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 24
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s2": [
+     {
+      "own_fill": 0.0,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "volume": 0
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 24
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s3": [
+     {
+      "own_fill": 6.0,
+      "own_revenue": 26.759999999999998,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "volume": 0
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 24
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "v0": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "volume": 0
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 24
+     },
+     {
+      "fees": 2.0,
+      "penalties": 0.0,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "v1": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "volume": 0
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 24
+     },
+     {
+      "fees": 2.0,
+      "penalties": 5.0,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ]
+   },
+   "utilities": {
+    "b0": 0.8299999999999983,
+    "b1": 3.6799999999999997,
+    "b2": 6.530000000000001,
+    "s0": 3.7799999999999994,
+    "s1": 2.9700000000000006,
+    "s2": 0.0,
+    "s3": 11.76,
+    "v0": 2.0,
+    "v1": -3.0
+   }
+  },
+  "id": "no-trade-no-audit",
+  "note": "",
+  "params": {
+   "buyers": [
+    {
+     "agent": "b0",
+     "demand": 10,
+     "value": 10.0
+    },
+    {
+     "agent": "b1",
+     "demand": 10,
+     "value": 10.5
+    },
+    {
+     "agent": "b2",
+     "demand": 10,
+     "value": 11.0
+    }
+   ],
+   "fee": 1.0,
+   "market_form": "per_project",
+   "p_audit": 1.0,
+   "penalty": 5.0,
+   "reputation_visible": true,
+   "rounds": 1,
+   "sellers": [
+    {
+     "agent": "s0",
+     "cost": 8.0,
+     "quantity": 10,
+     "theta": 0.9
+    },
+    {
+     "agent": "s1",
+     "cost": 7.0,
+     "quantity": 10,
+     "theta": 0.8
+    },
+    {
+     "agent": "s2",
+     "cost": 3.0,
+     "quantity": 10,
+     "theta": 0.4
+    },
+    {
+     "agent": "s3",
+     "cost": 2.5,
+     "quantity": 10,
+     "theta": 0.3
+    }
+   ],
+   "settle_on": "reported",
+   "sigma": 0.03,
+   "tol": 0.1,
+   "verifiers": [
+    {
+     "agent": "v0",
+     "bias": 0.0,
+     "projects": [
+      "s0",
+      "s1"
+     ],
+     "sigma": 0.03
+    },
+    {
+     "agent": "v1",
+     "bias": 0.3,
+     "projects": [
+      "s2",
+      "s3"
+     ],
+     "sigma": 0.03
+    }
+   ]
+  },
+  "script": {
+   "b0": [
+    {
+     "s0": {
+      "price": 8.84,
+      "qty": 3
+     },
+     "s1": {
+      "price": 7.66,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.08,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.42,
+      "qty": 2
+     }
+    }
+   ],
+   "b1": [
+    {
+     "s0": {
+      "price": 9.28,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.05,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.44,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.74,
+      "qty": 2
+     }
+    }
+   ],
+   "b2": [
+    {
+     "s0": {
+      "price": 9.72,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.43,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.79,
+      "qty": 2
+     },
+     "s3": {
+      "price": 7.06,
+      "qty": 2
+     }
+    }
+   ],
+   "s0": [
+    {
+     "price": 8.0,
+     "qty": 10
+    }
+   ],
+   "s1": [
+    {
+     "price": 7.0,
+     "qty": 10
+    }
+   ],
+   "s2": [
+    {
+     "price": 40.0,
+     "qty": 10
+    }
+   ],
+   "s3": [
+    {
+     "price": 2.5,
+     "qty": 10
+    }
+   ],
+   "v0": [
+    {
+     "s0": 0.88,
+     "s1": 0.77
+    }
+   ],
+   "v1": [
+    {
+     "s2": 0.71,
+     "s3": 0.64
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "A seller asks more than anyone bids",
+  "why": "A project that does not trade is not audited, so its verifier cannot be penalized."
+ },
+ {
+  "env_ref": "gao_idl.environments.vcm:build_vcm",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "b0": [
+     {
+      "own_fills": {},
+      "own_payment": 0.0,
+      "projects": {
+       "s0": {
+        "price": 8.64,
+        "volume": 6
+       },
+       "s1": {
+        "price": 7.525,
+        "volume": 6
+       },
+       "s2": {
+        "price": 5.220000000000001,
+        "volume": 4
+       },
+       "s3": {
+        "price": 4.62,
+        "volume": 4
+       }
+      },
+      "round": 0,
+      "volume": 20
+     },
+     {
+      "own_net": 0.0,
+      "own_value": 0.0,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "b1": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 68.17500000000001,
+      "projects": {
+       "s0": {
+        "price": 8.64,
+        "volume": 6
+       },
+       "s1": {
+        "price": 7.525,
+        "volume": 6
+       },
+       "s2": {
+        "price": 5.220000000000001,
+        "volume": 4
+       },
+       "s3": {
+        "price": 4.62,
+        "volume": 4
+       }
+      },
+      "round": 0,
+      "volume": 20
+     },
+     {
+      "own_net": 0.07499999999998863,
+      "own_value": 68.25,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "b2": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 68.17500000000001,
+      "projects": {
+       "s0": {
+        "price": 8.64,
+        "volume": 6
+       },
+       "s1": {
+        "price": 7.525,
+        "volume": 6
+       },
+       "s2": {
+        "price": 5.220000000000001,
+        "volume": 4
+       },
+       "s3": {
+        "price": 4.62,
+        "volume": 4
+       }
+      },
+      "round": 0,
+      "volume": 20
+     },
+     {
+      "own_net": 3.3249999999999886,
+      "own_value": 71.5,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s0": [
+     {
+      "own_fill": 6.0,
+      "own_revenue": 51.84,
+      "projects": {
+       "s0": {
+        "price": 8.64,
+        "volume": 6
+       },
+       "s1": {
+        "price": 7.525,
+        "volume": 6
+       },
+       "s2": {
+        "price": 5.220000000000001,
+        "volume": 4
+       },
+       "s3": {
+        "price": 4.62,
+        "volume": 4
+       }
+      },
+      "round": 0,
+      "volume": 20
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s1": [
+     {
+      "own_fill": 6.0,
+      "own_revenue": 45.150000000000006,
+      "projects": {
+       "s0": {
+        "price": 8.64,
+        "volume": 6
+       },
+       "s1": {
+        "price": 7.525,
+        "volume": 6
+       },
+       "s2": {
+        "price": 5.220000000000001,
+        "volume": 4
+       },
+       "s3": {
+        "price": 4.62,
+        "volume": 4
+       }
+      },
+      "round": 0,
+      "volume": 20
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s2": [
+     {
+      "own_fill": 4.0,
+      "own_revenue": 20.880000000000003,
+      "projects": {
+       "s0": {
+        "price": 8.64,
+        "volume": 6
+       },
+       "s1": {
+        "price": 7.525,
+        "volume": 6
+       },
+       "s2": {
+        "price": 5.220000000000001,
+        "volume": 4
+       },
+       "s3": {
+        "price": 4.62,
+        "volume": 4
+       }
+      },
+      "round": 0,
+      "volume": 20
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s3": [
+     {
+      "own_fill": 4.0,
+      "own_revenue": 18.48,
+      "projects": {
+       "s0": {
+        "price": 8.64,
+        "volume": 6
+       },
+       "s1": {
+        "price": 7.525,
+        "volume": 6
+       },
+       "s2": {
+        "price": 5.220000000000001,
+        "volume": 4
+       },
+       "s3": {
+        "price": 4.62,
+        "volume": 4
+       }
+      },
+      "round": 0,
+      "volume": 20
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "v0": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.64,
+        "volume": 6
+       },
+       "s1": {
+        "price": 7.525,
+        "volume": 6
+       },
+       "s2": {
+        "price": 5.220000000000001,
+        "volume": 4
+       },
+       "s3": {
+        "price": 4.62,
+        "volume": 4
+       }
+      },
+      "round": 0,
+      "volume": 20
+     },
+     {
+      "fees": 2.0,
+      "penalties": 0.0,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "v1": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.64,
+        "volume": 6
+       },
+       "s1": {
+        "price": 7.525,
+        "volume": 6
+       },
+       "s2": {
+        "price": 5.220000000000001,
+        "volume": 4
+       },
+       "s3": {
+        "price": 4.62,
+        "volume": 4
+       }
+      },
+      "round": 0,
+      "volume": 20
+     },
+     {
+      "fees": 2.0,
+      "penalties": 10.0,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ]
+   },
+   "utilities": {
+    "b0": 0.0,
+    "b1": 0.07499999999998863,
+    "b2": 3.3249999999999886,
+    "s0": 3.8400000000000034,
+    "s1": 3.150000000000002,
+    "s2": 8.880000000000003,
+    "s3": 8.48,
+    "v0": 2.0,
+    "v1": -8.0
+   }
+  },
+  "id": "buyer-stays-out",
+  "note": "",
+  "params": {
+   "buyers": [
+    {
+     "agent": "b0",
+     "demand": 10,
+     "value": 10.0
+    },
+    {
+     "agent": "b1",
+     "demand": 10,
+     "value": 10.5
+    },
+    {
+     "agent": "b2",
+     "demand": 10,
+     "value": 11.0
+    }
+   ],
+   "fee": 1.0,
+   "market_form": "per_project",
+   "p_audit": 1.0,
+   "penalty": 5.0,
+   "reputation_visible": true,
+   "rounds": 1,
+   "sellers": [
+    {
+     "agent": "s0",
+     "cost": 8.0,
+     "quantity": 10,
+     "theta": 0.9
+    },
+    {
+     "agent": "s1",
+     "cost": 7.0,
+     "quantity": 10,
+     "theta": 0.8
+    },
+    {
+     "agent": "s2",
+     "cost": 3.0,
+     "quantity": 10,
+     "theta": 0.4
+    },
+    {
+     "agent": "s3",
+     "cost": 2.5,
+     "quantity": 10,
+     "theta": 0.3
+    }
+   ],
+   "settle_on": "reported",
+   "sigma": 0.03,
+   "tol": 0.1,
+   "verifiers": [
+    {
+     "agent": "v0",
+     "bias": 0.0,
+     "projects": [
+      "s0",
+      "s1"
+     ],
+     "sigma": 0.03
+    },
+    {
+     "agent": "v1",
+     "bias": 0.3,
+     "projects": [
+      "s2",
+      "s3"
+     ],
+     "sigma": 0.03
+    }
+   ]
+  },
+  "script": {
+   "b0": [
+    {}
+   ],
+   "b1": [
+    {
+     "s0": {
+      "price": 9.28,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.05,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.44,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.74,
+      "qty": 2
+     }
+    }
+   ],
+   "b2": [
+    {
+     "s0": {
+      "price": 9.72,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.43,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.79,
+      "qty": 2
+     },
+     "s3": {
+      "price": 7.06,
+      "qty": 2
+     }
+    }
+   ],
+   "s0": [
+    {
+     "price": 8.0,
+     "qty": 10
+    }
+   ],
+   "s1": [
+    {
+     "price": 7.0,
+     "qty": 10
+    }
+   ],
+   "s2": [
+    {
+     "price": 3.0,
+     "qty": 10
+    }
+   ],
+   "s3": [
+    {
+     "price": 2.5,
+     "qty": 10
+    }
+   ],
+   "v0": [
+    {
+     "s0": 0.88,
+     "s1": 0.77
+    }
+   ],
+   "v1": [
+    {
+     "s2": 0.71,
+     "s3": 0.64
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "A buyer sends no orders",
+  "why": "An empty order is allowed: the buyer trades nothing and earns nothing."
+ },
+ {
+  "env_ref": "gao_idl.environments.vcm:build_vcm",
+  "expect": {
+   "exit_port": null,
+   "failed": true,
+   "reports": {},
+   "utilities": {
+    "b0": 0.0,
+    "b1": 0.0,
+    "b2": 0.0,
+    "s0": 0.0,
+    "s1": 0.0,
+    "s2": 0.0,
+    "s3": 0.0,
+    "v0": 2.0,
+    "v1": 2.0
+   }
+  },
+  "id": "seller-silent",
+  "note": "",
+  "params": {
+   "buyers": [
+    {
+     "agent": "b0",
+     "demand": 10,
+     "value": 10.0
+    },
+    {
+     "agent": "b1",
+     "demand": 10,
+     "value": 10.5
+    },
+    {
+     "agent": "b2",
+     "demand": 10,
+     "value": 11.0
+    }
+   ],
+   "fee": 1.0,
+   "market_form": "per_project",
+   "p_audit": 1.0,
+   "penalty": 5.0,
+   "reputation_visible": true,
+   "rounds": 1,
+   "sellers": [
+    {
+     "agent": "s0",
+     "cost": 8.0,
+     "quantity": 10,
+     "theta": 0.9
+    },
+    {
+     "agent": "s1",
+     "cost": 7.0,
+     "quantity": 10,
+     "theta": 0.8
+    },
+    {
+     "agent": "s2",
+     "cost": 3.0,
+     "quantity": 10,
+     "theta": 0.4
+    },
+    {
+     "agent": "s3",
+     "cost": 2.5,
+     "quantity": 10,
+     "theta": 0.3
+    }
+   ],
+   "settle_on": "reported",
+   "sigma": 0.03,
+   "tol": 0.1,
+   "verifiers": [
+    {
+     "agent": "v0",
+     "bias": 0.0,
+     "projects": [
+      "s0",
+      "s1"
+     ],
+     "sigma": 0.03
+    },
+    {
+     "agent": "v1",
+     "bias": 0.3,
+     "projects": [
+      "s2",
+      "s3"
+     ],
+     "sigma": 0.03
+    }
+   ]
+  },
+  "script": {
+   "b0": [
+    {
+     "s0": {
+      "price": 8.84,
+      "qty": 3
+     },
+     "s1": {
+      "price": 7.66,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.08,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.42,
+      "qty": 2
+     }
+    }
+   ],
+   "b1": [
+    {
+     "s0": {
+      "price": 9.28,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.05,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.44,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.74,
+      "qty": 2
+     }
+    }
+   ],
+   "b2": [
+    {
+     "s0": {
+      "price": 9.72,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.43,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.79,
+      "qty": 2
+     },
+     "s3": {
+      "price": 7.06,
+      "qty": 2
+     }
+    }
+   ],
+   "s0": [
+    null
+   ],
+   "s1": [
+    {
+     "price": 7.0,
+     "qty": 10
+    }
+   ],
+   "s2": [
+    {
+     "price": 3.0,
+     "qty": 10
+    }
+   ],
+   "s3": [
+    {
+     "price": 2.5,
+     "qty": 10
+    }
+   ],
+   "v0": [
+    {
+     "s0": 0.88,
+     "s1": 0.77
+    }
+   ],
+   "v1": [
+    {
+     "s2": 0.71,
+     "s3": 0.64
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "A seller does not act",
+  "why": "A participant who does not act stops the whole run."
+ },
+ {
+  "env_ref": "gao_idl.environments.vcm:build_vcm",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "b0": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": -1.25,
+      "own_value": 65.0,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     },
+     {
+      "own_fills": {
+       "s0": 2.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 1.0
+      },
+      "own_payment": 48.345,
+      "projects": {
+       "s0": {
+        "price": 8.305,
+        "volume": 10
+       },
+       "s1": {
+        "price": 7.52,
+        "volume": 9
+       },
+       "s2": {
+        "price": 3.3,
+        "volume": 6
+       },
+       "s3": {
+        "price": 2.575,
+        "volume": 3
+       }
+      },
+      "round": 1,
+      "volume": 28
+     },
+     {
+      "own_net": 4.655000000000001,
+      "own_value": 53.0,
+      "revealed": {
+       "s0": {
+        "report": 0.84,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.78,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.69,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.59,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 1
+     }
+    ],
+    "b1": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": 2.0,
+      "own_value": 68.25,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     },
+     {
+      "own_fills": {
+       "s0": 4.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 1.0
+      },
+      "own_payment": 64.955,
+      "projects": {
+       "s0": {
+        "price": 8.305,
+        "volume": 10
+       },
+       "s1": {
+        "price": 7.52,
+        "volume": 9
+       },
+       "s2": {
+        "price": 3.3,
+        "volume": 6
+       },
+       "s3": {
+        "price": 2.575,
+        "volume": 3
+       }
+      },
+      "round": 1,
+      "volume": 28
+     },
+     {
+      "own_net": 9.595000000000013,
+      "own_value": 74.55000000000001,
+      "revealed": {
+       "s0": {
+        "report": 0.84,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.78,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.69,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.59,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 1
+     }
+    ],
+    "b2": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": 5.25,
+      "own_value": 71.5,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     },
+     {
+      "own_fills": {
+       "s0": 4.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 1.0
+      },
+      "own_payment": 64.955,
+      "projects": {
+       "s0": {
+        "price": 8.305,
+        "volume": 10
+       },
+       "s1": {
+        "price": 7.52,
+        "volume": 9
+       },
+       "s2": {
+        "price": 3.3,
+        "volume": 6
+       },
+       "s3": {
+        "price": 2.575,
+        "volume": 3
+       }
+      },
+      "round": 1,
+      "volume": 28
+     },
+     {
+      "own_net": 13.144999999999996,
+      "own_value": 78.1,
+      "revealed": {
+       "s0": {
+        "report": 0.84,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.78,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.69,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.59,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 1
+     }
+    ],
+    "s0": [
+     {
+      "own_fill": 9.0,
+      "own_revenue": 75.78,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     },
+     {
+      "own_fill": 10.0,
+      "own_revenue": 83.05,
+      "projects": {
+       "s0": {
+        "price": 8.305,
+        "volume": 10
+       },
+       "s1": {
+        "price": 7.52,
+        "volume": 9
+       },
+       "s2": {
+        "price": 3.3,
+        "volume": 6
+       },
+       "s3": {
+        "price": 2.575,
+        "volume": 3
+       }
+      },
+      "round": 1,
+      "volume": 28
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.84,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.78,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.69,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.59,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 1
+     }
+    ],
+    "s1": [
+     {
+      "own_fill": 9.0,
+      "own_revenue": 65.97,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     },
+     {
+      "own_fill": 9.0,
+      "own_revenue": 67.67999999999999,
+      "projects": {
+       "s0": {
+        "price": 8.305,
+        "volume": 10
+       },
+       "s1": {
+        "price": 7.52,
+        "volume": 9
+       },
+       "s2": {
+        "price": 3.3,
+        "volume": 6
+       },
+       "s3": {
+        "price": 2.575,
+        "volume": 3
+       }
+      },
+      "round": 1,
+      "volume": 28
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.84,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.78,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.69,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.59,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 1
+     }
+    ],
+    "s2": [
+     {
+      "own_fill": 6.0,
+      "own_revenue": 30.240000000000002,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     },
+     {
+      "own_fill": 6.0,
+      "own_revenue": 19.799999999999997,
+      "projects": {
+       "s0": {
+        "price": 8.305,
+        "volume": 10
+       },
+       "s1": {
+        "price": 7.52,
+        "volume": 9
+       },
+       "s2": {
+        "price": 3.3,
+        "volume": 6
+       },
+       "s3": {
+        "price": 2.575,
+        "volume": 3
+       }
+      },
+      "round": 1,
+      "volume": 28
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.84,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.78,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.69,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.59,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 1
+     }
+    ],
+    "s3": [
+     {
+      "own_fill": 6.0,
+      "own_revenue": 26.759999999999998,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     },
+     {
+      "own_fill": 3.0,
+      "own_revenue": 7.7250000000000005,
+      "projects": {
+       "s0": {
+        "price": 8.305,
+        "volume": 10
+       },
+       "s1": {
+        "price": 7.52,
+        "volume": 9
+       },
+       "s2": {
+        "price": 3.3,
+        "volume": 6
+       },
+       "s3": {
+        "price": 2.575,
+        "volume": 3
+       }
+      },
+      "round": 1,
+      "volume": 28
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.84,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.78,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.69,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.59,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 1
+     }
+    ],
+    "v0": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "fees": 2.0,
+      "penalties": 0.0,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     },
+     {
+      "projects": {
+       "s0": {
+        "price": 8.305,
+        "volume": 10
+       },
+       "s1": {
+        "price": 7.52,
+        "volume": 9
+       },
+       "s2": {
+        "price": 3.3,
+        "volume": 6
+       },
+       "s3": {
+        "price": 2.575,
+        "volume": 3
+       }
+      },
+      "round": 1,
+      "volume": 28
+     },
+     {
+      "fees": 2.0,
+      "penalties": 0.0,
+      "revealed": {
+       "s0": {
+        "report": 0.84,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.78,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.69,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.59,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 1
+     }
+    ],
+    "v1": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "fees": 2.0,
+      "penalties": 10.0,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     },
+     {
+      "projects": {
+       "s0": {
+        "price": 8.305,
+        "volume": 10
+       },
+       "s1": {
+        "price": 7.52,
+        "volume": 9
+       },
+       "s2": {
+        "price": 3.3,
+        "volume": 6
+       },
+       "s3": {
+        "price": 2.575,
+        "volume": 3
+       }
+      },
+      "round": 1,
+      "volume": 28
+     },
+     {
+      "fees": 2.0,
+      "penalties": 10.0,
+      "revealed": {
+       "s0": {
+        "report": 0.84,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.78,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.69,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.59,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 1
+     }
+    ]
+   },
+   "utilities": {
+    "b0": 3.405000000000001,
+    "b1": 11.595000000000013,
+    "b2": 18.394999999999996,
+    "s0": 6.8299999999999965,
+    "s1": 7.649999999999997,
+    "s2": 14.04,
+    "s3": 11.985,
+    "v0": 4.0,
+    "v1": -16.0
+   }
+  },
+  "id": "reputation-shown",
+  "note": "",
+  "params": {
+   "buyers": [
+    {
+     "agent": "b0",
+     "demand": 10,
+     "value": 10.0
+    },
+    {
+     "agent": "b1",
+     "demand": 10,
+     "value": 10.5
+    },
+    {
+     "agent": "b2",
+     "demand": 10,
+     "value": 11.0
+    }
+   ],
+   "fee": 1.0,
+   "market_form": "per_project",
+   "p_audit": 1.0,
+   "penalty": 5.0,
+   "reputation_visible": true,
+   "rounds": 2,
+   "sellers": [
+    {
+     "agent": "s0",
+     "cost": 8.0,
+     "quantity": 10,
+     "theta": 0.9
+    },
+    {
+     "agent": "s1",
+     "cost": 7.0,
+     "quantity": 10,
+     "theta": 0.8
+    },
+    {
+     "agent": "s2",
+     "cost": 3.0,
+     "quantity": 10,
+     "theta": 0.4
+    },
+    {
+     "agent": "s3",
+     "cost": 2.5,
+     "quantity": 10,
+     "theta": 0.3
+    }
+   ],
+   "settle_on": "reported",
+   "sigma": 0.03,
+   "tol": 0.1,
+   "verifiers": [
+    {
+     "agent": "v0",
+     "bias": 0.0,
+     "projects": [
+      "s0",
+      "s1"
+     ],
+     "sigma": 0.03
+    },
+    {
+     "agent": "v1",
+     "bias": 0.3,
+     "projects": [
+      "s2",
+      "s3"
+     ],
+     "sigma": 0.03
+    }
+   ]
+  },
+  "script": {
+   "b0": [
+    {
+     "s0": {
+      "price": 8.84,
+      "qty": 3
+     },
+     "s1": {
+      "price": 7.66,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.08,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.42,
+      "qty": 2
+     }
+    },
+    {
+     "s0": {
+      "price": 8.61,
+      "qty": 4
+     },
+     "s1": {
+      "price": 8.04,
+      "qty": 3
+     },
+     "s2": {
+      "price": 3.6,
+      "qty": 2
+     },
+     "s3": {
+      "price": 2.65,
+      "qty": 1
+     }
+    }
+   ],
+   "b1": [
+    {
+     "s0": {
+      "price": 9.28,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.05,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.44,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.74,
+      "qty": 2
+     }
+    },
+    {
+     "s0": {
+      "price": 9.04,
+      "qty": 4
+     },
+     "s1": {
+      "price": 8.44,
+      "qty": 3
+     },
+     "s2": {
+      "price": 3.78,
+      "qty": 2
+     },
+     "s3": {
+      "price": 2.78,
+      "qty": 1
+     }
+    }
+   ],
+   "b2": [
+    {
+     "s0": {
+      "price": 9.72,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.43,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.79,
+      "qty": 2
+     },
+     "s3": {
+      "price": 7.06,
+      "qty": 2
+     }
+    },
+    {
+     "s0": {
+      "price": 9.47,
+      "qty": 4
+     },
+     "s1": {
+      "price": 8.84,
+      "qty": 3
+     },
+     "s2": {
+      "price": 3.96,
+      "qty": 2
+     },
+     "s3": {
+      "price": 2.92,
+      "qty": 1
+     }
+    }
+   ],
+   "s0": [
+    {
+     "price": 8.0,
+     "qty": 10
+    },
+    {
+     "price": 8.0,
+     "qty": 10
+    }
+   ],
+   "s1": [
+    {
+     "price": 7.0,
+     "qty": 10
+    },
+    {
+     "price": 7.0,
+     "qty": 10
+    }
+   ],
+   "s2": [
+    {
+     "price": 3.0,
+     "qty": 10
+    },
+    {
+     "price": 3.0,
+     "qty": 10
+    }
+   ],
+   "s3": [
+    {
+     "price": 2.5,
+     "qty": 10
+    },
+    {
+     "price": 2.5,
+     "qty": 10
+    }
+   ],
+   "v0": [
+    {
+     "s0": 0.88,
+     "s1": 0.77
+    },
+    {
+     "s0": 0.84,
+     "s1": 0.78
+    }
+   ],
+   "v1": [
+    {
+     "s2": 0.71,
+     "s3": 0.64
+    },
+    {
+     "s2": 0.69,
+     "s3": 0.59
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "Two rounds, buyers see the audit record and use it",
+  "why": "After round one the buyers bid less for the projects of the verifier that was caught."
+ },
+ {
+  "env_ref": "gao_idl.environments.vcm:build_vcm",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "b0": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": -1.25,
+      "own_value": 65.0,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     },
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 65.225,
+      "projects": {
+       "s0": {
+        "price": 8.205,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.42,
+        "volume": 9
+       },
+       "s2": {
+        "price": 4.95,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.225,
+        "volume": 6
+       }
+      },
+      "round": 1,
+      "volume": 30
+     },
+     {
+      "own_net": -0.22499999999999432,
+      "own_value": 65.0,
+      "revealed": {
+       "s0": {
+        "report": 0.84,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.78,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.69,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.59,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 1
+     }
+    ],
+    "b1": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": 2.0,
+      "own_value": 68.25,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     },
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 65.225,
+      "projects": {
+       "s0": {
+        "price": 8.205,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.42,
+        "volume": 9
+       },
+       "s2": {
+        "price": 4.95,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.225,
+        "volume": 6
+       }
+      },
+      "round": 1,
+      "volume": 30
+     },
+     {
+      "own_net": 3.0250000000000057,
+      "own_value": 68.25,
+      "revealed": {
+       "s0": {
+        "report": 0.84,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.78,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.69,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.59,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 1
+     }
+    ],
+    "b2": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": 5.25,
+      "own_value": 71.5,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     },
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 65.225,
+      "projects": {
+       "s0": {
+        "price": 8.205,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.42,
+        "volume": 9
+       },
+       "s2": {
+        "price": 4.95,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.225,
+        "volume": 6
+       }
+      },
+      "round": 1,
+      "volume": 30
+     },
+     {
+      "own_net": 6.275000000000006,
+      "own_value": 71.5,
+      "revealed": {
+       "s0": {
+        "report": 0.84,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.78,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.69,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.59,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 1
+     }
+    ],
+    "s0": [
+     {
+      "own_fill": 9.0,
+      "own_revenue": 75.78,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     },
+     {
+      "own_fill": 9.0,
+      "own_revenue": 73.845,
+      "projects": {
+       "s0": {
+        "price": 8.205,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.42,
+        "volume": 9
+       },
+       "s2": {
+        "price": 4.95,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.225,
+        "volume": 6
+       }
+      },
+      "round": 1,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.84,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.78,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.69,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.59,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 1
+     }
+    ],
+    "s1": [
+     {
+      "own_fill": 9.0,
+      "own_revenue": 65.97,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     },
+     {
+      "own_fill": 9.0,
+      "own_revenue": 66.78,
+      "projects": {
+       "s0": {
+        "price": 8.205,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.42,
+        "volume": 9
+       },
+       "s2": {
+        "price": 4.95,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.225,
+        "volume": 6
+       }
+      },
+      "round": 1,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.84,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.78,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.69,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.59,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 1
+     }
+    ],
+    "s2": [
+     {
+      "own_fill": 6.0,
+      "own_revenue": 30.240000000000002,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     },
+     {
+      "own_fill": 6.0,
+      "own_revenue": 29.700000000000003,
+      "projects": {
+       "s0": {
+        "price": 8.205,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.42,
+        "volume": 9
+       },
+       "s2": {
+        "price": 4.95,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.225,
+        "volume": 6
+       }
+      },
+      "round": 1,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.84,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.78,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.69,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.59,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 1
+     }
+    ],
+    "s3": [
+     {
+      "own_fill": 6.0,
+      "own_revenue": 26.759999999999998,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     },
+     {
+      "own_fill": 6.0,
+      "own_revenue": 25.349999999999998,
+      "projects": {
+       "s0": {
+        "price": 8.205,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.42,
+        "volume": 9
+       },
+       "s2": {
+        "price": 4.95,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.225,
+        "volume": 6
+       }
+      },
+      "round": 1,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.84,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.78,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.69,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.59,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 1
+     }
+    ],
+    "v0": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "fees": 2.0,
+      "penalties": 0.0,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     },
+     {
+      "projects": {
+       "s0": {
+        "price": 8.205,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.42,
+        "volume": 9
+       },
+       "s2": {
+        "price": 4.95,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.225,
+        "volume": 6
+       }
+      },
+      "round": 1,
+      "volume": 30
+     },
+     {
+      "fees": 2.0,
+      "penalties": 0.0,
+      "revealed": {
+       "s0": {
+        "report": 0.84,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.78,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.69,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.59,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 1
+     }
+    ],
+    "v1": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "fees": 2.0,
+      "penalties": 10.0,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     },
+     {
+      "projects": {
+       "s0": {
+        "price": 8.205,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.42,
+        "volume": 9
+       },
+       "s2": {
+        "price": 4.95,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.225,
+        "volume": 6
+       }
+      },
+      "round": 1,
+      "volume": 30
+     },
+     {
+      "fees": 2.0,
+      "penalties": 10.0,
+      "revealed": {
+       "s0": {
+        "report": 0.84,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.78,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.69,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.59,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 1
+     }
+    ]
+   },
+   "utilities": {
+    "b0": -1.4749999999999943,
+    "b1": 5.025000000000006,
+    "b2": 11.525000000000006,
+    "s0": 5.625,
+    "s1": 6.75,
+    "s2": 23.94,
+    "s3": 22.11,
+    "v0": 4.0,
+    "v1": -16.0
+   }
+  },
+  "id": "reputation-hidden",
+  "note": "",
+  "params": {
+   "buyers": [
+    {
+     "agent": "b0",
+     "demand": 10,
+     "value": 10.0
+    },
+    {
+     "agent": "b1",
+     "demand": 10,
+     "value": 10.5
+    },
+    {
+     "agent": "b2",
+     "demand": 10,
+     "value": 11.0
+    }
+   ],
+   "fee": 1.0,
+   "market_form": "per_project",
+   "p_audit": 1.0,
+   "penalty": 5.0,
+   "reputation_visible": false,
+   "rounds": 2,
+   "sellers": [
+    {
+     "agent": "s0",
+     "cost": 8.0,
+     "quantity": 10,
+     "theta": 0.9
+    },
+    {
+     "agent": "s1",
+     "cost": 7.0,
+     "quantity": 10,
+     "theta": 0.8
+    },
+    {
+     "agent": "s2",
+     "cost": 3.0,
+     "quantity": 10,
+     "theta": 0.4
+    },
+    {
+     "agent": "s3",
+     "cost": 2.5,
+     "quantity": 10,
+     "theta": 0.3
+    }
+   ],
+   "settle_on": "reported",
+   "sigma": 0.03,
+   "tol": 0.1,
+   "verifiers": [
+    {
+     "agent": "v0",
+     "bias": 0.0,
+     "projects": [
+      "s0",
+      "s1"
+     ],
+     "sigma": 0.03
+    },
+    {
+     "agent": "v1",
+     "bias": 0.3,
+     "projects": [
+      "s2",
+      "s3"
+     ],
+     "sigma": 0.03
+    }
+   ]
+  },
+  "script": {
+   "b0": [
+    {
+     "s0": {
+      "price": 8.84,
+      "qty": 3
+     },
+     "s1": {
+      "price": 7.66,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.08,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.42,
+      "qty": 2
+     }
+    },
+    {
+     "s0": {
+      "price": 8.41,
+      "qty": 3
+     },
+     "s1": {
+      "price": 7.84,
+      "qty": 3
+     },
+     "s2": {
+      "price": 6.9,
+      "qty": 2
+     },
+     "s3": {
+      "price": 5.95,
+      "qty": 2
+     }
+    }
+   ],
+   "b1": [
+    {
+     "s0": {
+      "price": 9.28,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.05,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.44,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.74,
+      "qty": 2
+     }
+    },
+    {
+     "s0": {
+      "price": 8.83,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.23,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.24,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.25,
+      "qty": 2
+     }
+    }
+   ],
+   "b2": [
+    {
+     "s0": {
+      "price": 9.72,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.43,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.79,
+      "qty": 2
+     },
+     "s3": {
+      "price": 7.06,
+      "qty": 2
+     }
+    },
+    {
+     "s0": {
+      "price": 9.25,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.62,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.59,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.54,
+      "qty": 2
+     }
+    }
+   ],
+   "s0": [
+    {
+     "price": 8.0,
+     "qty": 10
+    },
+    {
+     "price": 8.0,
+     "qty": 10
+    }
+   ],
+   "s1": [
+    {
+     "price": 7.0,
+     "qty": 10
+    },
+    {
+     "price": 7.0,
+     "qty": 10
+    }
+   ],
+   "s2": [
+    {
+     "price": 3.0,
+     "qty": 10
+    },
+    {
+     "price": 3.0,
+     "qty": 10
+    }
+   ],
+   "s3": [
+    {
+     "price": 2.5,
+     "qty": 10
+    },
+    {
+     "price": 2.5,
+     "qty": 10
+    }
+   ],
+   "v0": [
+    {
+     "s0": 0.88,
+     "s1": 0.77
+    },
+    {
+     "s0": 0.84,
+     "s1": 0.78
+    }
+   ],
+   "v1": [
+    {
+     "s2": 0.71,
+     "s3": 0.64
+    },
+    {
+     "s2": 0.69,
+     "s3": 0.59
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "Two rounds, the audit record is not shown",
+  "why": "With the record hidden the same buyers cannot react to it."
+ },
+ {
+  "env_ref": "gao_idl.environments.vcm:build_vcm",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "b0": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": 4.049999999999997,
+      "own_value": 70.3,
+      "revealed": {
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "b1": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": 7.564999999999998,
+      "own_value": 73.815,
+      "revealed": {
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "b2": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": 11.079999999999998,
+      "own_value": 77.33,
+      "revealed": {
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s0": [
+     {
+      "own_fill": 9.0,
+      "own_revenue": 75.78,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s1": [
+     {
+      "own_fill": 9.0,
+      "own_revenue": 65.97,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s2": [
+     {
+      "own_fill": 6.0,
+      "own_revenue": 30.240000000000002,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s3": [
+     {
+      "own_fill": 6.0,
+      "own_revenue": 26.759999999999998,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "v0": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "fees": 2.0,
+      "penalties": 0.0,
+      "revealed": {
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "v1": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "fees": 2.0,
+      "penalties": 5.0,
+      "revealed": {
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ]
+   },
+   "utilities": {
+    "b0": 4.049999999999997,
+    "b1": 7.564999999999998,
+    "b2": 11.079999999999998,
+    "s0": 3.7799999999999994,
+    "s1": 2.9700000000000006,
+    "s2": 12.24,
+    "s3": 11.76,
+    "v0": 2.0,
+    "v1": -3.0
+   }
+  },
+  "id": "audit-by-chance",
+  "note": "",
+  "params": {
+   "buyers": [
+    {
+     "agent": "b0",
+     "demand": 10,
+     "value": 10.0
+    },
+    {
+     "agent": "b1",
+     "demand": 10,
+     "value": 10.5
+    },
+    {
+     "agent": "b2",
+     "demand": 10,
+     "value": 11.0
+    }
+   ],
+   "fee": 1.0,
+   "market_form": "per_project",
+   "p_audit": 0.5,
+   "penalty": 5.0,
+   "reputation_visible": true,
+   "rounds": 1,
+   "sellers": [
+    {
+     "agent": "s0",
+     "cost": 8.0,
+     "quantity": 10,
+     "theta": 0.9
+    },
+    {
+     "agent": "s1",
+     "cost": 7.0,
+     "quantity": 10,
+     "theta": 0.8
+    },
+    {
+     "agent": "s2",
+     "cost": 3.0,
+     "quantity": 10,
+     "theta": 0.4
+    },
+    {
+     "agent": "s3",
+     "cost": 2.5,
+     "quantity": 10,
+     "theta": 0.3
+    }
+   ],
+   "settle_on": "reported",
+   "sigma": 0.03,
+   "tol": 0.1,
+   "verifiers": [
+    {
+     "agent": "v0",
+     "bias": 0.0,
+     "projects": [
+      "s0",
+      "s1"
+     ],
+     "sigma": 0.03
+    },
+    {
+     "agent": "v1",
+     "bias": 0.3,
+     "projects": [
+      "s2",
+      "s3"
+     ],
+     "sigma": 0.03
+    }
+   ]
+  },
+  "script": {
+   "b0": [
+    {
+     "s0": {
+      "price": 8.84,
+      "qty": 3
+     },
+     "s1": {
+      "price": 7.66,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.08,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.42,
+      "qty": 2
+     }
+    }
+   ],
+   "b1": [
+    {
+     "s0": {
+      "price": 9.28,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.05,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.44,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.74,
+      "qty": 2
+     }
+    }
+   ],
+   "b2": [
+    {
+     "s0": {
+      "price": 9.72,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.43,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.79,
+      "qty": 2
+     },
+     "s3": {
+      "price": 7.06,
+      "qty": 2
+     }
+    }
+   ],
+   "s0": [
+    {
+     "price": 8.0,
+     "qty": 10
+    }
+   ],
+   "s1": [
+    {
+     "price": 7.0,
+     "qty": 10
+    }
+   ],
+   "s2": [
+    {
+     "price": 3.0,
+     "qty": 10
+    }
+   ],
+   "s3": [
+    {
+     "price": 2.5,
+     "qty": 10
+    }
+   ],
+   "v0": [
+    {
+     "s0": 0.88,
+     "s1": 0.77
+    }
+   ],
+   "v1": [
+    {
+     "s2": 0.71,
+     "s3": 0.64
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "Audits happen with probability one half",
+  "why": "Only some traded projects are audited; the others stay unknown and unpenalized."
+ },
+ {
+  "env_ref": "gao_idl.environments.vcm:build_vcm",
+  "expect": {
+   "exit_port": "done",
+   "failed": false,
+   "reports": {
+    "b0": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": -1.25,
+      "own_value": 65.0,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "b1": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": 2.0,
+      "own_value": 68.25,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "b2": [
+     {
+      "own_fills": {
+       "s0": 3.0,
+       "s1": 3.0,
+       "s2": 2.0,
+       "s3": 2.0
+      },
+      "own_payment": 66.25,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "own_net": 5.25,
+      "own_value": 71.5,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s0": [
+     {
+      "own_fill": 9.0,
+      "own_revenue": 75.78,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s1": [
+     {
+      "own_fill": 9.0,
+      "own_revenue": 65.97,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s2": [
+     {
+      "own_fill": 6.0,
+      "own_revenue": 30.240000000000002,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "s3": [
+     {
+      "own_fill": 6.0,
+      "own_revenue": 26.759999999999998,
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "v0": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "fees": 2.0,
+      "penalties": 0.0,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ],
+    "v1": [
+     {
+      "projects": {
+       "s0": {
+        "price": 8.42,
+        "volume": 9
+       },
+       "s1": {
+        "price": 7.33,
+        "volume": 9
+       },
+       "s2": {
+        "price": 5.04,
+        "volume": 6
+       },
+       "s3": {
+        "price": 4.46,
+        "volume": 6
+       }
+      },
+      "round": 0,
+      "volume": 30
+     },
+     {
+      "fees": 2.0,
+      "penalties": 10.0,
+      "revealed": {
+       "s0": {
+        "report": 0.88,
+        "true_quality": 0.9,
+        "verifier": "v0"
+       },
+       "s1": {
+        "report": 0.77,
+        "true_quality": 0.8,
+        "verifier": "v0"
+       },
+       "s2": {
+        "report": 0.71,
+        "true_quality": 0.4,
+        "verifier": "v1"
+       },
+       "s3": {
+        "report": 0.64,
+        "true_quality": 0.3,
+        "verifier": "v1"
+       }
+      },
+      "round": 0
+     }
+    ]
+   },
+   "utilities": {
+    "b0": -1.25,
+    "b1": 2.0,
+    "b2": 5.25,
+    "s0": 3.7799999999999994,
+    "s1": 2.9700000000000006,
+    "s2": 12.24,
+    "s3": 11.76,
+    "v0": 2.0,
+    "v1": -8.0
+   }
+  },
+  "id": "settle-on-true",
+  "note": "",
+  "params": {
+   "buyers": [
+    {
+     "agent": "b0",
+     "demand": 10,
+     "value": 10.0
+    },
+    {
+     "agent": "b1",
+     "demand": 10,
+     "value": 10.5
+    },
+    {
+     "agent": "b2",
+     "demand": 10,
+     "value": 11.0
+    }
+   ],
+   "fee": 1.0,
+   "market_form": "per_project",
+   "p_audit": 1.0,
+   "penalty": 5.0,
+   "reputation_visible": true,
+   "rounds": 1,
+   "sellers": [
+    {
+     "agent": "s0",
+     "cost": 8.0,
+     "quantity": 10,
+     "theta": 0.9
+    },
+    {
+     "agent": "s1",
+     "cost": 7.0,
+     "quantity": 10,
+     "theta": 0.8
+    },
+    {
+     "agent": "s2",
+     "cost": 3.0,
+     "quantity": 10,
+     "theta": 0.4
+    },
+    {
+     "agent": "s3",
+     "cost": 2.5,
+     "quantity": 10,
+     "theta": 0.3
+    }
+   ],
+   "settle_on": "true",
+   "sigma": 0.03,
+   "tol": 0.1,
+   "verifiers": [
+    {
+     "agent": "v0",
+     "bias": 0.0,
+     "projects": [
+      "s0",
+      "s1"
+     ],
+     "sigma": 0.03
+    },
+    {
+     "agent": "v1",
+     "bias": 0.3,
+     "projects": [
+      "s2",
+      "s3"
+     ],
+     "sigma": 0.03
+    }
+   ]
+  },
+  "script": {
+   "b0": [
+    {
+     "s0": {
+      "price": 8.84,
+      "qty": 3
+     },
+     "s1": {
+      "price": 7.66,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.08,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.42,
+      "qty": 2
+     }
+    }
+   ],
+   "b1": [
+    {
+     "s0": {
+      "price": 9.28,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.05,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.44,
+      "qty": 2
+     },
+     "s3": {
+      "price": 6.74,
+      "qty": 2
+     }
+    }
+   ],
+   "b2": [
+    {
+     "s0": {
+      "price": 9.72,
+      "qty": 3
+     },
+     "s1": {
+      "price": 8.43,
+      "qty": 3
+     },
+     "s2": {
+      "price": 7.79,
+      "qty": 2
+     },
+     "s3": {
+      "price": 7.06,
+      "qty": 2
+     }
+    }
+   ],
+   "s0": [
+    {
+     "price": 8.0,
+     "qty": 10
+    }
+   ],
+   "s1": [
+    {
+     "price": 7.0,
+     "qty": 10
+    }
+   ],
+   "s2": [
+    {
+     "price": 3.0,
+     "qty": 10
+    }
+   ],
+   "s3": [
+    {
+     "price": 2.5,
+     "qty": 10
+    }
+   ],
+   "v0": [
+    {
+     "s0": 0.88,
+     "s1": 0.77
+    }
+   ],
+   "v1": [
+    {
+     "s2": 0.71,
+     "s3": 0.64
+    }
+   ]
+  },
+  "seed": 1,
+  "status": "proposed",
+  "title": "Buyers are credited on true quality",
+  "why": "With settle_on = true a buyer's payoff uses the true quality, not the report."
+ }
+]
