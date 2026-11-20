@@ -1902,3 +1902,17 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   round's gate: 4 passed, 1 skipped.
 - Under 30 rem the navigation is one row of numbers; each button keeps its full name in `aria-label` and `title`, and each screen's
   own heading names it. Labels are block elements with normal spacing (the "Your name" label no longer touches its field).
+
+## 2026-11-20 — M10 fix-up task 6: docs, pages, screenshots
+- `docs/verifying.md` describes the folded lists, the answer bar, the note needed to disagree and Ctrl/Cmd+Enter; CHANGELOG;
+  `llms.md` lists `split_told` / `summarize`.
+- Example pages rebuilt (`--fuzz 200 --seed 1`): auction 245,184 → 308,784 bytes, PD 260,607 → 349,995, carbon market
+  1,001,768 → 911,393; 0 mismatches each.
+- **Screenshots** with headless Chrome (outside the tests). Headless Chrome will not make a window narrower than 500 px
+  (`innerWidth` was 500 when asked for 390), so the narrow shots load the page in a 390-px iframe inside a wrapper page; there the
+  page's own `innerWidth` is 390 and nothing overflows horizontally. All screenshots were taken by injecting a short script into a
+  temporary copy of each page to open a screen and card.
+- An end-to-end run in headless Chrome (synthetic clicks and key events in a temporary copy of the auction page): Yes on one card,
+  Ctrl+Enter in another's note, `s` to skip, a note-less No (refused with the message), a note-less Disagree (refused), Cmd+Enter
+  with a note (recorded), Agree, a reviewer name. The export imported with `gao-idl cards import` into temporary copies: exit 0,
+  the dispute printed for the author.

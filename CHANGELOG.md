@@ -46,6 +46,14 @@ built on them), and `Card.reviewer`. Command line: `gao-idl review bundle|page`,
 `gao-idl cards import`, and `gao-idl cards review` (one card at a time in a terminal).
 `scripts/make_example_pages.py` writes the three example pages to `build/review/`.
 
+**M10 fix-up.** The review page after a first look at it rendered: `gao_idl.review.tell`
+(`split_told`, `summarize`) shows what a step told everyone alike once instead of once per
+recipient; the timeline is at most 920 wide, puts its text in a column on the right and repeats the
+lane names in every band; cards show payoffs before two folded lists and keep the answer bar in
+view; disagreeing with a choice needs a note (`cards import` refuses one without); Ctrl+Enter or
+Cmd+Enter in a note records No or Disagree; one-row navigation on phones; `clean_install.sh` and
+`tests/test_packaging.py` check that the wheel carries the page's files.
+
 Replace "Unreleased" with the date when the tag is cut.
 
 [0.1.0]: https://github.com/tolkienbagchi/GAO-Institutional-Design/releases/tag/v0.1.0

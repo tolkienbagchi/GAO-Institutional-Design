@@ -29,13 +29,20 @@ internet connection and no installation, and it makes no network request.
    (taken from runs of the built environment, not from the description), with secrets, payoffs and
    parameters.
 3. **Choices nobody confirmed.** Decisions the author made because your description did not settle
-   them. Agree or disagree with each, with a note if you like.
+   them. Agree, or disagree and say why in the note (a disagreement needs a note, as a "No" on a
+   card does). Ctrl+Enter (Cmd+Enter on a Mac) in the note records the disagreement.
 4. **Cards, one at a time.** Each card is one concrete case: "alice bids 8, bob bids 8, carol bids
-   1", a timeline of who did what and who was told what, the same steps in words, and every payoff.
-   The line under the title says which readings of your description the case tells apart. Answer
-   **Yes, this is what I meant** or **No** (then say what should happen instead), or skip it.
-   Keys: `y`, `n`, `s`, and the left and right arrows. A card marked out of date shows what the
-   environment does now and cannot be confirmed.
+   1". The line under the title says which readings of your description the case tells apart.
+   Then come the situation, a timeline (one column per participant; what each did or was told is
+   written in the column on the right, and what a step told everyone alike is one line starting
+   "everyone"), each payoff and how the run ends. Below are two folded lists, the steps in words
+   and everything each participant was told, in full. They are open on short cards and closed on
+   long ones; click a heading to open it. The answer bar stays at the bottom of the window while
+   you read: **Yes, this is what I meant**, **No** (say what should happen instead in the note
+   first), **Skip** or **Back**. Keys: `y`, `n`, `s`, and the left and right arrows; in the note,
+   Ctrl+Enter (Cmd+Enter) records No. A card marked out of date shows what the environment does
+   now and cannot be confirmed. On a phone the timeline scrolls sideways rather than shrinking
+   its text.
 5. **Finish.** Type your name and press **Download verdicts**. If your viewer blocks downloads,
    copy the text in the box into a file called `verdicts.json`. Give that file to the author.
 
@@ -44,7 +51,8 @@ it on the same computer). Nothing is sent anywhere.
 
 The author applies your file with `gao-idl cards import cards.json verdicts.json --spec spec.json`.
 A verdict is about one exact behaviour: if the environment changed after the page was made, that
-card's verdict is refused and the card comes back to you. Only you give verdicts. A card its author
+card's verdict is refused and the card comes back to you. A "No" or a disagreement without a note
+is refused too. Only you give verdicts. A card its author
 confirms is not evidence.
 
 **In a terminal instead.** `gao-idl spec render spec.json --cards cards.json --out design.md`

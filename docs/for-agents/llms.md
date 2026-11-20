@@ -292,6 +292,7 @@ from a bundle, no network, no server. Nothing here calls a model or records a ve
 | `render_page(bundle, api=None)` | the page as one HTML string; with `api` it also posts each verdict there (M11) |
 | `flow_svg(describe(p))`, `timeline_svg(story, title)` | the pictures, SVG drawn in Python |
 | `tell_card(card, spec)`, `tell_session(session, spec)` | (in `gao_idl.authoring`) a run as a `Story` of `StepView`s with `Move`s and `Told`s |
+| `split_told(told)`, `summarize(payload, limit=60)` | what a step told everyone alike once, then each one's own; a payload as a short label |
 | `outcome_hash(expect)` | SHA-256 of a `CardExpect` (floats rounded to 9 places); a verdict names the hash it saw |
 | `Verdicts`, `CardVerdict`, `AssumptionVerdict`, `load_verdicts`, `apply_verdicts(cards, spec, v)` | what the page exports; applied only where the card still does exactly what was seen |
 
