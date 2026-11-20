@@ -151,3 +151,18 @@ def test_bundle_text_and_page_agree_on_the_card_order() -> None:
     positions = [page.index(f"Card {i}; in the file") for i in ids]
     assert positions == sorted(positions)
     assert json.loads(dump_bundle(bundle))["bundle_version"] == 1
+
+
+def test_the_example_page_script_writes_three_pages(tmp_path: Path) -> None:
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "make_example_pages", ROOT / "scripts" / "make_example_pages.py"
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert module.main(["--fuzz", "0", "--out", str(tmp_path)]) == 0
+    pages = sorted(p.name for p in tmp_path.glob("*.html"))
+    assert pages == ["auction.html", "pd.html", "vcm.html"]
+    assert "build/review/" in (ROOT / ".gitignore").read_text().split()

@@ -36,6 +36,16 @@ and proposed cards for the auction, the prisoner's dilemma and the carbon market
 `gao-idl spec check --fuzz N` and `gao-idl diverge`; skills `second-implementation` and
 `write-spec-tests`; `examples/candidates/auction_second.py`.
 
+**M10, the review page.** New supporting package `gao_idl.review`: `make_bundle` (the JSON bundle,
+`bundle_version: 1`, the only contract between the engine and a front end), `flow_svg` and
+`timeline_svg` (SVG drawn in Python), `render_page` (one self-contained HTML file with no network
+request, in which a designer reads the design and gives a verdict on each card), and verdicts
+(`Verdicts`, `apply_verdicts`; a verdict is refused if the card's outcome changed since the page
+was made). `gao_idl.authoring` gains `Story`, `tell_card` and `tell_session` (`render_card` is
+built on them), and `Card.reviewer`. Command line: `gao-idl review bundle|page`,
+`gao-idl cards import`, and `gao-idl cards review` (one card at a time in a terminal).
+`scripts/make_example_pages.py` writes the three example pages to `build/review/`.
+
 Replace "Unreleased" with the date when the tag is cut.
 
 [0.1.0]: https://github.com/tolkienbagchi/GAO-Institutional-Design/releases/tag/v0.1.0

@@ -1807,3 +1807,13 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   - The cards file is rewritten only if some card changed; the spec only if some choice changed.
 - Never run on anything under `examples/`: every test copies the files to a temporary directory first, and asserts the shipped
   files are still all `proposed` / unconfirmed afterwards.
+
+## 2026-11-20 — M10 task 6: docs and example pages
+- `docs/verifying.md`: the designer's section now leads with `review.html` (five screens, keys, the download and its fallback) and
+  keeps `cards review` / `spec render` as "In a terminal instead"; the author's section gains `review page|bundle` and
+  `cards import`. `docs/api/review.md` (with nav), a `gao_idl.review` section in `docs/for-agents/llms.md`, CHANGELOG, README.
+- `skills/design-environment/SKILL.md`: the definition of done gains item 8, build `review.html` and hand the person that file;
+  183 lines.
+- `scripts/make_example_pages.py` writes `build/review/{auction,pd,vcm}.html` with `--fuzz 200 --seed 1` by default (the M9
+  settings). Result: 213 / 211 / 213 runs, 0 mismatches each; 239 KB, 254 KB, 978 KB. `build/` was already in `.gitignore`;
+  `build/review/` is added explicitly as the brief asks.
