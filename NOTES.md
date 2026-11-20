@@ -1883,3 +1883,22 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   1; `disputed()` lists only disputes with notes.
 - New pure function `submitsNote(key, ctrlKey, metaKey)`: Ctrl+Enter or Cmd+Enter in a card's note records No with that note, in
   a choice's note records Disagree. Enter alone stays a new line. The keys line on each card mentions it.
+
+## 2026-11-20 — M10 fix-up task 5: the wheel, and small layout fixes
+- `scripts/clean_install.sh` gains a step after the selftest: in the clean venv it reads `page.html/css/js` through
+  `importlib.resources.files("gao_idl.review")` (fails with the missing names) and, when `examples/` is reachable from the script's
+  repository root, builds the auction bundle and renders its page (fails if it contains `http://`/`https://` or a fourth
+  `<script>`).
+- `tests/test_packaging.py::test_the_wheel_contains_the_review_page_files` checks the wheel's file list. It uses
+  `dist/gao_idl-<version>-*.whl` if exactly one exists, else builds one with `python -m build --wheel --no-isolation` when both
+  `build` and `hatchling` are importable (no network: tests must not use it), else **skips**. CI's `test` job has `build` but not
+  `hatchling` and no `dist/`, so the test will skip there. The enforcing check in CI is `clean_install.sh` in the `package` job.
+  Adding a dev dependency on `hatchling` is not allowed this round.
+- Neither could run against a real wheel here (no `build`, no `hatchling`). I zipped `src/gao_idl` into a hand-made stand-in wheel
+  in the git-ignored `dist/` to exercise the logic: with all files, `clean_install.sh` (`--no-index --no-deps`,
+  `CLEAN_INSTALL_SYSTEM_SITE=1`) passes and renders the auction page (309 KB), and the test passes. With `page.js` left out, both fail
+  and name it. This shows the checks work, not that hatchling includes the files.
+- **`tests/test_packaging.py` runs here after all** (it needs no `build`); the M8–M10 reports ignored it out of habit. It is in this
+  round's gate: 4 passed, 1 skipped.
+- Under 30 rem the navigation is one row of numbers; each button keeps its full name in `aria-label` and `title`, and each screen's
+  own heading names it. Labels are block elements with normal spacing (the "Your name" label no longer touches its field).

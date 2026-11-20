@@ -213,3 +213,17 @@ def test_the_answer_bar_is_sticky_and_inside_every_card(auction_page: str) -> No
         assert article.index("Payoffs in total") < article.index("What happens, step by step")
         assert article.index("What each participant is told") < article.index('class="verdict')
         assert 'class="note" rows="1"' in article
+
+
+def test_narrow_navigation_keeps_full_names_for_screen_readers(auction_page: str) -> None:
+    names = ["What was checked", "The design", "Choices nobody confirmed", "Cards", "Finish"]
+    for i, name in enumerate(names):
+        assert (
+            f'data-screen="{i}" aria-label="{i + 1}. {name}" title="{name}">'
+            f'<span class="num">{i + 1}</span>'
+        ) in auction_page
+    css = asset("page.css")
+    assert re.search(
+        r"@media \(max-width: 30rem\) \{[^@]*nav\.screens \.name \{ display: none; \}", css
+    )
+    assert re.search(r"(?m)^label \{ display: block; margin: [^}]+\}", css)

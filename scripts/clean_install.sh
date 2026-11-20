@@ -74,4 +74,35 @@ print('ok')"
 echo "== selftest"
 "$py" -I -c "import gao_idl; gao_idl.selftest()"
 
+echo "== review page files are in the wheel"
+"$py" -I - "$ROOT" <<'PY'
+import pathlib
+import sys
+from importlib.resources import files
+
+root = pathlib.Path(sys.argv[1])
+package = files("gao_idl.review")
+names = ("page.html", "page.css", "page.js")
+missing = [n for n in names if not package.joinpath(n).is_file()]
+if missing:
+    sys.exit(f"clean_install: missing from the installed wheel: {missing}")
+for name in names:
+    text = package.joinpath(name).read_text(encoding="utf-8")
+    if len(text) < 500:
+        sys.exit(f"clean_install: {name} is only {len(text)} characters")
+spec = root / "examples" / "specs" / "auction.json"
+cards = root / "examples" / "cards" / "auction.json"
+if spec.is_file() and cards.is_file():
+    from gao_idl.authoring import load_cards, load_spec
+    from gao_idl.review import make_bundle, render_page
+
+    page = render_page(make_bundle(load_spec(spec), load_cards(cards)))
+    if "http://" in page or "https://" in page or page.count("<script") != 3:
+        sys.exit("clean_install: the rendered auction page is not self-contained")
+    print("rendered the auction review page:", len(page.encode("utf-8")), "bytes")
+else:
+    print("examples not reachable: read the three page files only")
+print("ok")
+PY
+
 echo "clean_install: OK"
