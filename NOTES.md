@@ -1854,3 +1854,24 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - The `svg` element carries `data-rows="N"` (rows drawn), for tests and the report.
 - Regenerated golden files (looked at as rasterized pictures): `tests/review/golden/auction.tie-top.svg`, `auction.no-bid.svg`,
   `pd.two-pairs.svg`, `pd.no-move-default.svg`. `auction.flow.svg`, `pd.flow.svg` and `tests/authoring/golden/` are unchanged.
+
+## 2026-11-20 — M10 fix-up task 3: shorter cards (`review/page.py`, `page.css`)
+- "What each participant is told" lists `split_told` rows per step (everyone line first, then own lines) with the full payload
+  text. Who a row went to is worded by a new helper `tell.addressed` shared with the timeline ("everyone" only when every participant
+  was told, else the names); `tell.participants(story)` is the other shared helper.
+- Both lists are `<details class="fold">`, `open` when the card has at most 12 told rows after splitting (`FOLD_AFTER`), with a
+  summary "(N steps)" / "(M messages)". Not scripted.
+- Card order: title, why, id line, stale warning, situation, timeline, payoffs and ending, the two folded lists, any existing note,
+  the answer bar. The answer bar (`.verdict`) is `position: sticky; bottom: 0` inside its card with an opaque background, a top
+  border and a faint shadow. The note field is one line (`rows="1"`) and grows on focus. Under 30 rem the label is visually hidden
+  but still the field's label (the field has the same text as a placeholder), the keys line is hidden and the buttons wrap
+  onto two rows.
+- `#status` no longer reserves a line when empty.
+- **The audited card's `revealed` payload** now appears once in the card's text (the everyone line) and once in the timeline,
+  as the `<title>` (full text) of the everyone row that task 2 requires. In M10 it appeared nine times in each. The test asserts
+  both counts.
+- Sizes without fuzz: auction 239 → 297 KB, PD 254 → 338 KB (wider timelines, lane names repeated in every band), carbon market
+  978 → 886 KB. The auction and PD pages are bigger. The brief only asks for the carbon market to shrink.
+- Screenshots (headless Chrome, outside the tests): the carbon-market card `reputation-shown` is 2,184 px tall at 1280 wide and
+  2,250 at 390 wide (the reviewer measured about 6,500 in M10). The answer bar stays at the bottom of the window while the card
+  scrolls.

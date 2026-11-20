@@ -14,7 +14,7 @@ import json
 from collections.abc import Sequence
 from typing import Any
 
-from gao_idl.authoring.cards import Told, _value
+from gao_idl.authoring.cards import Story, Told, _value
 from gao_idl.core.ids import role_sort_key
 from gao_idl.core.schemas import FrozenModel
 
@@ -95,3 +95,24 @@ def summarize(payload: dict[str, Any], limit: int = 60) -> str:
             break
         kept.append(pair)
     return ", ".join(kept) + ", …"
+
+
+def addressed(row: ToldRow, told: Sequence[Told], everyone: Sequence[str]) -> str:
+    """Who a row of ``split_told(told)`` went to, in words: names, or ``everyone``.
+
+    An everyone-row (``to == []``) went to every recipient of the step; it reads ``everyone`` only
+    when those are all of ``everyone`` (the run's participants), otherwise it names them, so a
+    report to one pair of a parallel step is not described as going to all.
+    """
+    if row.to:
+        return ", ".join(row.to)
+    here = sorted({t.agent for t in told}, key=role_sort_key)
+    return "everyone" if set(here) >= set(everyone) else ", ".join(here)
+
+
+def participants(story: Story) -> list[str]:
+    """Everyone who acts, is told something or is paid in ``story``, in natural order."""
+    people = set(story.utilities)
+    for step in story.steps:
+        people |= {m.agent for m in step.moves} | {t.agent for t in step.told}
+    return sorted(people, key=role_sort_key)

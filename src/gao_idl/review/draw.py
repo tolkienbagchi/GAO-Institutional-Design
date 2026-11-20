@@ -19,8 +19,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from gao_idl.authoring.cards import Story, _pairs, _value
-from gao_idl.core.ids import role_sort_key
-from gao_idl.review.tell import split_told, summarize
+from gao_idl.review.tell import addressed, participants, split_told, summarize
 
 FONT = 'font-family="system-ui, -apple-system, Segoe UI, sans-serif"'
 CHAR = 7.0  # estimated width of one character at 13px, for layout only
@@ -369,10 +368,6 @@ TOP = 52
 MIN_SCALE = 0.9  # 12-unit text stays at about 11 px or more: below this width the picture scrolls
 
 
-def _names(names: list[str]) -> str:
-    return ", ".join(names)
-
-
 def timeline_svg(story: Story, title: str) -> str:
     """One run as a sequence picture: a lane per participant, one for the rules, at most 920 wide.
 
@@ -385,10 +380,7 @@ def timeline_svg(story: Story, title: str) -> str:
     ``<title>``. Total payoffs sit under the lanes. Beyond 8 participants or 12 steps the first
     ones are drawn and the picture says how many more there are.
     """
-    people: set[str] = set(story.utilities)
-    for step in story.steps:
-        people |= {m.agent for m in step.moves} | {t.agent for t in step.told}
-    everyone = sorted(people, key=role_sort_key)
+    everyone = participants(story)
     lanes = everyone[:MAX_LANES]
     hidden_people = len(everyone) - len(lanes)
     n = max(1, len(lanes))
@@ -484,14 +476,13 @@ def timeline_svg(story: Story, title: str) -> str:
                 xs = [lane_x[a] for a in row.to if a in lane_x]
                 if not xs:
                     continue
-                who = _names(row.to)
+                who = addressed(row, step.told, everyone)
                 cls = "told"
             else:  # what everyone told in this step got alike
-                told_here = sorted({t.agent for t in step.told}, key=role_sort_key)
-                xs = [lane_x[a] for a in told_here if a in lane_x]
+                xs = [lane_x[t.agent] for t in step.told if t.agent in lane_x]
                 if not xs:
                     continue
-                who = "everyone" if set(told_here) == set(everyone) else _names(told_here)
+                who = addressed(row, step.told, everyone)
                 cls = "told everyone"
             full = f"{who} {'is' if len(row.to) == 1 else 'are'} told: {_pairs(row.payload)}"
             prefix = f"{cut(who, 30)}: "

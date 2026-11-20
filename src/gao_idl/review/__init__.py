@@ -22,7 +22,7 @@ from gao_idl.review.bundle import (
 )
 from gao_idl.review.draw import flow_svg, timeline_svg
 from gao_idl.review.page import render_page
-from gao_idl.review.tell import ToldRow, split_told, summarize
+from gao_idl.review.tell import ToldRow, addressed, participants, split_told, summarize
 from gao_idl.review.verdicts import (
     AssumptionVerdict,
     CardVerdict,
@@ -55,6 +55,8 @@ __all__ = [
     "save_bundle",
     "timeline_svg",
     "ToldRow",
+    "addressed",
+    "participants",
     "split_told",
     "summarize",
 ]

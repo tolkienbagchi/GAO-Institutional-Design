@@ -1,5 +1,6 @@
 """The page as text: self-contained, escaped, small enough, and complete. No browser is used."""
 
+import html
 import json
 import re
 from pathlib import Path
@@ -166,3 +167,49 @@ def test_the_example_page_script_writes_three_pages(tmp_path: Path) -> None:
     pages = sorted(p.name for p in tmp_path.glob("*.html"))
     assert pages == ["auction.html", "pd.html", "vcm.html"]
     assert "build/review/" in (ROOT / ".gitignore").read_text().split()
+
+
+# ------------------------------------------------------------------ M10 fix-up: shorter cards
+
+
+def _articles(page: str) -> list[str]:
+    return re.findall(r'<article class="card".*?</article>', page, re.S)
+
+
+def test_a_public_report_is_shown_once_not_once_per_recipient() -> None:
+    bundle = _bundle("vcm")
+    page = render_page(bundle)
+    (view,) = [v for v in bundle.cards if v.card.id == "audited"]
+    (audit,) = [s for s in view.story.steps if s.layer == "audit"]
+    revealed = audit.told[0].payload["revealed"]
+    text = html.escape(json.dumps(revealed, sort_keys=True), quote=True)
+    article = next(a for a in _articles(page) if "Card audited;" in a)
+    picture, words = article.split("</svg>", 1)
+    assert words.count(text) == 1  # the told list: once, for everyone
+    assert picture.count(text) == 1  # the everyone-row's full text, in its <title>
+    assert len(audit.told) == 9  # nine recipients in M10 meant nine copies
+
+
+def test_the_carbon_market_page_is_smaller_than_in_m10() -> None:
+    assert len(render_page(_bundle("vcm")).encode("utf-8")) < 978 * 1024
+
+
+def test_short_cards_have_their_lists_open_and_long_ones_folded() -> None:
+    auction = _articles(render_page(_bundle("auction")))
+    assert all(a.count('<details class="fold" open>') == 2 for a in auction)
+    vcm = _articles(render_page(_bundle("vcm")))
+    folded = [a for a in vcm if '<details class="fold">' in a]
+    assert folded and all(a.count('<details class="fold">') == 2 for a in folded)
+    assert all("message" in a and "step" in a for a in vcm)
+
+
+def test_the_answer_bar_is_sticky_and_inside_every_card(auction_page: str) -> None:
+    css = asset("page.css")
+    assert re.search(r"\.verdict \{[^}]*position: sticky;[^}]*bottom: 0;", css, re.S)
+    assert re.search(r"\.verdict \{[^}]*background: var\(--bg\);", css, re.S)
+    for article in _articles(auction_page):
+        assert article.count('<div class="verdict only-js"') == 1
+        assert article.index("<svg") < article.index("Payoffs in total")
+        assert article.index("Payoffs in total") < article.index("What happens, step by step")
+        assert article.index("What each participant is told") < article.index('class="verdict')
+        assert 'class="note" rows="1"' in article

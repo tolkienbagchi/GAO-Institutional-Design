@@ -22,6 +22,7 @@ from gao_idl.authoring.cards import Story, _pairs, _value
 from gao_idl.authoring.spec import EnvSpec
 from gao_idl.review.bundle import Bundle, CardView, dump_bundle
 from gao_idl.review.draw import esc
+from gao_idl.review.tell import addressed, participants, split_told
 
 FIXED_SENTENCE = "These checks compare the code with the design, not the design with the world."
 _SLOT = re.compile(r"\{\{([A-Z]+)\}\}")
@@ -253,7 +254,7 @@ def _assumptions(bundle: Bundle) -> str:
                 f'<li class="assumption" data-index="{i}">',
                 f"<p>{esc(a.text)}<span class='muted'>{esc(question)}</span></p>",
                 f'<label for="note-a{i}">Note (optional)</label>',
-                f'<textarea id="note-a{i}" rows="2"></textarea>',
+                f'<textarea id="note-a{i}" class="note" rows="1"></textarea>',
                 '<div class="actions only-js">',
                 '<button type="button" data-verdict="agreed" aria-pressed="false">Agree</button>',
                 '<button type="button" data-verdict="disputed" aria-pressed="false">'
@@ -275,8 +276,20 @@ def _where(place: str, layer: str) -> str:
     return f"{place}, step {layer}" if place else f"step {layer}"
 
 
-def _story_html(story: Story) -> list[str]:
-    out = ["<h3>What happens, step by step</h3>", '<ol class="steps">']
+FOLD_AFTER = 12  # a card with more told rows than this starts with its two lists closed
+
+
+def _payoffs_html(story: Story) -> list[str]:
+    ending = "the run fails" if story.failed else f"the run ends through {story.exit_port}"
+    return [
+        "<h3>Payoffs in total</h3>",
+        _ul([esc(f"{a}: {_value(story.utilities[a])}") for a in sorted(story.utilities)]),
+        _p(f"How it ends: {ending}."),
+    ]
+
+
+def _steps_items(story: Story) -> list[str]:
+    out: list[str] = []
     for step in story.steps:
         lines: list[str] = []
         for move in step.moves:
@@ -299,22 +312,51 @@ def _story_html(story: Story) -> list[str]:
             out.append(f"<li><em>{head}</em>{text}{_ul(lines) if lines else ''}</li>")
         elif lines:
             out.append(f"<li>{_ul(lines)}</li>")
-    out.append("</ol>")
-    told = [
-        esc(f"{t.agent}, after {_where(s.place, s.layer)}: {_pairs(t.payload)}")
-        for s in story.steps
-        for t in s.told
-    ]
-    out += [
-        "<h3>What each participant is told</h3>",
-        _ul(told) if told else _p("Nobody is told anything."),
-    ]
-    out += [
-        "<h3>Payoffs in total</h3>",
-        _ul([esc(f"{a}: {_value(story.utilities[a])}") for a in sorted(story.utilities)]),
-    ]
-    ending = "the run fails" if story.failed else f"the run ends through {story.exit_port}"
-    out.append(_p(f"How it ends: {ending}."))
+    return out
+
+
+def _told_items(story: Story) -> list[str]:
+    """One line per row of ``split_told``: per step, what all got first, then each one's own."""
+    everyone = participants(story)
+    out: list[str] = []
+    for step in story.steps:
+        for row in split_told(step.told):
+            who = addressed(row, step.told, everyone)
+            out.append(esc(f"{who}, after {_where(step.place, step.layer)}: {_pairs(row.payload)}"))
+    return out
+
+
+def _fold(title: str, count: str, body: str, is_open: bool) -> str:
+    """A ``<details>`` block (works without scripts) whose summary says what is inside."""
+    attr = " open" if is_open else ""
+    return (
+        f'<details class="fold"{attr}><summary><h3>{esc(title)}</h3> '
+        f'<span class="muted">({esc(count)})</span></summary>{body}</details>'
+    )
+
+
+def _story_html(story: Story) -> list[str]:
+    """Payoffs and ending, then the steps in words and what each is told, both folded."""
+    steps = _steps_items(story)
+    told = _told_items(story)
+    is_open = len(told) <= FOLD_AFTER
+    out = _payoffs_html(story)
+    out.append(
+        _fold(
+            "What happens, step by step",
+            _plural(len(steps), "step", "steps"),
+            '<ol class="steps">' + "".join(steps) + "</ol>",
+            is_open,
+        )
+    )
+    out.append(
+        _fold(
+            "What each participant is told",
+            _plural(len(told), "message", "messages"),
+            _ul(told) if told else _p("Nobody is told anything."),
+            is_open,
+        )
+    )
     return out
 
 
@@ -368,19 +410,21 @@ def _card(view: CardView, k: int, n: int, spec: EnvSpec) -> str:
         out.append(_p(f"Note already on this card: {card.note}", "muted"))
     yes_disabled = " disabled" if view.stale else ""
     out += [
-        '<div class="verdict only-js">',
-        "<h3>Is this what you meant?</h3>",
-        f'<label for="note-c{i}">If not, what should happen instead? (needed for No)</label>',
-        f'<textarea id="note-c{i}" rows="3"></textarea>',
+        f'<div class="verdict only-js" role="group" aria-labelledby="ask-c{i}">',
+        f'<p class="ask"><strong id="ask-c{i}">Is this what you meant?</strong> '
+        '<span class="answer"></span></p>',
+        f'<label class="sr-small" for="note-c{i}">If not, what should happen instead? '
+        "(needed for No)</label>",
+        f'<textarea id="note-c{i}" class="note" rows="1" '
+        'placeholder="If not, what should happen instead?"></textarea>',
         '<div class="actions">',
         f'<button type="button" data-act="yes" aria-pressed="false"{yes_disabled}>'
         "Yes, this is what I meant</button>",
         '<button type="button" data-act="no" aria-pressed="false">No</button>',
         '<button type="button" data-act="skip">Skip</button>',
         '<button type="button" data-act="back">Back</button>',
-        '<button type="button" data-clear="1">Remove my answer</button>',
+        '<button type="button" data-clear="1">Remove answer</button>',
         "</div>",
-        '<p class="answer"></p>',
         '<p class="keys muted">Keys: <kbd>y</kbd> yes, <kbd>n</kbd> no, <kbd>s</kbd> skip, '
         "<kbd>←</kbd> back, <kbd>→</kbd> next.</p>",
         "</div>",
