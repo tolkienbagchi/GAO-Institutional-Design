@@ -20,12 +20,12 @@ from typing import Any
 
 from gao_idl.authoring.cards import Story, _pairs, _value
 from gao_idl.core.ids import role_sort_key
+from gao_idl.review.tell import split_told, summarize
 
 FONT = 'font-family="system-ui, -apple-system, Segoe UI, sans-serif"'
 CHAR = 7.0  # estimated width of one character at 13px, for layout only
 MAX_LANES = 8
 MAX_STEPS = 12
-LABEL_CUT = 28
 
 
 def esc(text: Any) -> str:
@@ -43,7 +43,7 @@ def _text_w(text: str, size: float = 13) -> float:
     return len(text) * CHAR * size / 13
 
 
-def cut(text: str, n: int = LABEL_CUT) -> str:
+def cut(text: str, n: int) -> str:
     """``text`` cut to ``n`` characters, ending in an ellipsis when cut."""
     return text if len(text) <= n else text[: n - 1] + "…"
 
@@ -359,21 +359,31 @@ def flow_svg(tree: dict[str, Any]) -> str:
 # ------------------------------------------------------------------ timeline
 
 
-LANE = 180  # distance between lanes
-RULES_X = 90
-ROW = 24
-TOP = 56
+MAX_WIDTH = 920  # the timeline is never wider than this, whatever the number of lanes
+WHAT_MIN = 300  # the text column on the right
+LANE_MAX = 90  # lane spacing when there is room
+RULES_X = 44
+ROW = 20
+BAND = 26
+TOP = 52
+MIN_SCALE = 0.9  # 12-unit text stays at about 11 px or more: below this width the picture scrolls
+
+
+def _names(names: list[str]) -> str:
+    return ", ".join(names)
 
 
 def timeline_svg(story: Story, title: str) -> str:
-    """One run as a sequence picture: a lane per participant and one for the rules.
+    """One run as a sequence picture: a lane per participant, one for the rules, at most 920 wide.
 
-    Each step is a band. An arrow runs from each participant who acted to the rules lane,
-    labelled with the action (cut at 28 characters, the full text in a ``<title>``); a dashed
-    arrow marks a default used for someone who did not act, a dashed stub someone left out; an
-    arrow runs back to each participant who was told something. Total payoffs sit under each
-    lane. Beyond 8 participants or 12 steps the first ones are drawn and the picture says how
-    many more there are; nothing is left out without saying so.
+    Each step is a band whose header repeats the lane names. Each row has its arrow in the lanes
+    and its text in a column on the right: an arrow from a participant who acted to the rules
+    (dashed when a default was used, a dashed stub when left out), or from the rules to whoever
+    was told something. What a step told everyone alike is one row ("everyone: ..."), drawn
+    across all lanes; recipients told the same remaining fields share a row with a head on each of
+    their lanes (``tell.split_told``). Row texts are ``tell.summarize``d, the full text is in a
+    ``<title>``. Total payoffs sit under the lanes. Beyond 8 participants or 12 steps the first
+    ones are drawn and the picture says how many more there are.
     """
     people: set[str] = set(story.utilities)
     for step in story.steps:
@@ -381,127 +391,179 @@ def timeline_svg(story: Story, title: str) -> str:
     everyone = sorted(people, key=role_sort_key)
     lanes = everyone[:MAX_LANES]
     hidden_people = len(everyone) - len(lanes)
-    lane_x = {a: RULES_X + LANE * (i + 1) for i, a in enumerate(lanes)}
+    n = max(1, len(lanes))
+    room = MAX_WIDTH - 8 - WHAT_MIN - 16 - RULES_X
+    spacing = min(float(LANE_MAX), room / (n + 0.5))
+    lane_x = {a: RULES_X + spacing * (i + 1) for i, a in enumerate(lanes)}
+    lanes_right = RULES_X + spacing * (n + 0.5)
+    what_x = lanes_right + 16
+    width = min(float(MAX_WIDTH), what_x + max(WHAT_MIN, 560) + 8)
+    what_w = width - 8 - what_x
+    limit = max(30, int(what_w / 6.1))  # characters of 12-unit text that fit in the column
+    name_chars = max(3, int(spacing / 6.2))
     steps = story.steps[:MAX_STEPS]
     hidden_steps = len(story.steps) - len(steps)
-    width = RULES_X + LANE * (len(lanes) + 1) - 30
+
+    def what(y: float, text: str, extra: str = "") -> str:
+        return (
+            f'<text class="what" x="{_num(what_x)}" y="{_num(y + 14)}" font-size="12" '
+            f'fill="currentColor"{extra}>{esc(text)}</text>'
+        )
+
+    def lane_names(y: float, size: int) -> list[str]:
+        out = [
+            f'<text x="{_num(RULES_X)}" y="{_num(y)}" text-anchor="middle" font-size="{size}" '
+            f'fill="currentColor">rules</text>'
+        ]
+        for name, x in lane_x.items():
+            out.append(
+                f'<text class="lane-name" x="{_num(x)}" y="{_num(y)}" text-anchor="middle" '
+                f'font-size="{size}" fill="currentColor"><title>{esc(name)}</title>'
+                f"{esc(cut(name, name_chars))}</text>"
+            )
+        return out
+
+    def heads(xs: list[float], y: float) -> str:
+        return "".join(_arrowhead(x - 1, y, "right") for x in xs)
 
     body: list[str] = []
+    rows = 0
     y = TOP
     for step in steps:
         heading = ", ".join(p for p in (step.place, step.layer) if p) or "the rules"
+        told_rows = split_told(step.told)
+        off = sum(1 for m in step.moves if m.agent not in lane_x)
+        off += sum(1 for r in told_rows if r.to and not any(a in lane_x for a in r.to))
+        note = ""
+        if off:
+            note = f"  +{off} not drawn"
         body.append(
-            f'<g class="band"><rect x="6" y="{_num(y)}" width="{_num(width - 12)}" '
-            f'height="22" rx="4" fill="currentColor" fill-opacity="0.06"/>'
-            f'<text x="14" y="{_num(y + 15.5)}" fill="currentColor" font-weight="600">'
-            f"{esc(heading.capitalize())}</text></g>"
+            f'<g class="band"><rect x="4" y="{_num(y)}" width="{_num(width - 8)}" '
+            f'height="{BAND}" rx="4" fill="currentColor" fill-opacity="0.07"/>'
+            + "".join(lane_names(y + 17, 10))
+            + f'<text x="{_num(what_x)}" y="{_num(y + 17)}" font-weight="600" font-size="13" '
+            f'fill="currentColor"><title>{esc(heading.capitalize() + note)}</title>'
+            f"{esc(cut(heading.capitalize(), limit - len(note)))}"
+            f'<tspan dx="8" font-weight="400" font-style="italic" font-size="11">'
+            f"{esc(note.strip())}</tspan>"
+            "</text></g>"
         )
-        y += 22 + 8
-        off_moves = 0
+        y += BAND + 4
         for move in step.moves:
             if move.agent not in lane_x:
-                off_moves += 1
                 continue
             px = lane_x[move.agent]
             if move.kind == "dropped":
                 full = f"{move.agent} does not act and is left out of this step"
                 body.append(
                     f'<g class="move dropped"><title>{esc(full)}</title>'
-                    f'<path d="M{_num(px)} {_num(y + 12)} H{_num(px - 50)}" fill="none" '
-                    f'stroke="currentColor" stroke-dasharray="4 3"/>'
-                    f'<text x="{_num(px - 56)}" y="{_num(y + 16)}" text-anchor="end" '
-                    f'font-size="11" fill="currentColor">did not act</text></g>'
+                    f'<path d="M{_num(px)} {_num(y + 10)} H{_num(px - spacing * 0.6)}" '
+                    f'fill="none" stroke="currentColor" stroke-dasharray="4 3"/>'
+                    + what(y, f"{move.agent}: did not act", ' font-style="italic"')
+                    + "</g>"
                 )
             else:
-                action = _pairs(move.action or {})
-                prefix = "default: " if move.kind == "defaulted" else ""
+                action = move.action or {}
                 verb = "has the default used" if move.kind == "defaulted" else "chooses"
-                full = f"{move.agent} {verb}: {action}"
+                full = f"{move.agent} {verb}: {_pairs(action)}"
+                prefix = (
+                    f"{move.agent} (default): " if move.kind == "defaulted" else f"{move.agent}: "
+                )
                 dash = ' stroke-dasharray="5 3"' if move.kind == "defaulted" else ""
                 body.append(
                     f'<g class="move {move.kind}"><title>{esc(full)}</title>'
-                    f'<path d="M{_num(px)} {_num(y + 12)} H{_num(RULES_X + 8)}" fill="none" '
-                    f'stroke="currentColor"{dash}/>{_arrowhead(RULES_X + 1, y + 12, "left")}'
-                    f'<text x="{_num(px - 6)}" y="{_num(y + 8)}" text-anchor="end" '
-                    f'font-size="11" fill="currentColor">{esc(cut(prefix + action))}</text></g>'
+                    f'<path d="M{_num(px)} {_num(y + 10)} H{_num(RULES_X + 8)}" fill="none" '
+                    f'stroke="currentColor"{dash}/>{_arrowhead(RULES_X + 1, y + 10, "left")}'
+                    + what(y, prefix + summarize(action, max(20, limit - len(prefix))))
+                    + "</g>"
                 )
             y += ROW
-        off_told = 0
-        for told in step.told:
-            if told.agent not in lane_x:
-                off_told += 1
-                continue
-            px = lane_x[told.agent]
-            text = _pairs(told.payload)
-            full = f"{told.agent} is told: {text}"
+            rows += 1
+        for row in told_rows:
+            if row.to:
+                xs = [lane_x[a] for a in row.to if a in lane_x]
+                if not xs:
+                    continue
+                who = _names(row.to)
+                cls = "told"
+            else:  # what everyone told in this step got alike
+                told_here = sorted({t.agent for t in step.told}, key=role_sort_key)
+                xs = [lane_x[a] for a in told_here if a in lane_x]
+                if not xs:
+                    continue
+                who = "everyone" if set(told_here) == set(everyone) else _names(told_here)
+                cls = "told everyone"
+            full = f"{who} {'is' if len(row.to) == 1 else 'are'} told: {_pairs(row.payload)}"
+            prefix = f"{cut(who, 30)}: "
             body.append(
-                f'<g class="told"><title>{esc(full)}</title>'
-                f'<path d="M{_num(RULES_X)} {_num(y + 12)} H{_num(px - 8)}" fill="none" '
-                f'stroke="currentColor" stroke-opacity="0.8"/>{_arrowhead(px - 1, y + 12, "right")}'
-                f'<text x="{_num(RULES_X + 8)}" y="{_num(y + 8)}" font-size="11" '
-                f'fill="currentColor">{esc(cut(text))}</text></g>'
+                f'<g class="{cls}"><title>{esc(full)}</title>'
+                f'<path d="M{_num(RULES_X)} {_num(y + 10)} H{_num(max(xs) - 8)}" fill="none" '
+                f'stroke="currentColor" stroke-opacity="0.8"/>{heads(xs, y + 10)}'
+                + what(y, prefix + summarize(row.payload, max(20, limit - len(prefix))))
+                + "</g>"
             )
             y += ROW
-        if off_moves or off_told:
-            k = off_moves + off_told
-            note = f"+{k} more {'arrow' if k == 1 else 'arrows'} for participants not drawn"
-            body.append(
-                f'<text x="{_num(width - 14)}" y="{_num(y + 12)}" text-anchor="end" '
-                f'font-size="11" font-style="italic" fill="currentColor">{esc(note)}</text>'
-            )
-            y += ROW
+            rows += 1
         if step.stopped is not None:
             body.append(
                 f'<g class="stopped"><title>{esc(step.stopped)}</title>'
-                f'<text x="{_num(RULES_X)}" y="{_num(y + 14)}" font-weight="600" '
-                f'fill="currentColor">■ stops: {esc(cut(step.stopped, 60))}</text></g>'
+                + what(y, f"■ stops: {cut(step.stopped, limit - 9)}", ' font-weight="600"')
+                + "</g>"
             )
             y += ROW
+            rows += 1
         if not step.moves and not step.told and step.stopped is None:
-            body.append(
-                f'<text x="{_num(RULES_X + 8)}" y="{_num(y + 12)}" font-size="11" '
-                f'font-style="italic" fill="currentColor">'
-                "nobody is asked or told anything here</text>"
-            )
+            body.append(what(y, "nobody is asked or told anything here", ' font-style="italic"'))
             y += ROW
-        y += 8
+            rows += 1
+        y += 6
     if hidden_steps:
         body.append(
-            f'<text x="14" y="{_num(y + 14)}" font-style="italic" fill="currentColor">'
-            f"+{hidden_steps} more {'step' if hidden_steps == 1 else 'steps'} not drawn "
-            "(see the steps in words)</text>"
+            f'<text x="10" y="{_num(y + 14)}" font-style="italic" font-size="12" '
+            f'fill="currentColor">+{hidden_steps} more '
+            f"{'step' if hidden_steps == 1 else 'steps'} not drawn (see the steps in words)</text>"
         )
         y += ROW
-    bottom = y + 4
+    bottom = y + 2
 
-    lanes_svg: list[str] = []
+    top: list[str] = []
     for name, x in [("the rules", float(RULES_X)), *lane_x.items()]:
-        cls = "lane rules" if name == "the rules" else "lane"
-        weight = ' stroke-width="2"' if name == "the rules" else ' stroke-dasharray="1 3"'
-        lanes_svg.append(
+        rules = name == "the rules"
+        cls = "lane rules" if rules else "lane"
+        stroke = ' stroke-width="2"' if rules else ' stroke-dasharray="1 3"'
+        label = "rules" if rules else cut(name, name_chars)
+        top.append(
             f'<g class="{cls}"><title>{esc(name)}</title>'
-            f'<text x="{_num(x)}" y="34" text-anchor="middle" font-weight="600" '
-            f'fill="currentColor">{esc(cut(name, 20))}</text>'
-            f'<path d="M{_num(x)} 42 V{_num(bottom)}" fill="none" stroke="currentColor"'
-            f'{weight} stroke-opacity="0.6"/></g>'
+            f'<text x="{_num(x)}" y="38" text-anchor="middle" font-weight="600" font-size="12" '
+            f'fill="currentColor">{esc(label)}</text>'
+            f'<path d="M{_num(x)} 44 V{_num(bottom)}" fill="none" stroke="currentColor"'
+            f'{stroke} stroke-opacity="0.55"/></g>'
         )
+    top.append(
+        f'<text x="{_num(what_x)}" y="38" font-weight="600" font-size="12" '
+        f'fill="currentColor">what</text>'
+    )
     if hidden_people:
         more = "participant" if hidden_people == 1 else "participants"
-        lanes_svg.append(
-            f'<text x="14" y="14" font-style="italic" font-size="12" fill="currentColor">'
+        top.append(
+            f'<text x="8" y="16" font-style="italic" font-size="12" fill="currentColor">'
             f"+{hidden_people} more {more} not drawn (see the steps in words)</text>"
         )
     pay: list[str] = [
-        f'<text x="14" y="{_num(bottom + 22)}" fill="currentColor" font-size="12">'
-        "payoff in total</text>"
+        f'<text x="{_num(what_x)}" y="{_num(bottom + 20)}" fill="currentColor" font-size="12">'
+        "← payoff in total</text>"
     ]
     for name, x in lane_x.items():
-        value = _value(story.utilities[name]) if name in story.utilities else "\u2014"
+        value = _value(story.utilities[name]) if name in story.utilities else "—"
         pay.append(
             f'<g class="payoff"><title>{esc(name)}: {esc(value)}</title>'
-            f'<text x="{_num(x)}" y="{_num(bottom + 22)}" text-anchor="middle" '
-            f'font-weight="600" fill="currentColor">{esc(cut(value, 20))}</text></g>'
+            f'<text x="{_num(x)}" y="{_num(bottom + 20)}" text-anchor="middle" font-size="12" '
+            f'font-weight="600" fill="currentColor">{esc(cut(value, name_chars + 1))}</text></g>'
         )
-    height = bottom + 40
-    width = max(width, 360)
-    return _svg("gao-timeline", width, height, title, lanes_svg + body + pay)
+    height = bottom + 34
+    head = (
+        f'<svg class="gao-timeline" viewBox="0 0 {_num(width)} {_num(height)}" width="100%" '
+        f'style="max-width:{_num(width)}px;min-width:{_num(width * MIN_SCALE)}px" '
+        f'role="img" aria-label="{esc(title)}" data-rows="{rows}" {FONT} font-size="13">'
+    )
+    return "\n".join([head, f"<title>{esc(title)}</title>", *top, *body, *pay, "</svg>"]) + "\n"

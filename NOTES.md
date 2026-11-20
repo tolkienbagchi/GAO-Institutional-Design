@@ -1832,3 +1832,25 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   (`none`, `yes`, `no`); an empty payload is `nothing`. When the first pair fits but adding `, …` would pass `limit`, the first
   pair is still shown whole with `, …` (the brief forbids cutting inside a pair that fits), so such a label may run up to 3
   characters over.
+
+## 2026-11-20 — M10 fix-up task 2: a timeline that fits and stays labelled (`review/draw.py`)
+- `timeline_svg` keeps its signature. Width is at most 920 (lane spacing `min(90, room / (lanes + 0.5))`, a "what" column of at
+  least 300 on the right). Root element: `viewBox`, `width="100%"`, inline `style="max-width:<W>px;min-width:<0.9·W>px"` (12-unit
+  text stays at about 11 px or more; below that width the picture scrolls inside its `overflow-x: auto` container). `flow_svg` is
+  unchanged. `LABEL_CUT` is gone; `cut(text, n)` now always takes `n`.
+- Labels moved to the "what" column, `summarize`d to the column's width (about 6.1 units per 12-unit character); the full text is in
+  each row's `<title>`. Moves read `b0: ...`, defaults `b (default): ...`, drops `a: did not act`.
+- **"Everyone" rows (deviation in wording, kept to the meaning).** `split_told`'s `to == []` means "everyone told in this step".
+  In a `Par` step (the PD's `pair_0`) only two of four participants are told, so an arrow "across all lanes" labelled "everyone"
+  would claim that `c` and `d` were told. The row therefore has a head on each lane told in that step, and its text starts
+  `everyone:` only when every participant of the run was told; otherwise it names them (`a, b: ...`).
+- Every band's header repeats the lane names (10 units, each with its full name in a `<title>`) next to the step heading. A step's
+  "+k not drawn" note moved into that header (it was a row of its own); the rule is unchanged.
+- **`reputation-shown`:** M10 drew 54 rows (16 moves, 32 reports, 6 "+k more" notes) in a 1680×1700 picture. Now 39 rows (16
+  moves, 23 report rows) in 920×1156, 34 KB. **The exit criterion "fewer than half of M10's rows" (< 27) is not met.** Splitting the
+  reports removes 9 rows and moving the notes into the headers removes 6. The other 16 rows are one per move, which the brief
+  specifies ("each row has its arrow ... `summarize(...)` of the action for a move"). Getting under 27 would need simultaneous moves
+  of a step to share a row. That would drop the per-move text the brief asks for, so I did not improvise it. The test pins 39.
+- The `svg` element carries `data-rows="N"` (rows drawn), for tests and the report.
+- Regenerated golden files (looked at as rasterized pictures): `tests/review/golden/auction.tie-top.svg`, `auction.no-bid.svg`,
+  `pd.two-pairs.svg`, `pd.no-move-default.svg`. `auction.flow.svg`, `pd.flow.svg` and `tests/authoring/golden/` are unchanged.
