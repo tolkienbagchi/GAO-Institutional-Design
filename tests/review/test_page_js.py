@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 from gao_idl.authoring import load_cards, load_spec
-from gao_idl.review import make_bundle
+from gao_idl.review import Verdicts, apply_verdicts, make_bundle
 from gao_idl.review.page import asset
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -148,6 +148,15 @@ def test_page_js_state_functions_under_node(tmp_path: Path) -> None:
     assert done.returncode == 0, done.stderr[-3000:]
     exported = json.loads(done.stdout)
     assert exported["cards"][0]["verdict"] == "rejected"
+    # the page's export is a valid verdicts file, and it imports
+    verdicts = Verdicts.model_validate(exported)
+    spec = load_spec(ROOT / "examples" / "specs" / "auction.json")
+    cards = load_cards(ROOT / "examples" / "cards" / "auction.json")
+    new_cards, new_spec, problems = apply_verdicts(cards, spec, verdicts)
+    assert problems == []
+    assert [c.status for c in new_cards[:3]] == ["rejected", "confirmed", "proposed"]
+    assert {c.reviewer for c in new_cards[:2]} == {"Ann Example"}
+    assert sum(a.confirmed for a in new_spec.assumptions) == 1
 
 
 @pytest.mark.skipif(NODE is None, reason="node is not on the path: page.js was not executed")

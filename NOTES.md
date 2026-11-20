@@ -1786,3 +1786,24 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   opened the generated auction page once in headless Chrome with `--dump-dom` (no screenshot): it booted under its CSP with no
   script error (`<html class="js">`, one screen and one card visible, the summary line filled in). No click or key press was
   simulated, and nobody has looked at the page rendered.
+
+## 2026-11-20 — M10 task 5: verdicts (`review/verdicts.py`, `gao-idl cards import`)
+- `CardVerdict`, `AssumptionVerdict`, `Verdicts`, `load_verdicts`, `apply_verdicts` as pinned; `Card.reviewer: str = ""` added.
+  Also `apply_card_verdicts` (the card half, used by `cards import` without `--spec`), `disputed` and `save_spec` (writes
+  `exclude_unset`, indent 1: the shipped specs round-trip byte-identically, so agreeing to one choice changes two lines).
+- The export's shape lives in `page.js` (`cardVerdict`, `assumptionVerdict`, `exportVerdicts`) and is mirrored in a comment above
+  the models. `tests/review/test_page_js.py` runs those functions under node, validates the output as `Verdicts` and imports it.
+- **Brief underdetermined, chosen conservatively:**
+  - A verdicts file whose `spec_title` differs from the spec's title is refused whole (one problem, nothing applied).
+  - Two verdicts for one card id: a problem, neither applied.
+  - **A stale card** (recorded outcome no longer reproduced) whose hash matches what it does now: a rejection is applied and the
+    card's `expect` is replaced by the current outcome, the behaviour the person actually rejected. Keeping the old `expect` would
+    make the rejection vacuous (`cards verify` would pass at once, though the environment still does the rejected thing). A
+    confirmation of a stale card is refused, as on the page.
+  - **Disputed choices are not "problems"**: `cards import` prints them for the author ("choice 1 disputed: ... Note: ...") and they
+    do not change the exit status. Problems are verdicts that could not be applied.
+  - Without `--spec`, choice answers are listed as problems ("no --spec given") and the cards are still updated.
+  - An empty reviewer name is accepted (the page does not force one); `cards import` reports "an unnamed reviewer".
+  - The cards file is rewritten only if some card changed; the spec only if some choice changed.
+- Never run on anything under `examples/`: every test copies the files to a temporary directory first, and asserts the shipped
+  files are still all `proposed` / unconfirmed afterwards.

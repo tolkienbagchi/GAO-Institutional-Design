@@ -39,7 +39,11 @@ class CardExpect(FrozenModel):
 
 
 class Card(FrozenModel):
-    """One scenario. ``why`` says which readings of the design this case tells apart."""
+    """One scenario. ``why`` says which readings of the design this case tells apart.
+
+    ``reviewer`` names the person whose verdict set ``status`` when it came from a verdicts file
+    (``gao-idl cards import``); it is empty otherwise.
+    """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -53,6 +57,7 @@ class Card(FrozenModel):
     expect: CardExpect | None = None
     status: Literal["proposed", "confirmed", "rejected"] = "proposed"
     note: str = ""
+    reviewer: str = ""
 
 
 _CARDS = TypeAdapter(list[Card])

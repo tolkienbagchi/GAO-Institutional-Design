@@ -19,7 +19,9 @@ with the environment it names (exit status 1 on any mismatch); with ``--cards`` 
 one run to draw on. ``cards review`` shows cards one at a time and asks for a verdict after each,
 saving as it goes. ``cards show`` prints cards in plain language, ``cards confirm`` and
 ``cards reject`` record a person's verdict, and ``cards verify`` checks that confirmed cards are
-still reproduced and rejected ones are not (exit status 1 otherwise). ``spec check --fuzz N`` adds
+still reproduced and rejected ones are not (exit status 1 otherwise). ``cards import`` applies the
+verdicts file a person downloaded from the review page (exit status 1 if any verdict could not be
+applied). ``spec check --fuzz N`` adds
 N edge-biased runs and checks the spec's invariants on all runs. ``diverge SPEC REF...`` replays
 edge-biased scripts on other implementations of the spec and writes one question per distinct
 disagreement (exit status 1 if there is any). ``review bundle`` writes the JSON bundle the review
@@ -354,6 +356,50 @@ def _cmd_cards_review(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_cards_import(args: argparse.Namespace) -> int:
+    """Apply a person's verdicts file (written by the review page) to the cards and the spec."""
+    from gao_idl.authoring import load_cards, load_spec, save_cards
+    from gao_idl.review.verdicts import (
+        apply_card_verdicts,
+        apply_verdicts,
+        disputed,
+        load_verdicts,
+        save_spec,
+    )
+
+    try:
+        cards = load_cards(args.cards)
+        verdicts = load_verdicts(args.verdicts)
+        spec = load_spec(args.spec) if args.spec is not None else None
+    except (OSError, ValueError) as e:
+        print(f"cannot read: {type(e).__name__}: {e}", file=sys.stderr)
+        return 2
+    if spec is not None:
+        new_cards, new_spec, problems = apply_verdicts(cards, spec, verdicts)
+    else:
+        new_cards, problems = apply_card_verdicts(cards, verdicts)
+        new_spec = None
+        problems += [
+            f"choice {v.index}: no --spec given; answer not applied" for v in verdicts.assumptions
+        ]
+    changed = sum(a != b for a, b in zip(cards, new_cards, strict=True))
+    if changed:
+        save_cards(args.cards, new_cards)
+    if spec is not None and new_spec is not None and new_spec != spec:
+        save_spec(args.spec, new_spec)
+    for problem in problems:
+        print(problem, file=sys.stderr)
+    for line in disputed(verdicts):
+        print(line)
+    agreed = sum(v.verdict == "agreed" for v in verdicts.assumptions)
+    print(
+        f"{changed} cards updated from {len(verdicts.cards)} verdicts by "
+        f"{verdicts.reviewer or 'an unnamed reviewer'}; {agreed} choices agreed; "
+        f"{len(problems)} problems"
+    )
+    return 1 if problems else 0
+
+
 def _cmd_cards_verify(args: argparse.Namespace) -> int:
     from gao_idl.authoring import load_cards, verify_cards
 
@@ -482,6 +528,13 @@ def main(argv: list[str] | None = None) -> int:
     reject_p.add_argument("ids", nargs=1, metavar="ID")
     reject_p.add_argument("--note", required=True, help="what should happen instead")
     reject_p.set_defaults(func=_cmd_cards_mark, status="rejected")
+    import_p = cards_sub.add_parser(
+        "import", help="apply a person's verdicts file from the review page"
+    )
+    import_p.add_argument("cards", type=Path)
+    import_p.add_argument("verdicts", type=Path, help="verdicts JSON downloaded from the page")
+    import_p.add_argument("--spec", type=Path, default=None, help="spec whose choices to update")
+    import_p.set_defaults(func=_cmd_cards_import)
     verify_p = cards_sub.add_parser("verify", help="check confirmed and rejected cards")
     verify_p.add_argument("cards", type=Path)
     verify_p.set_defaults(func=_cmd_cards_verify)
