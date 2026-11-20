@@ -1702,3 +1702,18 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - Applied `0001-cards-review.patch` with `git am` on `m10-review-page`, then amended its message to `M10 task 0: ...` (author and
   content unchanged) so the branch follows the one-commit-per-task convention. Gate again: same clean lint/types,
   881 passed (the new `test_cards_review_goes_one_card_at_a_time_and_saves_each_answer`), 4 skipped.
+
+## 2026-11-20 — M10 task 1: narration as data (`authoring/cards.py`)
+- `Move`, `Told`, `StepView`, `Story`, `tell_session`, `tell_card` as pinned, exported from `gao_idl.authoring`. `render_card` now
+  renders a `Story`. Checked beyond the existing tests: the old and new `render_card` give byte-identical text for all 37 shipped
+  cards, with and without their spec (74 comparisons; script kept out of the repo).
+- **`StepView.place` excludes the step name** (`"round 2, pair_0"`, `""` at the top level, as the brief's example); `render_card`
+  composes `"round 2, pair_0, step pd_round"` as before.
+- **Events outside any layer instance.** A `Loop`'s `Truncated` (and a connector's `Failed`) happen at a path where no layer was
+  entered. They get their own `StepView` with `layer == ""`, and the reason in `stopped` ("The repetition is cut off: ..."). Places
+  outside layers where only `StoreAccess` happened (the PD's round counter store) are dropped: nothing visible occurred there.
+- **Delivery order of reports.** Under `Par`, reports are delivered in completion order, which need not be entry order.
+  `render_card` lists "What each participant is told" in delivery order, so an internal `_story` also returns each report's step
+  index; the public `Story` carries reports per step only.
+- `tell_session` lists payoffs for every agent asked to decide, told something or paid; `tell_card` uses the same agents as
+  `CardExpect` (script, paid, told), so `Story.utilities == CardExpect.utilities` for a card.
