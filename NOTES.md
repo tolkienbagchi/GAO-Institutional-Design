@@ -1933,3 +1933,8 @@ Made by the reviewer (Claude) on `m10-fixup` after opening the delivered pages i
   in the rebuilt pages. `tests/authoring/golden/`, the bundle's shape, `Story` and the verdict models are untouched.
 - Rebuilt pages with 200 fuzzed runs: auction 309 KB, PD 351 KB, carbon market 962 KB (M10: 1,002 KB). No script error and no
   network request at 1280, 390 and in dark mode. Fast suite: 955 passed, 5 skipped.
+- **Notes have a Submit button** (the designer's report: the text boxes "aren't quite working", nothing said how to send one).
+  The note box was always on screen and only Ctrl+Enter or a second press of No sent it. Now "No…" (or `n`) on a card and
+  "Disagree…" on a choice open a box with a visible label, **Submit** and **Cancel**; Enter submits, Shift+Enter is a new line,
+  Esc closes. An empty note is still refused. A recorded note is put back in the box when it is reopened, and a choice's answer
+  line now shows its note. `submitsNote` takes the Shift key as a fourth argument. Bundle, verdict file and state are unchanged.

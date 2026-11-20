@@ -50,8 +50,8 @@ built on them), and `Card.reviewer`. Command line: `gao-idl review bundle|page`,
 (`split_told`, `summarize`) shows what a step told everyone alike once instead of once per
 recipient; the timeline is at most 920 wide, puts its text in a column on the left (what a phone shows first), draws up to twelve participants, writes small nested values out, and repeats the
 lane names in every band; cards show payoffs before two folded lists and keep the answer bar in
-view; disagreeing with a choice needs a note (`cards import` refuses one without); Ctrl+Enter or
-Cmd+Enter in a note records No or Disagree; one-row navigation on phones; `clean_install.sh` and
+view; disagreeing with a choice needs a note (`cards import` refuses one without); "No…" and
+"Disagree…" open a note box with Submit and Cancel buttons (Enter submits, Shift+Enter is a new line); one-row navigation on phones; `clean_install.sh` and
 `tests/test_packaging.py` check that the wheel carries the page's files.
 
 Replace "Unreleased" with the date when the tag is cut.

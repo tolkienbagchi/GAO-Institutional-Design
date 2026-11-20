@@ -63,7 +63,7 @@ def test_the_page_has_five_screens_and_every_card(auction_page: str) -> None:
     assert "Card 1 of 13" in auction_page and "Card 13 of 13" in auction_page
     assert auction_page.count('<article class="card"') == 13
     assert auction_page.count('<li class="assumption"') == 7
-    for label in ("Yes, this is what I meant", ">No<", ">Skip<", ">Back<", "Download verdicts"):
+    for label in ("Yes, this is what I meant", ">No…<", ">Skip<", ">Back<", "Download verdicts"):
         assert label in auction_page
     assert "<button " in auction_page and "<a " not in auction_page
     assert auction_page.count('<div class="picture"><svg') == 14  # the flow and 13 timelines
@@ -212,7 +212,11 @@ def test_the_answer_bar_is_sticky_and_inside_every_card(auction_page: str) -> No
         assert article.index("<svg") < article.index("Payoffs in total")
         assert article.index("Payoffs in total") < article.index("What happens, step by step")
         assert article.index("What each participant is told") < article.index('class="verdict')
-        assert 'class="note" rows="1"' in article
+        # the note box stays shut until "No…" asks for it, and has its own Submit and Cancel
+        panel = article[article.index('<div class="note-panel"') :]
+        assert re.match(r'<div class="note-panel" id="panel-c\d+" hidden>', panel)
+        assert "data-submit-note" in panel and "data-cancel-note" in panel
+        assert 'class="note"' in panel and "<label for=" in panel
 
 
 def test_narrow_navigation_keeps_full_names_for_screen_readers(auction_page: str) -> None:
@@ -227,3 +231,13 @@ def test_narrow_navigation_keeps_full_names_for_screen_readers(auction_page: str
         r"@media \(max-width: 30rem\) \{[^@]*nav\.screens \.name \{ display: none; \}", css
     )
     assert re.search(r"(?m)^label \{ display: block; margin: [^}]+\}", css)
+
+
+def test_every_choice_has_a_note_box_with_a_submit_button(auction_page: str) -> None:
+    items = re.findall(r'<li class="assumption".*?</li>', auction_page, re.S)
+    assert items
+    for item in items:
+        assert 'data-verdict="agreed"' in item and "data-open-note" in item
+        assert 'data-verdict="disputed"' not in item  # disagreeing goes through the box
+        assert re.search(r'<div class="note-panel only-js" id="panel-a\d+" hidden>', item)
+        assert "data-submit-note" in item and "data-cancel-note" in item

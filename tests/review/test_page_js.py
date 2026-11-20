@@ -106,11 +106,13 @@ assert.strictEqual(P.keyAction("y", true), null);
 assert.strictEqual(P.keyAction("q", false), null);
 assert.strictEqual(P.keyAction("constructor", false), null);
 
-// Ctrl+Enter or Cmd+Enter submits a note; Enter alone is a new line
-assert.strictEqual(P.submitsNote("Enter", true, false), true);
-assert.strictEqual(P.submitsNote("Enter", false, true), true);
-assert.strictEqual(P.submitsNote("Enter", false, false), false);
-assert.strictEqual(P.submitsNote("n", true, false), false);
+// Enter submits a note (also with Ctrl or Cmd); Shift+Enter is a new line
+assert.strictEqual(P.submitsNote("Enter", true, false, false), true);
+assert.strictEqual(P.submitsNote("Enter", false, true, false), true);
+assert.strictEqual(P.submitsNote("Enter", false, false, false), true);
+assert.strictEqual(P.submitsNote("Enter", false, false, true), false);
+assert.strictEqual(P.submitsNote("Enter", true, false, true), true);
+assert.strictEqual(P.submitsNote("n", true, false, false), false);
 
 // restoring saved progress keeps only what still fits the bundle
 const saved = JSON.parse(JSON.stringify(s));

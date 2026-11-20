@@ -29,8 +29,8 @@ internet connection and no installation, and it makes no network request.
    (taken from runs of the built environment, not from the description), with secrets, payoffs and
    parameters.
 3. **Choices nobody confirmed.** Decisions the author made because your description did not settle
-   them. Agree, or disagree and say why in the note (a disagreement needs a note, as a "No" on a
-   card does). Ctrl+Enter (Cmd+Enter on a Mac) in the note records the disagreement.
+   them. Press **Agree**, or press **Disagree…**: a box opens for why, with **Submit** and
+   **Cancel**. A disagreement needs a note, as a "No" on a card does.
 4. **Cards, one at a time.** Each card is one concrete case: "alice bids 8, bob bids 8, carol bids
    1". The line under the title says which readings of your description the case tells apart.
    Then come the situation, a timeline (one column per participant; what each did or was told is
@@ -38,9 +38,10 @@ internet connection and no installation, and it makes no network request.
    "everyone"), each payoff and how the run ends. Below are two folded lists, the steps in words
    and everything each participant was told, in full. They are open on short cards and closed on
    long ones; click a heading to open it. The answer bar stays at the bottom of the window while
-   you read: **Yes, this is what I meant**, **No** (say what should happen instead in the note
-   first), **Skip** or **Back**. Keys: `y`, `n`, `s`, and the left and right arrows; in the note,
-   Ctrl+Enter (Cmd+Enter) records No. A card marked out of date shows what the environment does
+   you read: **Yes, this is what I meant**, **No…** (a box opens; write what should happen
+   instead and press **Submit**, or **Cancel**), **Skip** or **Back**. Keys: `y`, `n` (opens the
+   box), `s`, and the left and right arrows; in the box, Enter submits, Shift+Enter starts a new
+   line and Esc closes it. A card marked out of date shows what the environment does
    now and cannot be confirmed. On a phone the timeline scrolls sideways rather than shrinking
    its text.
 5. **Finish.** Type your name and press **Download verdicts**. If your viewer blocks downloads,

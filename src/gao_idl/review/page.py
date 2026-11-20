@@ -253,13 +253,21 @@ def _assumptions(bundle: Bundle) -> str:
             out += [
                 f'<li class="assumption" data-index="{i}">',
                 f"<p>{esc(a.text)}<span class='muted'>{esc(question)}</span></p>",
-                f'<label for="note-a{i}">Note (needed if you disagree; '
-                "Ctrl+Enter or ⌘+Enter records Disagree)</label>",
-                f'<textarea id="note-a{i}" class="note" rows="1"></textarea>',
                 '<div class="actions only-js">',
                 '<button type="button" data-verdict="agreed" aria-pressed="false">Agree</button>',
-                '<button type="button" data-verdict="disputed" aria-pressed="false">'
-                "Disagree</button>",
+                '<button type="button" data-open-note="1" aria-pressed="false" '
+                f'aria-expanded="false" aria-controls="panel-a{i}">Disagree…</button>',
+                "</div>",
+                f'<div class="note-panel only-js" id="panel-a{i}" hidden>',
+                f'<label for="note-a{i}">Why do you disagree, and what should it be instead?'
+                "</label>",
+                f'<textarea id="note-a{i}" class="note" rows="3"></textarea>',
+                '<div class="actions">',
+                '<button type="button" class="primary" data-submit-note="1">'
+                "Submit: I disagree</button>",
+                '<button type="button" data-cancel-note="1">Cancel</button>',
+                "</div>",
+                '<p class="hint muted">Enter submits. Shift+Enter starts a new line.</p>',
                 "</div>",
                 '<p class="answer only-js"></p>',
                 "</li>",
@@ -414,21 +422,27 @@ def _card(view: CardView, k: int, n: int, spec: EnvSpec) -> str:
         f'<div class="verdict only-js" role="group" aria-labelledby="ask-c{i}">',
         f'<p class="ask"><strong id="ask-c{i}">Is this what you meant?</strong> '
         '<span class="answer"></span></p>',
-        f'<label class="sr-small" for="note-c{i}">If not, what should happen instead? '
-        "(needed for No)</label>",
-        f'<textarea id="note-c{i}" class="note" rows="1" '
-        'placeholder="If not, what should happen instead?"></textarea>',
         '<div class="actions">',
         f'<button type="button" data-act="yes" aria-pressed="false"{yes_disabled}>'
         "Yes, this is what I meant</button>",
-        '<button type="button" data-act="no" aria-pressed="false">No</button>',
+        '<button type="button" data-act="no" aria-pressed="false" aria-expanded="false" '
+        f'aria-controls="panel-c{i}">No…</button>',
         '<button type="button" data-act="skip">Skip</button>',
         '<button type="button" data-act="back">Back</button>',
         '<button type="button" data-clear="1">Remove answer</button>',
         "</div>",
-        '<p class="keys muted">Keys: <kbd>y</kbd> yes, <kbd>n</kbd> no, <kbd>s</kbd> skip, '
-        "<kbd>←</kbd> back, <kbd>→</kbd> next; in the note, "
-        "<kbd>Ctrl</kbd>+<kbd>Enter</kbd> (<kbd>⌘</kbd>+<kbd>Enter</kbd>) records No.</p>",
+        f'<div class="note-panel" id="panel-c{i}" hidden>',
+        f'<label for="note-c{i}">What should happen instead?</label>',
+        f'<textarea id="note-c{i}" class="note" rows="3"></textarea>',
+        '<div class="actions">',
+        '<button type="button" class="primary" data-submit-note="1">'
+        "Submit: No, with this note</button>",
+        '<button type="button" data-cancel-note="1">Cancel</button>',
+        "</div>",
+        '<p class="hint muted">Enter submits. Shift+Enter starts a new line.</p>',
+        "</div>",
+        '<p class="keys muted">Keys: <kbd>y</kbd> yes, <kbd>n</kbd> no (opens a box for what '
+        "should happen instead), <kbd>s</kbd> skip, <kbd>←</kbd> back, <kbd>→</kbd> next.</p>",
         "</div>",
         "</article>",
     ]
