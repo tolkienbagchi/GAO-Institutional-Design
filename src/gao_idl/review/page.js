@@ -95,8 +95,12 @@
     if (verdict !== "agreed" && verdict !== "disputed") {
       return { state: state, error: "Unknown answer." };
     }
+    var text = (note || "").trim();
+    if (verdict === "disputed" && !text) {
+      return { state: state, error: "Please write why you disagree, then press Disagree again." };
+    }
     var assumptions = copy(state.assumptions);
-    assumptions[String(index)] = { verdict: verdict, note: (note || "").trim() };
+    assumptions[String(index)] = { verdict: verdict, note: text };
     var next = copy(state);
     next.assumptions = assumptions;
     return { state: next, error: null };
@@ -171,6 +175,12 @@
     return Object.prototype.hasOwnProperty.call(map, key) ? map[key] : null;
   }
 
+  /* Whether a key press in a note field submits it: Ctrl+Enter or Cmd+Enter. In a card's note it
+   * records "No", in a choice's note "disagree", each with the note typed. */
+  function submitsNote(key, ctrlKey, metaKey) {
+    return key === "Enter" && Boolean(ctrlKey || metaKey);
+  }
+
   /* A state rebuilt from whatever was saved, keeping only answers that still fit this bundle. */
   function restore(saved, bundle) {
     var state = initialState();
@@ -193,10 +203,9 @@
       var item = bundle.spec.assumptions[Number(key)];
       if (!item || item.confirmed || !given || typeof given !== "object") { return; }
       if (given.verdict !== "agreed" && given.verdict !== "disputed") { return; }
-      state.assumptions[String(Number(key))] = {
-        verdict: given.verdict,
-        note: typeof given.note === "string" ? given.note : "",
-      };
+      var note = typeof given.note === "string" ? given.note : "";
+      if (given.verdict === "disputed" && !note.trim()) { return; }
+      state.assumptions[String(Number(key))] = { verdict: given.verdict, note: note };
     });
     if (typeof saved.reviewer === "string") { state.reviewer = saved.reviewer; }
     if (typeof saved.at === "number" && saved.at >= 0 && saved.at < bundle.cards.length) {
@@ -226,6 +235,7 @@
     exportVerdicts: exportVerdicts,
     summary: summary,
     keyAction: keyAction,
+    submitsNote: submitsNote,
     restore: restore,
   };
 
@@ -387,24 +397,45 @@
       all("button[data-act]", article).forEach(function (button) {
         button.addEventListener("click", function () { cardAct(button.dataset.act); });
       });
+      var noteField = article.querySelector("textarea");
+      if (noteField) {
+        noteField.addEventListener("keydown", function (event) {
+          if (!submitsNote(event.key, event.ctrlKey, event.metaKey)) { return; }
+          event.preventDefault();
+          cardAct("no");
+        });
+      }
       var clear = article.querySelector("button[data-clear]");
       if (clear) {
         clear.addEventListener("click", function () { update(clearCard(state, bundle)); say("Answer removed."); });
       }
     });
+    function assumptionAct(item, verdict) {
+      var index = Number(item.dataset.index);
+      var noteField = item.querySelector("textarea");
+      var result = decideAssumption(state, bundle, index, verdict, noteField ? noteField.value : "");
+      if (result.error) {
+        say(result.error);
+        if (noteField) { noteField.focus(); }
+        return;
+      }
+      update(result.state);
+      say("Recorded.");
+      send(assumptionVerdict(state, bundle, index));
+    }
+
     all("li.assumption").forEach(function (item) {
       all("button[data-verdict]", item).forEach(function (button) {
-        button.addEventListener("click", function () {
-          var index = Number(item.dataset.index);
-          var noteField = item.querySelector("textarea");
-          var result = decideAssumption(state, bundle, index, button.dataset.verdict,
-                                        noteField ? noteField.value : "");
-          if (result.error) { say(result.error); return; }
-          update(result.state);
-          say("Recorded.");
-          send(assumptionVerdict(state, bundle, index));
-        });
+        button.addEventListener("click", function () { assumptionAct(item, button.dataset.verdict); });
       });
+      var noteField = item.querySelector("textarea");
+      if (noteField) {
+        noteField.addEventListener("keydown", function (event) {
+          if (!submitsNote(event.key, event.ctrlKey, event.metaKey)) { return; }
+          event.preventDefault();
+          assumptionAct(item, "disputed");
+        });
+      }
     });
     var reviewer = document.getElementById("reviewer");
     if (reviewer) {

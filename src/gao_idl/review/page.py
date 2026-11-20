@@ -253,7 +253,8 @@ def _assumptions(bundle: Bundle) -> str:
             out += [
                 f'<li class="assumption" data-index="{i}">',
                 f"<p>{esc(a.text)}<span class='muted'>{esc(question)}</span></p>",
-                f'<label for="note-a{i}">Note (optional)</label>',
+                f'<label for="note-a{i}">Note (needed if you disagree; '
+                "Ctrl+Enter or ⌘+Enter records Disagree)</label>",
                 f'<textarea id="note-a{i}" class="note" rows="1"></textarea>',
                 '<div class="actions only-js">',
                 '<button type="button" data-verdict="agreed" aria-pressed="false">Agree</button>',
@@ -426,7 +427,8 @@ def _card(view: CardView, k: int, n: int, spec: EnvSpec) -> str:
         '<button type="button" data-clear="1">Remove answer</button>',
         "</div>",
         '<p class="keys muted">Keys: <kbd>y</kbd> yes, <kbd>n</kbd> no, <kbd>s</kbd> skip, '
-        "<kbd>←</kbd> back, <kbd>→</kbd> next.</p>",
+        "<kbd>←</kbd> back, <kbd>→</kbd> next; in the note, "
+        "<kbd>Ctrl</kbd>+<kbd>Enter</kbd> (<kbd>⌘</kbd>+<kbd>Enter</kbd>) records No.</p>",
         "</div>",
         "</article>",
     ]

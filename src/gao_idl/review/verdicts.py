@@ -129,6 +129,9 @@ def _apply_assumptions(spec: EnvSpec, verdicts: Verdicts) -> tuple[EnvSpec, list
                 "(it may have been edited); answer not applied"
             )
             continue
+        if verdict.verdict == "disputed" and not verdict.note.strip():
+            problems.append(f"choice {verdict.index}: disputed without a note; answer not applied")
+            continue
         if verdict.verdict == "agreed":
             items[verdict.index] = items[verdict.index].model_copy(update={"confirmed": True})
     if items == list(spec.assumptions):
@@ -146,8 +149,9 @@ def apply_verdicts(
     status, note and ``reviewer`` (from the file), and records the outcome the person saw when
     the card had none or had an out-of-date one (which cannot be confirmed). An agreed choice
     is marked confirmed when its index and text both match; a disputed one stays unconfirmed
-    (``disputed`` lists them for the author). A file for a spec with another title is refused
-    whole. Cards and choices without a verdict are untouched.
+    (``disputed`` lists them for the author) and must have a note, as a rejected card must. A
+    file for a spec with another title is refused whole. Cards and choices without a verdict
+    are untouched.
     """
     if verdicts.spec_title != spec.title:
         problem = (
@@ -163,9 +167,9 @@ def apply_verdicts(
 def disputed(verdicts: Verdicts) -> list[str]:
     """One line per choice the person disagreed with, with their note: work for the author."""
     return [
-        f"choice {v.index} disputed: {v.text}" + (f" Note: {v.note}" if v.note else "")
+        f"choice {v.index} disputed: {v.text} Note: {v.note.strip()}"
         for v in verdicts.assumptions
-        if v.verdict == "disputed"
+        if v.verdict == "disputed" and v.note.strip()
     ]
 
 

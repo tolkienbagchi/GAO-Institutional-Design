@@ -1875,3 +1875,11 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - Screenshots (headless Chrome, outside the tests): the carbon-market card `reputation-shown` is 2,184 px tall at 1280 wide and
   2,250 at 390 wide (the reviewer measured about 6,500 in M10). The answer bar stays at the bottom of the window while the card
   scrolls.
+
+## 2026-11-20 — M10 fix-up task 4: answers (`page.js`, `page.py`, `review/verdicts.py`)
+- `decideAssumption` refuses `disputed` with an empty note ("Please write why you disagree, then press Disagree again.") and moves
+  focus to the note field; `restore` drops a note-less dispute. The choice's label now says the note is needed to disagree.
+- `apply_verdicts` lists a note-less dispute as a problem ("disputed without a note; answer not applied"), so `cards import` exits
+  1; `disputed()` lists only disputes with notes.
+- New pure function `submitsNote(key, ctrlKey, metaKey)`: Ctrl+Enter or Cmd+Enter in a card's note records No with that note, in
+  a choice's note records Disagree. Enter alone stays a new line. The keys line on each card mentions it.

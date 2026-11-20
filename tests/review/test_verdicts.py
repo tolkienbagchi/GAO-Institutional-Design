@@ -15,6 +15,7 @@ from gao_idl.cli import main
 from gao_idl.review import (
     Verdicts,
     apply_verdicts,
+    disputed,
     load_verdicts,
     make_bundle,
     outcome_hash,
@@ -229,3 +230,27 @@ def test_save_spec_keeps_the_shipped_layout(tmp_path: Path) -> None:
         out = tmp_path / f"{name}.json"
         save_spec(out, load_spec(source))
         assert out.read_text() == source.read_text()
+
+
+def test_a_dispute_without_a_note_is_a_problem(tmp_path: Path) -> None:
+    spec = load_spec(SPEC)
+    verdicts = _verdicts(
+        spec.title,
+        [],
+        assumptions=[
+            {"index": 0, "text": spec.assumptions[0].text, "verdict": "disputed", "note": "  "},
+            {"index": 1, "text": spec.assumptions[1].text, "verdict": "agreed"},
+        ],
+    )
+    cards, new_spec, problems = apply_verdicts(load_cards(CARDS), spec, verdicts)
+    assert problems == ["choice 0: disputed without a note; answer not applied"]
+    assert [a.confirmed for a in new_spec.assumptions[:2]] == [False, True]
+    assert disputed(verdicts) == []
+    spec_path, cards_path, path = tmp_path / "s.json", tmp_path / "c.json", tmp_path / "v.json"
+    shutil.copy(SPEC, spec_path)
+    shutil.copy(CARDS, cards_path)
+    path.write_text(verdicts.model_dump_json())
+    done = _cli(
+        "cards", "import", str(cards_path), str(path), "--spec", str(spec_path), cwd=tmp_path
+    )
+    assert done.returncode == 1 and "disputed without a note" in done.stderr

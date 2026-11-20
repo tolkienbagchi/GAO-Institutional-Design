@@ -65,12 +65,15 @@ assert.strictEqual(end.at, n - 1);
 
 // assumptions
 const open = P.openAssumptions(bundle);
-assert.ok(open.length >= 2);
+assert.ok(open.length >= 3);
 r = P.decideAssumption(s, bundle, open[0].index, "agreed", "");
 s = r.state;
 r = P.decideAssumption(s, bundle, open[1].index, "disputed", " a missing bid is zero ");
 s = r.state;
 assert.ok(P.decideAssumption(s, bundle, 999, "agreed", "").error);
+r = P.decideAssumption(s, bundle, open[2].index, "disputed", "   ");    // a dispute needs a note
+assert.ok(r.error && r.error.includes("why you disagree"));
+assert.strictEqual(r.state, s);
 assert.ok(P.decideAssumption(s, bundle, open[0].index, "yes", "").error);
 s = P.setReviewer(s, "  Ann Example ");
 
@@ -103,6 +106,12 @@ assert.strictEqual(P.keyAction("y", true), null);
 assert.strictEqual(P.keyAction("q", false), null);
 assert.strictEqual(P.keyAction("constructor", false), null);
 
+// Ctrl+Enter or Cmd+Enter submits a note; Enter alone is a new line
+assert.strictEqual(P.submitsNote("Enter", true, false), true);
+assert.strictEqual(P.submitsNote("Enter", false, true), true);
+assert.strictEqual(P.submitsNote("Enter", false, false), false);
+assert.strictEqual(P.submitsNote("n", true, false), false);
+
 // restoring saved progress keeps only what still fits the bundle
 const saved = JSON.parse(JSON.stringify(s));
 saved.cards["no-such-card"] = { verdict: "confirmed", note: "" };
@@ -110,6 +119,7 @@ saved.cards[id(0)] = { verdict: "confirmed", note: "" };        // stale: droppe
 saved.cards[id(2)] = { verdict: "rejected", note: "" };         // no note: dropped
 saved.cards[id(3)] = { verdict: "sure", note: "" };             // unknown: dropped
 saved.assumptions["999"] = { verdict: "agreed", note: "" };
+saved.assumptions[String(open[2].index)] = { verdict: "disputed", note: " " };  // no note: dropped
 saved.at = 1e9;
 const back = P.restore(saved, bundle);
 assert.deepStrictEqual(Object.keys(back.cards), [id(1)]);
