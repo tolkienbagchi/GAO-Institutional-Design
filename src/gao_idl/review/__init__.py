@@ -9,6 +9,27 @@ Stability: supporting API: documented in the API reference, but not re-exported 
 ``gao_idl``; it may change in a minor release before 1.0 (see NOTES.md).
 """
 
+from gao_idl.review.bundle import (
+    Bundle,
+    CardView,
+    CheckStatus,
+    dump_bundle,
+    load_bundle,
+    make_bundle,
+    outcome_hash,
+    save_bundle,
+)
 from gao_idl.review.draw import flow_svg, timeline_svg
 
-__all__ = ["flow_svg", "timeline_svg"]
+__all__ = [
+    "Bundle",
+    "CardView",
+    "CheckStatus",
+    "dump_bundle",
+    "flow_svg",
+    "load_bundle",
+    "make_bundle",
+    "outcome_hash",
+    "save_bundle",
+    "timeline_svg",
+]

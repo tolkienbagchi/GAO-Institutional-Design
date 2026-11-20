@@ -1738,3 +1738,20 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   `rsvg-convert` to look for overlaps. That is a check of the pictures alone, not of the page in a browser.
 - `docs/api/review.md` and its nav entry are added now (with `draw` only) because `tests/test_docs.py` requires every module to
   have one; task 6 completes the page.
+
+## 2026-11-20 — M10 task 3: the bundle (`review/bundle.py`)
+- `CheckStatus`, `CardView`, `Bundle`, `outcome_hash`, `make_bundle` as pinned; added `dump_bundle`, `save_bundle`, `load_bundle`
+  (sorted keys, indent 1, no timestamp) and `gao-idl review bundle`.
+- **What `runs` counts (brief silent):** every run checked, one per card plus the fuzzed ones; `fuzzed` is how many of those were
+  fuzzed. **The who-knows-what table** in the bundle is built from the same runs (cards and fuzzed), so the page's table and its
+  mismatches describe the same evidence. (`gao-idl spec render` builds its table from cards only.)
+- `mismatches` holds everything `check_spec` and `check_invariants(..., secrets=False)` return except `invariant_unchecked`
+  (those statements are `unchecked_invariants`); `not_exercised` stays in, since it is never a pass.
+- **Each card is played once** and that session gives its story, timeline, `outcome_hash` and `stale`. A card for a different
+  `env_ref` than the spec's, or one whose run raises, makes `make_bundle` raise `ValueError` (conservative: the page shows only what
+  runs; `render_card` instead prints "cannot be played").
+- **`outcome_hash`:** SHA-256 of `json.dumps(..., sort_keys=True, separators=(",", ":"), ensure_ascii=True)` over
+  `CardExpect.model_dump(mode="json")` with floats rounded to 9 places and `-0.0` as `0.0`; ints are left as ints. Pinned for the
+  carbon-market card `buyer-stays-out` (the one that differed between 3.11 and 3.13 in M8). **Verified on Python 3.13 only**:
+  3.11 has no pydantic here. Rounding fails to agree only if two interpreters' values straddle a 9th-decimal boundary.
+- Bundle sizes (no fuzz): auction 123 KB, PD 131 KB, carbon market 651 KB.

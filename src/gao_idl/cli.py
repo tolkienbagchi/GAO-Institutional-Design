@@ -22,7 +22,8 @@ saving as it goes. ``cards show`` prints cards in plain language, ``cards confir
 still reproduced and rejected ones are not (exit status 1 otherwise). ``spec check --fuzz N`` adds
 N edge-biased runs and checks the spec's invariants on all runs. ``diverge SPEC REF...`` replays
 edge-biased scripts on other implementations of the spec and writes one question per distinct
-disagreement (exit status 1 if there is any). See ``docs/verifying.md``.
+disagreement (exit status 1 if there is any). ``review bundle`` writes the JSON bundle the review
+page shows. See ``docs/verifying.md``.
 
 Stability: internal; the command-line interface is the supported way to use this module.
 """
@@ -371,6 +372,30 @@ def _cmd_cards_verify(args: argparse.Namespace) -> int:
     return 1 if problems else 0
 
 
+def _make_bundle(args: argparse.Namespace) -> Any:
+    """The bundle of ``args.spec`` and ``args.cards`` with ``args.fuzz`` runs (``review``)."""
+    from gao_idl.authoring import load_cards, load_spec
+    from gao_idl.review import make_bundle
+
+    return make_bundle(load_spec(args.spec), load_cards(args.cards), args.fuzz, args.seed)
+
+
+def _cmd_review_bundle(args: argparse.Namespace) -> int:
+    from gao_idl.review import save_bundle
+
+    try:
+        bundle = _make_bundle(args)
+    except (OSError, ValueError, RuntimeError, GaoError) as e:
+        print(f"cannot build the bundle: {type(e).__name__}: {e}", file=sys.stderr)
+        return 2
+    save_bundle(args.out, bundle)
+    print(
+        f"{bundle.spec.title}: {len(bundle.cards)} cards, {bundle.status.runs} runs, "
+        f"{len(bundle.status.mismatches)} mismatches -> {args.out}"
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """Command-line entry point (``gao-idl``); returns the exit status."""
     parser = argparse.ArgumentParser(
@@ -438,6 +463,16 @@ def main(argv: list[str] | None = None) -> int:
     verify_p = cards_sub.add_parser("verify", help="check confirmed and rejected cards")
     verify_p.add_argument("cards", type=Path)
     verify_p.set_defaults(func=_cmd_cards_verify)
+
+    review_p = sub.add_parser("review", help="build the review page (or its bundle) for a person")
+    review_sub = review_p.add_subparsers(dest="review_command", required=True)
+    bundle_p = review_sub.add_parser("bundle", help="write the JSON bundle the page shows")
+    bundle_p.add_argument("spec", type=Path, help="spec JSON file")
+    bundle_p.add_argument("--cards", type=Path, required=True, help="cards JSON file")
+    bundle_p.add_argument("--fuzz", type=int, default=0, metavar="N", help="add N edge-biased runs")
+    bundle_p.add_argument("--seed", type=int, default=0, help="seed for the fuzzed runs")
+    bundle_p.add_argument("--out", type=Path, required=True, help="bundle JSON file to write")
+    bundle_p.set_defaults(func=_cmd_review_bundle)
     args = parser.parse_args(argv)
     return int(args.func(args))
 
