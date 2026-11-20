@@ -1817,3 +1817,18 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - `scripts/make_example_pages.py` writes `build/review/{auction,pd,vcm}.html` with `--fuzz 200 --seed 1` by default (the M9
   settings). Result: 213 / 211 / 213 runs, 0 mismatches each; 239 KB, 254 KB, 978 KB. `build/` was already in `.gitignore`;
   `build/review/` is added explicitly as the brief asks.
+
+## 2026-11-20 — M10 fix-up task 0: inputs
+- The fix-up brief names `00_SHARED_CONTEXT.md` "incl. Amendments after M10"; only the earlier shared context (ending with the
+  amendments after M8 and M9) was provided. Worked from it, the fix-up brief and the M10 report.
+- Branch `m10-fixup` from `m10-review-page` at `939c2d8`. Same sandbox limits as M10 (no PyPI; Python 3.13 with `PYTHONPATH=src`).
+
+## 2026-11-20 — M10 fix-up task 1: shared and own parts of what people are told (`review/tell.py`)
+- `ToldRow`, `split_told`, `summarize` as pinned (exported from `gao_idl.review`, API page entry added).
+- `split_told`: shared fields keep the first payload's key order; own rows are ordered by their first recipient in natural order;
+  two payloads that both lack a field never share it. Recipients are `Told` entries, so an agent told twice in one step counts
+  twice (no shipped environment does that).
+- `summarize`: nested values as `name: k entries` / `name: 1 entry` / `name: none`; `None` and booleans as `render_card` shows them
+  (`none`, `yes`, `no`); an empty payload is `nothing`. When the first pair fits but adding `, …` would pass `limit`, the first
+  pair is still shown whole with `, …` (the brief forbids cutting inside a pair that fits), so such a label may run up to 3
+  characters over.

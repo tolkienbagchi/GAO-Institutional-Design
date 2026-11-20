@@ -5,12 +5,16 @@ environment and goes through its scenario cards, one per screen, with a timeline
 Verdicts leave the page as a file and are applied with `gao-idl cards import`. The page needs no
 server. See [Verifying an environment](../verifying.md) for the workflow.
 
-The pieces, in the order data flows: `draw` (pictures as SVG), `bundle` (everything the page shows,
+The pieces, in the order data flows: `tell` (shared and own parts of reports), `draw` (pictures as SVG), `bundle` (everything the page shows,
 as JSON), `page` (the HTML file), `verdicts` (what the page exports, and applying it).
 
 ## `gao_idl.review`
 
 ::: gao_idl.review
+
+## `gao_idl.review.tell`
+
+::: gao_idl.review.tell
 
 ## `gao_idl.review.draw`
 
