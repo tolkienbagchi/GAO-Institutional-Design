@@ -1,0 +1,26 @@
+<svg class="gao-flow" viewBox="0 0 372 456" width="372" height="456" role="img" aria-label="How the steps of pd connect" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="13">
+<title>How the steps of pd connect</title>
+<g class="frame loop"><rect x="16" y="16" width="340" height="350" rx="10" fill="none" stroke="currentColor" stroke-dasharray="6 4"/><text x="30" y="35" fill="currentColor" font-style="italic">repeat: pd (limit 4)</text></g>
+<g class="frame par"><rect x="30" y="46" width="292" height="228" rx="10" fill="none" stroke="currentColor" stroke-dasharray="2 3"/><text x="44" y="65" fill="currentColor" font-style="italic">in parallel: round</text></g>
+<g class="fork"><rect x="144" y="76" width="64" height="24" rx="12" fill="none" stroke="currentColor"/><text x="176" y="92.5" text-anchor="middle" fill="currentColor" font-size="12">split</text></g>
+<g class="step"><rect x="44" y="140" width="120" height="56" rx="6" fill="none" stroke="currentColor"/>
+<text x="104" y="164" text-anchor="middle" fill="currentColor" font-weight="600">pd_round</text>
+<text x="104" y="182" text-anchor="middle" fill="currentColor" font-size="12" class="roles">col, row</text>
+</g>
+<g class="step"><rect x="188" y="140" width="120" height="56" rx="6" fill="none" stroke="currentColor"/>
+<text x="248" y="164" text-anchor="middle" fill="currentColor" font-weight="600">pd_round</text>
+<text x="248" y="182" text-anchor="middle" fill="currentColor" font-size="12" class="roles">col, row</text>
+</g>
+<g class="fork"><rect x="144" y="236" width="64" height="24" rx="12" fill="none" stroke="currentColor"/><text x="176" y="252.5" text-anchor="middle" fill="currentColor" font-size="12">join</text></g>
+<g class="step"><rect x="116" y="314" width="120" height="38" rx="6" fill="none" stroke="currentColor"/>
+<text x="176" y="338" text-anchor="middle" fill="currentColor" font-weight="600">round_counter</text>
+</g>
+<g class="end"><rect x="137" y="416" width="98" height="24" rx="12" fill="none" stroke="currentColor"/><text x="186" y="432.5" text-anchor="middle" fill="currentColor" font-size="12">ends: done</text></g>
+<g class="edge"><path d="M176 100 V112 H104 V140" fill="none" stroke="currentColor"/><polygon class="head" points="104,140 100,133 108,133" fill="currentColor"/><text x="109" y="135" text-anchor="start" font-size="11" class="port" fill="currentColor">pair_0</text></g>
+<g class="edge"><path d="M104 196 V222 H176 V236" fill="none" stroke="currentColor"/><polygon class="head" points="176,236 172,229 180,229" fill="currentColor"/><text x="109" y="211" text-anchor="start" font-size="11" class="port" fill="currentColor">done</text></g>
+<g class="edge"><path d="M176 100 V112 H248 V140" fill="none" stroke="currentColor"/><polygon class="head" points="248,140 244,133 252,133" fill="currentColor"/><text x="253" y="135" text-anchor="start" font-size="11" class="port" fill="currentColor">pair_1</text></g>
+<g class="edge"><path d="M248 196 V222 H176 V236" fill="none" stroke="currentColor"/><polygon class="head" points="176,236 172,229 180,229" fill="currentColor"/><text x="253" y="211" text-anchor="start" font-size="11" class="port" fill="currentColor">done</text></g>
+<g class="edge"><path d="M176 260 V300 H176 V314" fill="none" stroke="currentColor"/><polygon class="head" points="176,314 172,307 180,307" fill="currentColor"/><text x="181" y="309" text-anchor="start" font-size="11" class="port" fill="currentColor">round_done</text></g>
+<g class="edge"><path d="M158 352 V364 H342 V62 H176 V76" fill="none" stroke="currentColor"/><polygon class="head" points="176,76 172,69 180,69" fill="currentColor"/><text x="338" y="213" text-anchor="end" font-size="11" class="port" fill="currentColor">again</text></g>
+<g class="edge"><path d="M194 352 V402 H186 V416" fill="none" stroke="currentColor"/><polygon class="head" points="186,416 182,409 190,409" fill="currentColor"/><text x="191" y="411" text-anchor="start" font-size="11" class="port" fill="currentColor">done</text></g>
+</svg>

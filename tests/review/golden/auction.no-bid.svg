@@ -1,0 +1,13 @@
+<svg class="gao-timeline" viewBox="0 0 780 162" width="780" height="162" role="img" aria-label="One bidder sends no bid" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="13">
+<title>One bidder sends no bid</title>
+<g class="lane rules"><title>the rules</title><text x="90" y="34" text-anchor="middle" font-weight="600" fill="currentColor">the rules</text><path d="M90 42 V122" fill="none" stroke="currentColor" stroke-width="2" stroke-opacity="0.6"/></g>
+<g class="lane"><title>alice</title><text x="270" y="34" text-anchor="middle" font-weight="600" fill="currentColor">alice</text><path d="M270 42 V122" fill="none" stroke="currentColor" stroke-dasharray="1 3" stroke-opacity="0.6"/></g>
+<g class="lane"><title>bob</title><text x="450" y="34" text-anchor="middle" font-weight="600" fill="currentColor">bob</text><path d="M450 42 V122" fill="none" stroke="currentColor" stroke-dasharray="1 3" stroke-opacity="0.6"/></g>
+<g class="lane"><title>carol</title><text x="630" y="34" text-anchor="middle" font-weight="600" fill="currentColor">carol</text><path d="M630 42 V122" fill="none" stroke="currentColor" stroke-dasharray="1 3" stroke-opacity="0.6"/></g>
+<g class="band"><rect x="6" y="56" width="768" height="22" rx="4" fill="currentColor" fill-opacity="0.06"/><text x="14" y="71.5" fill="currentColor" font-weight="600">Bidding</text></g>
+<g class="stopped"><title>carol did not act. Under the rules of this step the whole run stops here.</title><text x="90" y="100" font-weight="600" fill="currentColor">■ stops: carol did not act. Under the rules of this step the whole r…</text></g>
+<text x="14" y="144" fill="currentColor" font-size="12">payoff in total</text>
+<g class="payoff"><title>alice: 0</title><text x="270" y="144" text-anchor="middle" font-weight="600" fill="currentColor">0</text></g>
+<g class="payoff"><title>bob: 0</title><text x="450" y="144" text-anchor="middle" font-weight="600" fill="currentColor">0</text></g>
+<g class="payoff"><title>carol: 0</title><text x="630" y="144" text-anchor="middle" font-weight="600" fill="currentColor">0</text></g>
+</svg>

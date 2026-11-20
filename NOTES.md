@@ -1717,3 +1717,24 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   index; the public `Story` carries reports per step only.
 - `tell_session` lists payoffs for every agent asked to decide, told something or paid; `tell_card` uses the same agents as
   `CardExpect` (script, paid, told), so `Story.utilities == CardExpect.utilities` for a card.
+
+## 2026-11-20 — M10 task 2: pictures in Python (`review/draw.py`)
+- `flow_svg(tree)` and `timeline_svg(story, title)` as pinned. Both emit no `id`, no `url(...)`, no `href`, no `xmlns`: several
+  SVGs are inlined in one page, so ids (and `<marker>` arrowheads that need them) would collide. Arrowheads are small polygons.
+  Colours are `currentColor` presentation attributes plus CSS classes (`step`, `frame loop`, `frame par`, `edge`, `port`, `end`,
+  `lane`, `lane rules`, `move chose|defaulted|dropped`, `told`, `stopped`, `payoff`, `band`), so a standalone SVG still draws.
+- **Layout choices (brief silent):** the flow is a recursive block layout; a `Seq` with several routes puts the routed blocks side
+  by side; a port that passes by later blocks of a `Seq`, and every `Loop` repeat arrow, runs along a rail on the block's right.
+  Step boxes show the roles the contract declares on wrapped lines (as `to_mermaid`). The loop's reserved `truncated` port is not
+  drawn as an end, as in `to_mermaid` (no layer leaves through it); the limit is in the frame's label.
+- **Timeline:** lanes left to right are "the rules" then participants in natural order; within a band, one row per arrow (moves in
+  trace order, then reports). A default is a dashed arrow labelled `default: ...`; someone left out (`drop`) is a dashed stub
+  "did not act". Someone silent in a step whose policy stops the run has no `Move` (the pinned `Move.kind` has no such case), so
+  the band shows the step's `stopped` text ("■ stops: b did not act. ...") instead of a per-person mark.
+- Over 8 participants / 12 steps: the picture says "+k more participants/steps not drawn (see the steps in words)", and each band
+  says how many arrows for undrawn participants it left out. The two-round carbon-market card `reputation-shown` has nine
+  participants, so one (`v1`) is not drawn there; its timeline is 36 KB.
+- Text widths are estimated (7 px per character at 13 px); nothing measures fonts. During development I rasterized the SVGs with
+  `rsvg-convert` to look for overlaps. That is a check of the pictures alone, not of the page in a browser.
+- `docs/api/review.md` and its nav entry are added now (with `draw` only) because `tests/test_docs.py` requires every module to
+  have one; task 6 completes the page.
