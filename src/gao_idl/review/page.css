@@ -1,0 +1,121 @@
+/* gao-idl review page. No web fonts, no images, no external anything. */
+:root {
+  --fg: #1d1f23;
+  --muted: #5b6270;
+  --bg: #ffffff;
+  --panel: #f4f5f7;
+  --line: #c9ced6;
+  --accent: #1f5fbf;
+  --warn-bg: #fff4d6;
+  --warn-line: #b98900;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fg: #e7e9ee;
+    --muted: #a3aab8;
+    --bg: #15171b;
+    --panel: #20232a;
+    --line: #3b404b;
+    --accent: #7fb0ff;
+    --warn-bg: #3a2f10;
+    --warn-line: #e0b84a;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+header.top {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  padding: 0.5rem 1rem;
+}
+header.top h1 { font-size: 1.05rem; margin: 0 0 0.4rem; }
+nav.screens { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+main { max-width: 60rem; margin: 0 auto; padding: 1rem; }
+section.screen { padding-bottom: 3rem; border-bottom: 1px solid var(--line); margin-bottom: 2rem; }
+html.js section.screen { border-bottom: 0; }
+html.js section.screen[hidden], html.js article.card[hidden] { display: none; }
+h2 { font-size: 1.4rem; margin: 0.6rem 0 0.6rem; }
+h3 { font-size: 1.1rem; margin: 1.4rem 0 0.4rem; }
+p.lead { font-size: 1.05rem; }
+.muted, .progress { color: var(--muted); }
+.fixed { font-weight: 600; border-left: 4px solid var(--accent); padding-left: 0.75rem; }
+code, pre, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; }
+pre { background: var(--panel); padding: 0.75rem; overflow-x: auto; }
+.picture {
+  overflow-x: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.5rem;
+  margin: 0.5rem 0 1rem;
+  color: var(--fg);
+}
+.picture svg { display: block; max-width: none; height: auto; }
+.picture svg .port, .picture svg .roles { fill: var(--muted); }
+table.knows { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+table.knows th, table.knows td { border: 1px solid var(--line); padding: 0.3rem 0.45rem; text-align: left; vertical-align: top; }
+table.knows th { background: var(--panel); }
+.table-wrap { overflow-x: auto; }
+.warning {
+  background: var(--warn-bg);
+  border: 2px solid var(--warn-line);
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+}
+.warning strong::before { content: "\26a0\fe0e  "; }
+button {
+  font: inherit;
+  min-height: 2.75rem;
+  padding: 0.45rem 0.9rem;
+  border: 2px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--fg);
+  cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
+button:focus-visible, textarea:focus-visible, input:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+button[aria-pressed="true"], button[aria-current="page"] {
+  border-color: var(--accent);
+  font-weight: 700;
+  text-decoration: underline;
+}
+button[disabled] { opacity: 0.55; cursor: not-allowed; text-decoration: line-through; }
+.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.75rem 0; }
+.answer { font-weight: 600; }
+textarea, input[type="text"] {
+  font: inherit;
+  width: 100%;
+  padding: 0.45rem;
+  border: 2px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+}
+textarea.export { min-height: 12rem; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.85rem; }
+.only-js { display: none; }
+html.js .only-js { display: block; }
+html.js .no-js { display: none; }
+ol.steps > li { margin-bottom: 0.6rem; }
+li.assumption { margin-bottom: 1.4rem; }
+#status { min-height: 1.5rem; font-weight: 600; }
+.keys { font-size: 0.9rem; }
+kbd { border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 0.3rem; font-size: 0.85em; }
+@media (max-width: 40rem) {
+  main { padding: 0.6rem; }
+  h2 { font-size: 1.2rem; }
+  .actions button { flex: 1 1 45%; }
+}

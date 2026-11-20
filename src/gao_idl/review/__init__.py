@@ -20,6 +20,7 @@ from gao_idl.review.bundle import (
     save_bundle,
 )
 from gao_idl.review.draw import flow_svg, timeline_svg
+from gao_idl.review.page import render_page
 
 __all__ = [
     "Bundle",
@@ -30,6 +31,7 @@ __all__ = [
     "load_bundle",
     "make_bundle",
     "outcome_hash",
+    "render_page",
     "save_bundle",
     "timeline_svg",
 ]

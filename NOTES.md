@@ -1755,3 +1755,34 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   carbon-market card `buyer-stays-out` (the one that differed between 3.11 and 3.13 in M8). **Verified on Python 3.13 only**:
   3.11 has no pydantic here. Rounding fails to agree only if two interpreters' values straddle a 9th-decimal boundary.
 - Bundle sizes (no fuzz): auction 123 KB, PD 131 KB, carbon market 651 KB.
+
+## 2026-11-20 — M10 task 4: the page (`review/page.py`, `page.html`, `page.css`, `page.js`)
+- `render_page(bundle, api=None)` as pinned; `gao-idl review page SPEC --cards CARDS [--fuzz N] --out` and
+  `gao-idl review page --bundle bundle.json --out`. `--api` exists but is hidden from `--help` until M11.
+- **All content is rendered and escaped in Python**, including the five screens, every card's story and the inlined SVGs; `page.js`
+  only switches screens and cards, records answers, saves progress and exports. Reasons: the script can only be tested under node
+  (pure functions), so a page whose content does not depend on it still reads fine if the script fails; no markup is ever built
+  from strings in JavaScript (text goes in with `textContent`; there is no `innerHTML`). Without scripts every screen is shown in
+  one long page and a note says answers cannot be saved. The SVGs are therefore present twice (in the markup and inside the
+  embedded bundle); the carbon-market page is still 978 KB.
+- **Embedded JSON escapes every `<`, `>` and `&`** as `<` etc., a superset of the brief's "`</` escaped": with only `</`
+  escaped, a title containing `<script>` would appear literally inside the JSON block, which the escaping test forbids, and `<!--`
+  inside a script block has its own parsing traps.
+- **Content-Security-Policy** in a `<meta>`: `default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline';
+  connect-src 'none'` (or `'self'` / the api's origin when `api` is given), so a browser itself refuses any network request even if
+  something slipped through. `api` must be a plain path (`/verdicts`) or an http(s) URL without query; anything else raises.
+  **Untested in a browser:** whether every viewer allows the blob download under this policy (the text box is the fallback).
+- **`api` (M11):** each verdict is `POST`ed to exactly `api` as JSON, body one `CardVerdict` or `AssumptionVerdict` object
+  (`page.js` `cardVerdict` / `assumptionVerdict`); a failed send is shown in the status line and the verdict stays in the export.
+- **Progress** is kept in memory and in `localStorage` under `gao-idl-review:<sha256 of dump_bundle(bundle)>` inside try/catch;
+  restored answers are re-validated against the bundle (unknown ids, confirmed stale cards and note-less rejections are dropped).
+- Brief silent, chosen: after the last card the page moves to Finish; a "Remove my answer" button undoes a card verdict; `Skip`
+  advances without recording; `ArrowRight` moves without recording too. The download is named `verdicts.json`. A stale card's Yes
+  button is `disabled` and the pure `decideCard` refuses it as well.
+- **Package data:** `pyproject.toml` lists the three files as wheel `artifacts`. Hatchling includes non-Python files under
+  `packages` anyway (that is how `py.typed` ships), so this is belt and braces; `python -m build` could not run here, so whether the
+  wheel contains them is verified only by CI's `package` job. The test loads them through `importlib.resources`.
+- **What ran:** `tests/review/test_page_js.py` executed the pure half of `page.js` under node 22 (passes). Outside the test suite I
+  opened the generated auction page once in headless Chrome with `--dump-dom` (no screenshot): it booted under its CSP with no
+  script error (`<html class="js">`, one screen and one card visible, the summary line filled in). No click or key press was
+  simulated, and nobody has looked at the page rendered.

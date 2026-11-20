@@ -23,7 +23,8 @@ still reproduced and rejected ones are not (exit status 1 otherwise). ``spec che
 N edge-biased runs and checks the spec's invariants on all runs. ``diverge SPEC REF...`` replays
 edge-biased scripts on other implementations of the spec and writes one question per distinct
 disagreement (exit status 1 if there is any). ``review bundle`` writes the JSON bundle the review
-page shows. See ``docs/verifying.md``.
+page shows and ``review page`` the self-contained HTML page itself (from a spec and cards, or
+from a bundle). See ``docs/verifying.md``.
 
 Stability: internal; the command-line interface is the supported way to use this module.
 """
@@ -396,6 +397,27 @@ def _cmd_review_bundle(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_review_page(args: argparse.Namespace) -> int:
+    from gao_idl.review import load_bundle, render_page
+
+    if (args.bundle is None) == (args.spec is None):
+        print("give either SPEC with --cards, or --bundle", file=sys.stderr)
+        return 2
+    if args.spec is not None and args.cards is None:
+        print("SPEC needs --cards", file=sys.stderr)
+        return 2
+    try:
+        bundle = load_bundle(args.bundle) if args.bundle is not None else _make_bundle(args)
+        text = render_page(bundle, args.api)
+    except (OSError, ValueError, RuntimeError, GaoError) as e:
+        print(f"cannot build the page: {type(e).__name__}: {e}", file=sys.stderr)
+        return 2
+    args.out.write_text(text, encoding="utf-8")
+    size = len(text.encode("utf-8"))
+    print(f"{bundle.spec.title}: {len(bundle.cards)} cards, {size // 1024} KB -> {args.out}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """Command-line entry point (``gao-idl``); returns the exit status."""
     parser = argparse.ArgumentParser(
@@ -473,6 +495,15 @@ def main(argv: list[str] | None = None) -> int:
     bundle_p.add_argument("--seed", type=int, default=0, help="seed for the fuzzed runs")
     bundle_p.add_argument("--out", type=Path, required=True, help="bundle JSON file to write")
     bundle_p.set_defaults(func=_cmd_review_bundle)
+    page_p = review_sub.add_parser("page", help="write the self-contained review page (HTML)")
+    page_p.add_argument("spec", type=Path, nargs="?", default=None, help="spec JSON file")
+    page_p.add_argument("--cards", type=Path, default=None, help="cards JSON file (with SPEC)")
+    page_p.add_argument("--bundle", type=Path, default=None, help="a bundle instead of SPEC")
+    page_p.add_argument("--fuzz", type=int, default=0, metavar="N", help="add N edge-biased runs")
+    page_p.add_argument("--seed", type=int, default=0, help="seed for the fuzzed runs")
+    page_p.add_argument("--api", default=None, help=argparse.SUPPRESS)  # M11: post verdicts here
+    page_p.add_argument("--out", type=Path, required=True, help="HTML file to write")
+    page_p.set_defaults(func=_cmd_review_page)
     args = parser.parse_args(argv)
     return int(args.func(args))
 

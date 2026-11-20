@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="{{CSP}}">
+<meta name="referrer" content="no-referrer">
+<meta name="generator" content="gao_idl {{VERSION}}">
+<title>{{TITLE}}</title>
+<style>
+{{CSS}}
+</style>
+</head>
+<body>
+<header class="top">
+<h1>{{HEADING}}</h1>
+<nav class="screens only-js" aria-label="Parts of this review">
+<button type="button" data-screen="0">1. What was checked</button>
+<button type="button" data-screen="1">2. The design</button>
+<button type="button" data-screen="2">3. Choices nobody confirmed</button>
+<button type="button" data-screen="3">4. Cards</button>
+<button type="button" data-screen="4">5. Finish</button>
+</nav>
+<p id="status" role="status" aria-live="polite"></p>
+</header>
+<main>
+<noscript><p class="warning"><strong>Scripts are off.</strong> You can read everything below, but your answers cannot be saved or downloaded without scripts.</p></noscript>
+{{BODY}}
+</main>
+<script type="application/json" id="gao-bundle">{{BUNDLE}}</script>
+<script type="application/json" id="gao-config">{{CONFIG}}</script>
+<script>
+{{JS}}
+</script>
+</body>
+</html>
