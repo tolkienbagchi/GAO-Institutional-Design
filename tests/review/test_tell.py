@@ -83,6 +83,24 @@ def test_summarize_scalars_first_nested_by_size_numbers_as_cards_show_them() -> 
     assert "{" not in summarize({"deep": {"a": {"b": 1}}})
 
 
+def test_summarize_writes_small_nested_values_out() -> None:
+    assert summarize({"all_bids": {"alice": 8, "bob": 8.0}}) == "all_bids: (alice = 8, bob = 8)"
+    order = {"s0": {"price": 8.84, "qty": 3}, "s1": None}
+    assert summarize(order) == "s1 = none, s0: (price = 8.84, qty = 3)"
+    table = {
+        "round": 0,
+        "revealed": {"s0": {"report": 0.9, "q": 0.4}, "s1": {"report": 0.5, "q": 0.5}},
+    }
+    assert summarize(table, limit=200) == (
+        "round = 0, revealed.s0: (report = 0.9, q = 0.4), revealed.s1: (report = 0.5, q = 0.5)"
+    )
+    assert (
+        summarize(table, limit=40) == "round = 0, revealed: 2 entries"
+    )  # all of a table or its size
+    five = {"fills": {f"s{i}": i for i in range(5)}}
+    assert summarize(five) == "fills: 5 entries"
+
+
 def test_summarize_cuts_on_a_pair_boundary() -> None:
     payload = {f"field{i}": i for i in range(20)}
     text = summarize(payload, limit=40)

@@ -1916,3 +1916,20 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
   Ctrl+Enter in another's note, `s` to skip, a note-less No (refused with the message), a note-less Disagree (refused), Cmd+Enter
   with a note (recorded), Agree, a reviewer name. The export imported with `gao-idl cards import` into temporary copies: exit 0,
   the dispute printed for the author.
+
+## 2026-11-20 — M10 fix-up, reviewer's changes after looking at the pages in a browser
+Made by the reviewer (Claude) on `m10-fixup` after opening the delivered pages in headless Chrome at 1280 and 390 wide.
+- **The timeline draws up to 12 participants** (`MAX_LANES` 8 → 12). With eight, the two-round carbon-market card left out `v1`,
+  the verifier that is caught and ends at −16: the participant the card is about. Lanes already shrink to fit, so nine fit at 920.
+  `reputation-shown` now has 9 lanes and 43 rows (the delivered fix-up: 8 and 39; M10: 8 and 54) and says nothing is "not drawn".
+- **The text column is left of the lanes** (`WHAT_X`, at most `WHAT_MAX = 440` wide, at least 300). On a phone the picture scrolls
+  sideways; with the text on the right a phone showed arrows and no words. Now it shows the words first.
+- **`summarize` writes small nested values out**: a nested dict with at most four plain fields inline
+  (`s0: (price = 8.84, qty = 3)`, `all_bids: (alice = 8, bob = 8, carol = 1)`), and a small table of such rows when all of it fits
+  the limit; otherwise by size as before. A buyer's order used to read `s0: 2 entries`. Never JSON.
+- **The answer bar is slimmer**: the note's visible label (it repeated the placeholder) is hidden for the eye at every width and kept
+  for screen readers; smaller keys line and padding. 156 px tall at 1280 × 800 (was about 197); unchanged on a phone (196 px).
+- Four timeline golden files regenerated (`auction.tie-top`, `auction.no-bid`, `pd.two-pairs`, `pd.no-move-default`) and looked at
+  in the rebuilt pages. `tests/authoring/golden/`, the bundle's shape, `Story` and the verdict models are untouched.
+- Rebuilt pages with 200 fuzzed runs: auction 309 KB, PD 351 KB, carbon market 962 KB (M10: 1,002 KB). No script error and no
+  network request at 1280, 390 and in dark mode. Fast suite: 955 passed, 5 skipped.

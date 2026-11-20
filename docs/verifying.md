@@ -34,7 +34,7 @@ internet connection and no installation, and it makes no network request.
 4. **Cards, one at a time.** Each card is one concrete case: "alice bids 8, bob bids 8, carol bids
    1". The line under the title says which readings of your description the case tells apart.
    Then come the situation, a timeline (one column per participant; what each did or was told is
-   written in the column on the right, and what a step told everyone alike is one line starting
+   written in the column on the left, and what a step told everyone alike is one line starting
    "everyone"), each payoff and how the run ends. Below are two folded lists, the steps in words
    and everything each participant was told, in full. They are open on short cards and closed on
    long ones; click a heading to open it. The answer bar stays at the bottom of the window while

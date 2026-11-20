@@ -134,20 +134,24 @@ details.fold > summary h3 { display: inline; margin: 0; }
   background: var(--bg);
   border-top: 2px solid var(--line);
   margin-top: 1.5rem;
-  padding: 0.5rem 0 0.6rem;
+  padding: 0.35rem 0 0.4rem;
   box-shadow: 0 -6px 12px -10px currentColor;
 }
+/* the note's label repeats its placeholder: keep it for screen readers, not for the eye */
+.verdict .sr-small {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+.verdict .keys { font-size: 0.8rem; }
+.verdict textarea.note { min-height: 2.2rem; padding-top: 0.3rem; padding-bottom: 0.3rem; }
+.verdict textarea.note:focus { min-height: 5.5rem; }
 .verdict .ask { margin: 0 0 0.25rem; }
-.verdict .actions { margin: 0.4rem 0 0.2rem; }
+.verdict .actions { margin: 0.3rem 0 0.15rem; }
 .verdict .keys { margin: 0; }
 textarea.note { min-height: 2.6rem; resize: vertical; }
 textarea.note:focus { min-height: 5.5rem; }
 .sr-small { font-size: 0.9rem; }
 @media (max-width: 30rem) {
-  .verdict .sr-small {
-    position: absolute; width: 1px; height: 1px; overflow: hidden;
-    clip: rect(0 0 0 0); white-space: nowrap;
-  }
   .verdict .ask { font-size: 0.95rem; }
   .verdict .actions { gap: 0.3rem; }
   .verdict .actions button { flex: 1 1 30%; min-height: 2.5rem; padding: 0.3rem 0.4rem; font-size: 0.95rem; }

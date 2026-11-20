@@ -152,20 +152,27 @@ def _crowded(people: int, steps: int) -> Story:
     )
 
 
-def test_beyond_eight_participants_or_twelve_steps_the_rest_is_announced() -> None:
-    svg = timeline_svg(_crowded(10, 14), "crowded")
-    assert svg.count('<g class="lane">') == 8
+def test_beyond_twelve_participants_or_twelve_steps_the_rest_is_announced() -> None:
+    svg = timeline_svg(_crowded(14, 14), "crowded")
+    assert svg.count('<g class="lane">') == 12
     assert "+2 more participants not drawn" in svg
     assert svg.count('<g class="band">') == 12
     assert "+2 more steps not drawn" in svg
-    assert svg.count(">+2 not drawn<") == 12  # p8 and p9 moved in every band
-    assert ">p9<" not in svg and ">p7<" in svg
-    small = timeline_svg(_crowded(8, 12), "fits")
+    assert svg.count(">+2 not drawn<") == 12  # p12 and p13 moved in every band
+    assert ">p13<" not in svg and ">p11<" in svg
+    small = timeline_svg(_crowded(12, 12), "fits")
     assert "more" not in small and "not drawn" not in small
 
 
+def test_the_text_column_is_left_of_the_lanes() -> None:
+    svg = timeline_svg(_crowded(3, 2), "t")
+    what = float(re.search(r'<text class="what" x="([0-9.]+)"', svg).group(1))  # type: ignore[union-attr]
+    lanes = [float(x) for x in re.findall(r'<path d="M([0-9.]+) 44 V', svg)]
+    assert what < 20 and min(lanes) >= what + 300  # a narrow screen shows the words first
+
+
 def test_the_timeline_is_never_wider_than_920() -> None:
-    for people in (1, 3, 8, 12):
+    for people in (1, 3, 8, 12, 20):
         svg = timeline_svg(_crowded(people, 2), "t")
         width = float(re.search(r'viewBox="0 0 ([0-9.]+) ', svg).group(1))  # type: ignore[union-attr]
         assert width <= 920
@@ -203,12 +210,14 @@ def test_the_two_round_carbon_market_timeline_stays_small() -> None:
     card = _card("vcm", "reputation-shown")
     svg = timeline_svg(tell_card(card, spec), card.title)
     assert len(svg.encode()) < 200_000
-    assert "+1 more participant not drawn" in svg  # nine participants
+    assert "not drawn" not in svg  # all nine participants have a lane
     width = float(re.search(r'viewBox="0 0 ([0-9.]+) ', svg).group(1))  # type: ignore[union-attr]
     assert width <= 920
-    assert svg.count('<g class="lane">') == 8
+    assert svg.count('<g class="lane">') == 9
     rows = int(re.search(r'data-rows="(\d+)"', svg).group(1))  # type: ignore[union-attr]
-    assert rows == 39  # M10 drew 54 (16 moves, 32 reports, 6 notes); see NOTES.md
+    assert rows == 43  # M10 drew 54 for eight of the nine participants; see NOTES.md
+    assert "v1: fees = 2, penalties = 10" in svg  # the verifier that was caught is in the picture
+    assert "b0: s0: (price = 8.84, qty = 3), …" in svg  # an order shows its price and quantity
     assert svg.count('<g class="told everyone">') == 4 and svg.count("revealed: 4 entries") == 2
     lanes = re.findall(r'<g class="lane"><title>([^<]+)</title>', svg)
     bands = svg.split('<g class="band">')[1:]

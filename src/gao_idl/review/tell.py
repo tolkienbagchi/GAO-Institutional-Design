@@ -62,28 +62,61 @@ def split_told(told: Sequence[Told]) -> list[ToldRow]:
     return rows
 
 
-def _size(value: Any) -> str:
+INLINE = 4  # a nested value with at most this many plain fields is written out
+
+
+def _plain(value: Any) -> bool:
+    return not isinstance(value, dict | list)
+
+
+def _inline(value: dict[str, Any]) -> str:
+    return "(" + ", ".join(f"{k} = {_value(v)}" for k, v in value.items()) + ")"
+
+
+def _nested(name: str, value: Any, tables: bool) -> list[str]:
+    """The pairs for one nested field: written out when small, by size otherwise.
+
+    With ``tables`` a small table (an order per project) is one pair per row, so that a cut
+    drops whole rows.
+    """
+    if not value:
+        return [f"{name}: none"]
+    if isinstance(value, dict):
+        if len(value) <= INLINE and all(_plain(v) for v in value.values()):
+            return [f"{name}: {_inline(value)}"]
+        rows = all(
+            v is None
+            or (isinstance(v, dict) and 0 < len(v) <= INLINE and all(map(_plain, v.values())))
+            for v in value.values()
+        )
+        if tables and rows and len(value) <= 2 * INLINE:
+            return [f"{name}.{k}: {'none' if v is None else _inline(v)}" for k, v in value.items()]
     n = len(value)
-    if n == 0:
-        return "none"
-    return f"{n} {'entry' if n == 1 else 'entries'}"
+    return [f"{name}: {n} {'entry' if n == 1 else 'entries'}"]
 
 
 def summarize(payload: dict[str, Any], limit: int = 60) -> str:
     """``payload`` as ``name = value`` pairs for a label, at most about ``limit`` characters.
 
-    Scalar fields come first in the payload's key order, then nested ones shown by size
-    (``projects: 4 entries``, an empty one as ``projects: none``). Numbers are shown as
+    Scalar fields come first in the payload's key order, then nested ones. A nested value with at
+    most four plain fields is written out (``own_fills: (s0 = 3, s1 = 2)``), and so is a small
+    table of such rows when all of it fits (``bids.a: (price = 8.5, qty = 3)``); anything else is
+    shown by size (``projects: 4 entries``), an empty one as ``projects: none``, and never as
+    JSON. Numbers are shown as
     ``render_card`` shows them. The text is cut on a pair boundary and ends with ``, …`` when
     something was left out; a pair is cut inside only when the first pair alone is longer than
     ``limit``. The first pair is always shown, so with ``, …`` the text may run a little over.
     """
-    scalars = [k for k, v in payload.items() if not isinstance(v, dict | list)]
-    nested = [k for k, v in payload.items() if isinstance(v, dict | list)]
-    pairs = [f"{k} = {_value(payload[k])}" for k in scalars]
-    pairs += [f"{k}: {_size(payload[k])}" for k in nested]
+    scalars = [k for k, v in payload.items() if _plain(v)]
+    nested = [k for k, v in payload.items() if not _plain(v)]
+    plain = [f"{k} = {_value(payload[k])}" for k in scalars]
+    pairs = plain + [p for k in nested for p in _nested(k, payload[k], tables=True)]
     if not pairs:
         return "nothing"
+    full = ", ".join(pairs)
+    if len(full) <= limit:
+        return full
+    pairs = plain + [p for k in nested for p in _nested(k, payload[k], tables=False)]
     full = ", ".join(pairs)
     if len(full) <= limit:
         return full

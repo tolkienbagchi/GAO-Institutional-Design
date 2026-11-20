@@ -108,3 +108,7 @@ I also drove one review end to end in headless Chrome (synthetic clicks and key 
 - **Timeline text size at 1280.** The 920-unit picture is drawn about 4% smaller in an 880-px card, so its 12-unit text is about 11.5 px. It is legible in the screenshots, but it is the smallest text on the page.
 - **Buyers' orders in the carbon-market timeline** summarize as `s0: 2 entries, s1: 2 entries, …` (nested values by size, as specified). The prices are only in the tooltip and in the folded "steps in words". That is honest but not informative.
 - **The PD `two-pairs` card at 390 is 3,179 px tall**, the longest card now.
+
+## 10. Reviewer's changes after delivery
+
+The reviewer opened the delivered pages in headless Chrome (1280 and 390 wide, and dark mode) and made four presentation changes on this branch; see the last `NOTES.md` entry. In short: the timeline draws up to 12 participants (the two-round carbon-market card had left out `v1`, the verifier it is about); its text column moved to the left of the lanes, so a phone shows the words first; labels write small nested values out (`s0: (price = 8.84, qty = 3)` instead of `s0: 2 entries`); the answer bar is slimmer. Numbers in sections 4 and 5 above describe the fix-up as delivered: `reputation-shown` now has 9 lanes and 43 rows, and the pages with 200 fuzzed runs are 309 KB, 351 KB and 962 KB. Fast suite after the changes: 955 passed, 5 skipped.

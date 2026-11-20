@@ -23,7 +23,7 @@ from gao_idl.review.tell import addressed, participants, split_told, summarize
 
 FONT = 'font-family="system-ui, -apple-system, Segoe UI, sans-serif"'
 CHAR = 7.0  # estimated width of one character at 13px, for layout only
-MAX_LANES = 8
+MAX_LANES = 12
 MAX_STEPS = 12
 
 
@@ -359,9 +359,11 @@ def flow_svg(tree: dict[str, Any]) -> str:
 
 
 MAX_WIDTH = 920  # the timeline is never wider than this, whatever the number of lanes
-WHAT_MIN = 300  # the text column on the right
+WHAT_X = 10  # the text column is on the left: it is what a narrow screen shows first
+WHAT_MIN = 300  # the text column is at least this wide
+WHAT_MAX = 440  # and no wider, so the lanes stay near the text they belong to
 LANE_MAX = 90  # lane spacing when there is room
-RULES_X = 44
+RULES_PAD = 30  # from the end of the text column to the rules lane
 ROW = 20
 BAND = 26
 TOP = 52
@@ -371,26 +373,27 @@ MIN_SCALE = 0.9  # 12-unit text stays at about 11 px or more: below this width t
 def timeline_svg(story: Story, title: str) -> str:
     """One run as a sequence picture: a lane per participant, one for the rules, at most 920 wide.
 
-    Each step is a band whose header repeats the lane names. Each row has its arrow in the lanes
-    and its text in a column on the right: an arrow from a participant who acted to the rules
+    Each step is a band whose header repeats the lane names. Each row has its text in a column on
+    the left (what a narrow screen shows first) and its arrow in the lanes to the right of it: an
+    arrow from a participant who acted to the rules
     (dashed when a default was used, a dashed stub when left out), or from the rules to whoever
     was told something. What a step told everyone alike is one row ("everyone: ..."), drawn
     across all lanes; recipients told the same remaining fields share a row with a head on each of
     their lanes (``tell.split_told``). Row texts are ``tell.summarize``d, the full text is in a
-    ``<title>``. Total payoffs sit under the lanes. Beyond 8 participants or 12 steps the first
+    ``<title>``. Total payoffs sit under the lanes. Beyond 12 participants or 12 steps the first
     ones are drawn and the picture says how many more there are.
     """
     everyone = participants(story)
     lanes = everyone[:MAX_LANES]
     hidden_people = len(everyone) - len(lanes)
     n = max(1, len(lanes))
-    room = MAX_WIDTH - 8 - WHAT_MIN - 16 - RULES_X
+    room = MAX_WIDTH - 8 - WHAT_X - WHAT_MIN - RULES_PAD
     spacing = min(float(LANE_MAX), room / (n + 0.5))
-    lane_x = {a: RULES_X + spacing * (i + 1) for i, a in enumerate(lanes)}
-    lanes_right = RULES_X + spacing * (n + 0.5)
-    what_x = lanes_right + 16
-    width = min(float(MAX_WIDTH), what_x + max(WHAT_MIN, 560) + 8)
-    what_w = width - 8 - what_x
+    what_x = float(WHAT_X)
+    what_w = min(float(WHAT_MAX), MAX_WIDTH - 8 - WHAT_X - RULES_PAD - spacing * (n + 0.5))
+    rules_x = what_x + what_w + RULES_PAD
+    lane_x = {a: rules_x + spacing * (i + 1) for i, a in enumerate(lanes)}
+    width = rules_x + spacing * (n + 0.5) + 8
     limit = max(30, int(what_w / 6.1))  # characters of 12-unit text that fit in the column
     name_chars = max(3, int(spacing / 6.2))
     steps = story.steps[:MAX_STEPS]
@@ -404,7 +407,7 @@ def timeline_svg(story: Story, title: str) -> str:
 
     def lane_names(y: float, size: int) -> list[str]:
         out = [
-            f'<text x="{_num(RULES_X)}" y="{_num(y)}" text-anchor="middle" font-size="{size}" '
+            f'<text x="{_num(rules_x)}" y="{_num(y)}" text-anchor="middle" font-size="{size}" '
             f'fill="currentColor">rules</text>'
         ]
         for name, x in lane_x.items():
@@ -464,8 +467,8 @@ def timeline_svg(story: Story, title: str) -> str:
                 dash = ' stroke-dasharray="5 3"' if move.kind == "defaulted" else ""
                 body.append(
                     f'<g class="move {move.kind}"><title>{esc(full)}</title>'
-                    f'<path d="M{_num(px)} {_num(y + 10)} H{_num(RULES_X + 8)}" fill="none" '
-                    f'stroke="currentColor"{dash}/>{_arrowhead(RULES_X + 1, y + 10, "left")}'
+                    f'<path d="M{_num(px)} {_num(y + 10)} H{_num(rules_x + 8)}" fill="none" '
+                    f'stroke="currentColor"{dash}/>{_arrowhead(rules_x + 1, y + 10, "left")}'
                     + what(y, prefix + summarize(action, max(20, limit - len(prefix))))
                     + "</g>"
                 )
@@ -488,7 +491,7 @@ def timeline_svg(story: Story, title: str) -> str:
             prefix = f"{cut(who, 30)}: "
             body.append(
                 f'<g class="{cls}"><title>{esc(full)}</title>'
-                f'<path d="M{_num(RULES_X)} {_num(y + 10)} H{_num(max(xs) - 8)}" fill="none" '
+                f'<path d="M{_num(rules_x)} {_num(y + 10)} H{_num(max(xs) - 8)}" fill="none" '
                 f'stroke="currentColor" stroke-opacity="0.8"/>{heads(xs, y + 10)}'
                 + what(y, prefix + summarize(row.payload, max(20, limit - len(prefix))))
                 + "</g>"
@@ -518,7 +521,7 @@ def timeline_svg(story: Story, title: str) -> str:
     bottom = y + 2
 
     top: list[str] = []
-    for name, x in [("the rules", float(RULES_X)), *lane_x.items()]:
+    for name, x in [("the rules", rules_x), *lane_x.items()]:
         rules = name == "the rules"
         cls = "lane rules" if rules else "lane"
         stroke = ' stroke-width="2"' if rules else ' stroke-dasharray="1 3"'
@@ -542,7 +545,7 @@ def timeline_svg(story: Story, title: str) -> str:
         )
     pay: list[str] = [
         f'<text x="{_num(what_x)}" y="{_num(bottom + 20)}" fill="currentColor" font-size="12">'
-        "← payoff in total</text>"
+        "payoff in total →</text>"
     ]
     for name, x in lane_x.items():
         value = _value(story.utilities[name]) if name in story.utilities else "—"
