@@ -14,7 +14,7 @@ import json
 from collections.abc import Sequence
 from typing import Any
 
-from gao_idl.authoring.cards import Story, Told, _value
+from gao_idl.authoring.cards import StepView, Story, Told, _value
 from gao_idl.core.ids import role_sort_key
 from gao_idl.core.schemas import FrozenModel
 
@@ -149,3 +149,148 @@ def participants(story: Story) -> list[str]:
     for step in story.steps:
         people |= {m.agent for m in step.moves} | {t.agent for t in step.told}
     return sorted(people, key=role_sort_key)
+
+
+# ------------------------------------------------------------------ the run in plain sentences
+
+MANY_ENDINGS = 4  # with more distinct payoffs than this the ending points to the list
+WRITTEN_OUT = 3  # a choice or announcement with more fields than this is counted, not listed
+
+
+def words(name: str) -> str:
+    """A field or step name as words: ``winning_payment`` reads ``winning payment``."""
+    return name.replace("_", " ").strip()
+
+
+def names(people: Sequence[str]) -> str:
+    """Names in a sentence: ``a``, ``a and b``, ``a, b and c``."""
+    people = list(people)
+    if len(people) <= 1:
+        return "".join(people)
+    return ", ".join(people[:-1]) + " and " + people[-1]
+
+
+def _short(payload: dict[str, Any]) -> str | None:
+    """``payload`` as ``field value, field value``; None when it is too long or nested to say."""
+    if not payload or len(payload) > WRITTEN_OUT or not all(_plain(v) for v in payload.values()):
+        return None
+    return ", ".join(f"{words(k)} {_value(payload[k])}" for k in sorted(payload))
+
+
+def _parts(payload: dict[str, Any]) -> str:
+    n = len(payload)
+    return "1 part" if n == 1 else f"{n} parts"
+
+
+def _move_sentences(step: StepView) -> list[str]:
+    out: list[str] = []
+    groups: dict[str, tuple[list[str], dict[str, Any]]] = {}
+    for move in sorted(step.moves, key=lambda m: role_sort_key(m.agent)):
+        if move.kind == "dropped":
+            out.append(f"{move.agent} did not answer and was left out of this step.")
+            continue
+        action = move.action or {}
+        if move.kind == "defaulted":
+            said = _short(action)
+            used = f": {said}" if said else ""
+            out.append(f"{move.agent} did not answer, so the standard choice was used{used}.")
+            continue
+        key = _same(action)
+        if key in groups:
+            groups[key][0].append(move.agent)
+        else:
+            groups[key] = ([move.agent], action)
+    chose: list[str] = []
+    longer: list[str] = []
+    for who, action in groups.values():
+        said = _short(action)
+        if said is None:
+            longer += who
+        else:
+            chose.append(f"{names(who)} chose {said}")
+    lines = ["; ".join(chose) + "."] if chose else []
+    if longer:
+        verb = "each made a choice" if len(longer) > 1 else "made a choice"
+        lines.append(f"{names(longer)} {verb} with several parts (listed in the full record).")
+    return lines + out
+
+
+def _told_sentences(step: StepView, everyone: Sequence[str]) -> list[str]:
+    out: list[str] = []
+    private: list[str] = []
+    for row in split_told(step.told):
+        if row.to:
+            private += row.to
+            continue
+        to = addressed(row, step.told, everyone)
+        who = "Everyone" if to == "everyone" else names(to.split(", "))
+        simple = {k: row.payload[k] for k in sorted(row.payload) if _plain(row.payload[k])}
+        rest = len(row.payload) - len(simple)
+        said = ", ".join(f"{words(k)} {_value(v)}" for k, v in list(simple.items())[:6])
+        more = len(simple) - min(len(simple), 6) + rest
+        if said and more:
+            said += f", and {more} more {'item' if more == 1 else 'items'} (in the full record)"
+        elif not said:
+            said = f"{more} {'item' if more == 1 else 'items'} listed in the full record"
+        verb = "were" if who != "Everyone" and " and " in who else "was"
+        out.append(f"{who} {verb} told: {said}.")
+    if private:
+        if out:
+            out.append("Each was also told their own result (in the full record).")
+        else:
+            who = names(sorted(set(private), key=role_sort_key))
+            out.append(f"{who}: each was told their own result (in the full record).")
+    return out
+
+
+class PlainStep(FrozenModel):
+    """One step of a run in plain sentences: where, the rule as the spec words it, what happened."""
+
+    where: str
+    rule: str
+    happened: list[str]
+
+
+def plain_steps(story: Story) -> list[PlainStep]:
+    """The run as plain sentences, one entry per step in which somebody chose or was told.
+
+    Every name and number comes from ``story`` (a run of the built environment); ``rule`` is the
+    step's description from the spec. Steps where nobody acts and nothing is announced (a round
+    counter) are left out. Long or nested choices are counted here and listed in the full record.
+    """
+    everyone = participants(story)
+    out: list[PlainStep] = []
+    for step in story.steps:
+        happened = _move_sentences(step) + _told_sentences(step, everyone)
+        if step.stopped is not None:
+            happened.append(f"The run stopped here: {step.stopped}")
+        if not happened:
+            continue
+        label = words(step.layer) or "step"
+        where = f"{step.place}: {label}" if step.place else label
+        out.append(
+            PlainStep(where=where[:1].upper() + where[1:], rule=step.description, happened=happened)
+        )
+    return out
+
+
+def plain_ending(story: Story) -> list[str]:
+    """How the run ends in plain sentences: whether it finished, and what each one ends with."""
+    groups: dict[str, list[str]] = {}
+    for agent in sorted(story.utilities, key=role_sort_key):
+        groups.setdefault(_value(story.utilities[agent]), []).append(agent)
+    got = [
+        f"{names(who)} {'each have' if len(who) > 1 else 'has'} {value}"
+        for value, who in groups.items()
+    ]
+    if story.failed:
+        first = "The run stopped before it finished."
+    elif story.exit_port in (None, "done"):
+        first = "The run finished."
+    else:
+        first = f"The run finished ({words(story.exit_port)})."
+    if not got:
+        return [first]
+    if len(got) > MANY_ENDINGS:
+        return [first, "What each one ends with is listed under Payoffs."]
+    return [first, "At the end " + "; ".join(got) + "."]

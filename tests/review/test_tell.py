@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from gao_idl.authoring import load_cards, tell_card
-from gao_idl.authoring.cards import Told
+from gao_idl.authoring.cards import Move, StepView, Story, Told
 from gao_idl.review import ToldRow, split_told, summarize
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -113,3 +113,64 @@ def test_summarize_cuts_inside_a_pair_only_when_the_first_is_too_long() -> None:
     assert summarize({"note": "x" * 100}, limit=20) == "note = " + "x" * 12 + "…"
     text = summarize({"note": "x" * 50, "b": 1}, limit=58)
     assert text == "note = " + "x" * 50 + ", …"  # first pair kept whole
+
+
+def _made_step(moves: list[Move], told: list[Told], stopped: str | None = None) -> StepView:
+    return StepView(
+        place="round 1",
+        layer="pd_round",
+        description="Both choose.",
+        moves=moves,
+        told=told,
+        stopped=stopped,
+    )
+
+
+def test_plain_steps_group_equal_choices_and_skip_silent_steps() -> None:
+    from gao_idl.review.tell import plain_ending, plain_steps
+
+    acted = _made_step(
+        [
+            Move(agent="b", kind="chose", action={"move": "C"}),
+            Move(agent="a", kind="chose", action={"move": "C"}),
+            Move(agent="c", kind="defaulted", action={"move": "D"}),
+            Move(agent="d", kind="dropped", action=None),
+            Move(agent="e", kind="chose", action={"orders": {"s0": {"price": 1, "qty": 2}}}),
+        ],
+        [
+            Told(agent="a", payload={"round_index": 0, "own_payoff": 3}),
+            Told(agent="b", payload={"round_index": 0, "own_payoff": 1}),
+        ],
+    )
+    silent = _made_step([], [])
+    story = Story(
+        steps=[acted, silent],
+        utilities={"a": 3.0, "b": 1.0, "c": 1.0},
+        exit_port="done",
+        failed=False,
+    )
+    (step,) = plain_steps(story)
+    assert step.where == "Round 1: pd round" and step.rule == "Both choose."
+    assert step.happened == [
+        "a and b chose move C.",
+        "e made a choice with several parts (listed in the full record).",
+        "c did not answer, so the standard choice was used: move D.",
+        "d did not answer and was left out of this step.",
+        "a and b were told: round index 0.",
+        "Each was also told their own result (in the full record).",
+    ]
+    assert plain_ending(story) == ["The run finished.", "At the end a has 3; b and c each have 1."]
+    failed = story.model_copy(update={"failed": True, "exit_port": None, "utilities": {}})
+    assert plain_ending(failed) == ["The run stopped before it finished."]
+
+
+def test_plain_steps_do_not_depend_on_key_order() -> None:
+    from gao_idl.review.tell import plain_steps
+
+    def story(payload: dict[str, object]) -> Story:
+        told = [Told(agent=a, payload=dict(payload)) for a in ("a", "b")]
+        return Story(steps=[_made_step([], told)], utilities={}, exit_port="done", failed=False)
+
+    one = plain_steps(story({"winner": "a", "price": 2}))
+    two = plain_steps(story({"price": 2, "winner": "a"}))
+    assert one == two

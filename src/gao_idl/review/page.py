@@ -22,7 +22,13 @@ from gao_idl.authoring.cards import Story, _pairs, _value
 from gao_idl.authoring.spec import EnvSpec
 from gao_idl.review.bundle import Bundle, CardView, dump_bundle
 from gao_idl.review.draw import esc
-from gao_idl.review.tell import addressed, participants, split_told
+from gao_idl.review.tell import (
+    addressed,
+    participants,
+    plain_ending,
+    plain_steps,
+    split_told,
+)
 
 FIXED_SENTENCE = "These checks compare the code with the design, not the design with the world."
 _SLOT = re.compile(r"\{\{([A-Z]+)\}\}")
@@ -80,7 +86,7 @@ def _checked(bundle: Bundle) -> str:
     from_cards = st.runs - st.fuzzed
     out = [
         '<section class="screen" id="screen-0" aria-labelledby="h-checked">',
-        '<h2 id="h-checked">What was checked</h2>',
+        '<h2 id="h-checked">Checks</h2>',
         _p(
             f"The environment in code was run {_plural(st.runs, 'time', 'times')}: "
             f"{_plural(from_cards, 'run', 'runs')} from the scenario cards and "
@@ -134,7 +140,7 @@ def _design(bundle: Bundle) -> str:
     spec = bundle.spec
     out = [
         '<section class="screen" id="screen-1" aria-labelledby="h-design">',
-        f'<h2 id="h-design">The design: {esc(spec.title)}</h2>',
+        f'<h2 id="h-design">Design: {esc(spec.title)}</h2>',
         _p(spec.summary, "lead"),
         "<h3>Who takes part</h3>",
         _ul(
@@ -236,7 +242,7 @@ def _design(bundle: Bundle) -> str:
 def _assumptions(bundle: Bundle) -> str:
     out = [
         '<section class="screen" id="screen-2" aria-labelledby="h-choices">',
-        '<h2 id="h-choices">Choices nobody confirmed</h2>',
+        '<h2 id="h-choices">Choices</h2>',
         _p(
             "Each of these is a modelling decision the author of the environment made because "
             "the description did not settle it. Say whether you agree.",
@@ -285,16 +291,25 @@ def _where(place: str, layer: str) -> str:
     return f"{place}, step {layer}" if place else f"step {layer}"
 
 
-FOLD_AFTER = 12  # a card with more told rows than this starts with its two lists closed
-
-
 def _payoffs_html(story: Story) -> list[str]:
-    ending = "the run fails" if story.failed else f"the run ends through {story.exit_port}"
     return [
-        "<h3>Payoffs in total</h3>",
+        "<h3>Payoffs</h3>",
         _ul([esc(f"{a}: {_value(story.utilities[a])}") for a in sorted(story.utilities)]),
-        _p(f"How it ends: {ending}."),
     ]
+
+
+def _plain_html(story: Story) -> list[str]:
+    """What happened in plain sentences (from the run), before the picture and the record."""
+    items = []
+    for step in plain_steps(story):
+        rule = f' <span class="rule muted">{esc(step.rule)}</span>' if step.rule else ""
+        said = "".join(f"<li>{esc(line)}</li>" for line in step.happened)
+        items.append(f"<li><strong>{esc(step.where)}.</strong>{rule}<ul>{said}</ul></li>")
+    out = ["<h3>What happened</h3>"]
+    if items:
+        out.append('<ol class="plain">' + "".join(items) + "</ol>")
+    out.append(_p(" ".join(plain_ending(story)), "ending"))
+    return out
 
 
 def _steps_items(story: Story) -> list[str]:
@@ -345,25 +360,28 @@ def _fold(title: str, count: str, body: str, is_open: bool) -> str:
 
 
 def _story_html(story: Story) -> list[str]:
-    """Payoffs and ending, then the steps in words and what each is told, both folded."""
+    """Payoffs, then the full record: every step and every message, both folded shut."""
     steps = _steps_items(story)
     told = _told_items(story)
-    is_open = len(told) <= FOLD_AFTER
     out = _payoffs_html(story)
+    out.append("<h3>The full record</h3>")
+    out.append(
+        _p("Every choice and every message of this run, exactly as the environment made it.")
+    )
     out.append(
         _fold(
-            "What happens, step by step",
+            "Every step",
             _plural(len(steps), "step", "steps"),
             '<ol class="steps">' + "".join(steps) + "</ol>",
-            is_open,
+            False,
         )
     )
     out.append(
         _fold(
-            "What each participant is told",
+            "Everything each participant was told",
             _plural(len(told), "message", "messages"),
             _ul(told) if told else _p("Nobody is told anything."),
-            is_open,
+            False,
         )
     )
     return out
@@ -372,15 +390,15 @@ def _story_html(story: Story) -> list[str]:
 def _situation(view: CardView, spec: EnvSpec) -> list[str]:
     card = view.card
     shown = sorted(card.params)
-    out = ["<h3>The situation</h3>"]
+    out = ["<h3>The setup</h3>"]
     lead = ""
     if spec.env_ref == card.env_ref:
         shown = [k for k in shown if k not in spec.params or spec.params[k] != card.params[k]]
         dropped = sorted(k for k in spec.params if k not in card.params)
         lead = (
-            "As in the design, except:"
+            "The same as the design, except:"
             if shown or dropped
-            else "Exactly the parameters of the design."
+            else "The same as the design, with nothing changed."
         )
         items = [esc(f"{k}: left at its default") for k in dropped]
     else:
@@ -401,7 +419,6 @@ def _card(view: CardView, k: int, n: int, spec: EnvSpec) -> str:
         f'<p class="progress">Card {k} of {n}</p>',
         f'<h2 id="h-card{i}" tabindex="-1">{esc(card.title)}</h2>',
         _p(card.why, "lead"),
-        _p(f"Card {card.id}; in the file it is {card.status}.", "muted"),
     ]
     if view.stale:
         out.append(
@@ -410,13 +427,15 @@ def _card(view: CardView, k: int, n: int, spec: EnvSpec) -> str:
             "does now. A card that is out of date cannot be confirmed; you can still say No.</p>"
         )
     out += _situation(view, spec)
+    out += _plain_html(view.story)
     out += [
-        "<h3>Timeline</h3>",
+        "<h3>The same run as a picture</h3>",
         f'<div class="picture">{view.timeline_svg}</div>',
     ]
     out += _story_html(view.story)
     if card.note:
         out.append(_p(f"Note already on this card: {card.note}", "muted"))
+    out.append(_p(f"Card name: {card.id}.", "muted small"))
     yes_disabled = " disabled" if view.stale else ""
     out += [
         f'<div class="verdict only-js" role="group" aria-labelledby="ask-c{i}">',

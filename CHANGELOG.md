@@ -50,7 +50,9 @@ built on them), and `Card.reviewer`. Command line: `gao-idl review bundle|page`,
 (`split_told`, `summarize`) shows what a step told everyone alike once instead of once per
 recipient; the timeline is at most 920 wide, puts its text in a column on the left (what a phone shows first), draws up to twelve participants, writes small nested values out, and repeats the
 lane names in every band; cards show payoffs before two folded lists and keep the answer bar in
-view; disagreeing with a choice needs a note (`cards import` refuses one without); "No…" and
+view; disagreeing with a choice needs a note (`cards import` refuses one without); screens are named Checks, Design,
+Choices, Cards, Finish; each card says what happened in plain sentences made from the run
+(`plain_steps`, `plain_ending`) before the picture, with the exact record folded below; "No…" and
 "Disagree…" open a note box with Submit and Cancel buttons (Enter submits, Shift+Enter is a new line); one-row navigation on phones; `clean_install.sh` and
 `tests/test_packaging.py` check that the wheel carries the page's files.
 

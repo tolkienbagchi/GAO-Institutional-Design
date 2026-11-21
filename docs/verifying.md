@@ -22,22 +22,24 @@ comes from the process tree, the table and the cards from real runs.
 The author hands you one file, `review.html`. Open it in any browser: it needs no server, no
 internet connection and no installation, and it makes no network request.
 
-1. **What was checked.** How many runs of the environment were compared with the design, every
+1. **Checks.** How many runs of the environment were compared with the design, every
    difference found, and the rules of the design that nothing checks automatically. These checks
    compare the code with the design, not the design with the world.
-2. **The design.** Who takes part, the steps, a picture of how they connect, and who knows what
+2. **Design.** Who takes part, the steps, a picture of how they connect, and who knows what
    (taken from runs of the built environment, not from the description), with secrets, payoffs and
    parameters.
-3. **Choices nobody confirmed.** Decisions the author made because your description did not settle
+3. **Choices.** Decisions the author made because your description did not settle
    them. Press **Agree**, or press **Disagree…**: a box opens for why, with **Submit** and
    **Cancel**. A disagreement needs a note, as a "No" on a card does.
 4. **Cards, one at a time.** Each card is one concrete case: "alice bids 8, bob bids 8, carol bids
    1". The line under the title says which readings of your description the case tells apart.
-   Then come the situation, a timeline (one column per participant; what each did or was told is
-   written in the column on the left, and what a step told everyone alike is one line starting
-   "everyone"), each payoff and how the run ends. Below are two folded lists, the steps in words
-   and everything each participant was told, in full. They are open on short cards and closed on
-   long ones; click a heading to open it. The answer bar stays at the bottom of the window while
+   Then come the setup (what differs from the design, if anything) and **What happened**: the
+   run in plain sentences, step by step ("alice and bob chose amount 8; carol chose amount 1.
+   Everyone was told: winner alice, winning payment 8"), ending with what each one has. The
+   sentences are written by the package from the run itself, never by a model; the line under
+   each step's name is the rule as the design words it. Below are the same run as a picture
+   (one column per participant), the payoffs, and the full record, folded shut: every step and
+   everything each participant was told, exactly. The answer bar stays at the bottom of the window while
    you read: **Yes, this is what I meant**, **No…** (a box opens; write what should happen
    instead and press **Submit**, or **Cancel**), **Skip** or **Back**. Keys: `y`, `n` (opens the
    box), `s`, and the left and right arrows; in the box, Enter submits, Shift+Enter starts a new
@@ -74,7 +76,7 @@ gao-idl review page examples/specs/auction.json --cards examples/cards/auction.j
 ```
 
 `review page` builds the page the designer reviews (add `--fuzz 200` to put fuzzed runs into its
-"What was checked" screen). Everything on it comes from the spec, the built process and real runs;
+"Checks" screen). Everything on it comes from the spec, the built process and real runs;
 no part of it is written by hand or by a model. `gao-idl review bundle ... --out bundle.json`
 writes the same content as JSON (`bundle_version: 1`), the format any other front end reads, and
 `gao-idl review page --bundle bundle.json --out review.html` turns a bundle into the page. When the

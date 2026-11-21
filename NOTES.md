@@ -1938,3 +1938,15 @@ Made by the reviewer (Claude) on `m10-fixup` after opening the delivered pages i
   "Disagree…" on a choice open a box with a visible label, **Submit** and **Cancel**; Enter submits, Shift+Enter is a new line,
   Esc closes. An empty note is still refused. A recorded note is put back in the box when it is reopened, and a choice's answer
   line now shows its note. `submitsNote` takes the Shift key as a fourth argument. Bundle, verdict file and state are unchanged.
+- **Screens have one-word names**: Checks, Design, Choices, Cards, Finish (the designer's request).
+- **Cards say what happened in plain sentences** (the designer: the card "is written too technically for a policymaker").
+  `review.tell.plain_steps` and `plain_ending` turn the `Story` into sentences: equal choices are grouped ("alice and bob chose
+  amount 8"), field names read as words, what everyone was told is one sentence, each one's own results are left to the record,
+  steps where nothing happens (a round counter) are skipped, long or nested choices are counted and not listed. Keys are taken in
+  sorted order so a page made from a spec and one made from a saved bundle are identical. Still V3: every name and number is from
+  the run, and the only authored text is the step's description from the spec. The card now reads title, why, setup, what
+  happened, the picture, payoffs, then "The full record" with both lists always folded (`FOLD_AFTER` is gone). "How it ends: the
+  run ends through done" became "The run finished."; the card's id moved to a small line at the bottom.
+- **Not solved by this**: the words are still the build's field names (`amount`, `own payoff`, `round index 0` under "Round 1").
+  Saying "bid" for "amount" needs the author to give wording in the spec; that is a spec change and is not made here.
+

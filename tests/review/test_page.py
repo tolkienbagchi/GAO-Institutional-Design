@@ -149,7 +149,7 @@ def test_bundle_text_and_page_agree_on_the_card_order() -> None:
     bundle = _bundle("pd")
     page = render_page(bundle)
     ids = [v.card.id for v in bundle.cards]
-    positions = [page.index(f"Card {i}; in the file") for i in ids]
+    positions = [page.index(f"Card name: {i}.") for i in ids]
     assert positions == sorted(positions)
     assert json.loads(dump_bundle(bundle))["bundle_version"] == 1
 
@@ -183,7 +183,7 @@ def test_a_public_report_is_shown_once_not_once_per_recipient() -> None:
     (audit,) = [s for s in view.story.steps if s.layer == "audit"]
     revealed = audit.told[0].payload["revealed"]
     text = html.escape(json.dumps(revealed, sort_keys=True), quote=True)
-    article = next(a for a in _articles(page) if "Card audited;" in a)
+    article = next(a for a in _articles(page) if "Card name: audited." in a)
     picture, words = article.split("</svg>", 1)
     assert words.count(text) == 1  # the told list: once, for everyone
     assert picture.count(text) == 1  # the everyone-row's full text, in its <title>
@@ -194,9 +194,10 @@ def test_the_carbon_market_page_is_smaller_than_in_m10() -> None:
     assert len(render_page(_bundle("vcm")).encode("utf-8")) < 978 * 1024
 
 
-def test_short_cards_have_their_lists_open_and_long_ones_folded() -> None:
+def test_the_full_record_is_folded_shut_on_every_card() -> None:
     auction = _articles(render_page(_bundle("auction")))
-    assert all(a.count('<details class="fold" open>') == 2 for a in auction)
+    assert all('<details class="fold" open>' not in a for a in auction)
+    assert all(a.count('<details class="fold">') == 2 for a in auction)
     vcm = _articles(render_page(_bundle("vcm")))
     folded = [a for a in vcm if '<details class="fold">' in a]
     assert folded and all(a.count('<details class="fold">') == 2 for a in folded)
@@ -209,9 +210,12 @@ def test_the_answer_bar_is_sticky_and_inside_every_card(auction_page: str) -> No
     assert re.search(r"\.verdict \{[^}]*background: var\(--bg\);", css, re.S)
     for article in _articles(auction_page):
         assert article.count('<div class="verdict only-js"') == 1
-        assert article.index("<svg") < article.index("Payoffs in total")
-        assert article.index("Payoffs in total") < article.index("What happens, step by step")
-        assert article.index("What each participant is told") < article.index('class="verdict')
+        assert article.index("<h3>What happened</h3>") < article.index("<svg")
+        assert article.index("<svg") < article.index("<h3>Payoffs</h3>")
+        assert article.index("<h3>Payoffs</h3>") < article.index("The full record")
+        assert article.index("Everything each participant was told") < article.index(
+            'class="verdict'
+        )
         # the note box stays shut until "No…" asks for it, and has its own Submit and Cancel
         panel = article[article.index('<div class="note-panel"') :]
         assert re.match(r'<div class="note-panel" id="panel-c\d+" hidden>', panel)
@@ -220,7 +224,7 @@ def test_the_answer_bar_is_sticky_and_inside_every_card(auction_page: str) -> No
 
 
 def test_narrow_navigation_keeps_full_names_for_screen_readers(auction_page: str) -> None:
-    names = ["What was checked", "The design", "Choices nobody confirmed", "Cards", "Finish"]
+    names = ["Checks", "Design", "Choices", "Cards", "Finish"]
     for i, name in enumerate(names):
         assert (
             f'data-screen="{i}" aria-label="{i + 1}. {name}" title="{name}">'
@@ -241,3 +245,13 @@ def test_every_choice_has_a_note_box_with_a_submit_button(auction_page: str) -> 
         assert 'data-verdict="disputed"' not in item  # disagreeing goes through the box
         assert re.search(r'<div class="note-panel only-js" id="panel-a\d+" hidden>', item)
         assert "data-submit-note" in item and "data-cancel-note" in item
+
+
+def test_a_card_says_what_happened_in_plain_sentences_before_the_picture() -> None:
+    (article,) = [a for a in _articles(render_page(_bundle("auction"))) if "name: tie-top." in a]
+    plain = article[article.index("<h3>What happened</h3>") : article.index("<svg")]
+    assert "<strong>Bidding.</strong>" in plain
+    assert "alice and bob chose amount 8; carol chose amount 1." in plain
+    assert "Everyone was told: winner alice, winning payment 8." in plain
+    assert "The run finished. At the end alice has 2; bob and carol each have 0." in plain
+    assert "own_bid" not in plain and " = " not in plain  # field names and pairs: record only
