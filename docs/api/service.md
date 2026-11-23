@@ -34,3 +34,15 @@ connection per request with `Store.open()`, a `Db`. Methods, all parameterised S
 | `Db.card_verdicts(user, slug)`, `Db.assumption_verdicts(user, slug)` | The latest verdict per card, and per choice |
 
 ::: gao_idl.service.store
+
+## `gao_idl.service.runs`
+
+::: gao_idl.service.runs
+
+## `gao_idl.service.pages`
+
+::: gao_idl.service.pages
+
+## `gao_idl.service.app`
+
+::: gao_idl.service.app

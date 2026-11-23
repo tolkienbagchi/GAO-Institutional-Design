@@ -21,7 +21,7 @@ from gao_idl._version import __version__
 from gao_idl.authoring.cards import Story, _pairs, _value
 from gao_idl.authoring.spec import EnvSpec
 from gao_idl.review.bundle import Bundle, CardView, dump_bundle
-from gao_idl.review.draw import esc
+from gao_idl.review.draw import esc, timeline_svg
 from gao_idl.review.tell import (
     Tile,
     addressed,
@@ -422,6 +422,28 @@ def _run_html(story: Story, top: float) -> list[str]:
     out.append(_p(" ".join(plain_ending(story)[:1]), "ending"))
     out += _payoffs_html(story, top)
     return out
+
+
+def render_run(story: Story, title: str, top: float | None = None) -> str:
+    """One run as a scenario card shows it: "What happened", the payoff bars, a folded diagram.
+
+    An HTML fragment, rendered and escaped here: the run by participant, the final payoffs as
+    bars scaled to ``top`` (default: the largest payoff size in ``story``), and the
+    ``timeline_svg(story, title)`` folded under "Detailed diagram". The same markup as a card of
+    ``render_page`` shows for that story.
+    """
+    if top is None:
+        top = max((abs(u) for u in story.utilities.values()), default=0.0)
+    out = _run_html(story, top)
+    out.append(
+        _fold(
+            "Detailed diagram",
+            "every message, in order",
+            f'<div class="picture">{timeline_svg(story, title)}</div>',
+            False,
+        )
+    )
+    return "\n".join(out)
 
 
 def _steps_items(story: Story) -> list[str]:

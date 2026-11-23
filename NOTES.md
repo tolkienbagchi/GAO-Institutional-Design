@@ -2004,3 +2004,55 @@ Made by the reviewer (Claude) on `m10-fixup` after opening the delivered pages i
 - Tables as in the brief. The column for the cast is `cast_name` (`cast` is an SQL keyword). Verdicts are appended,
   never updated: the latest per user and card (by row id, not by `created`, which a coarse or fake clock can tie)
   is the one that counts. A database at a newer schema version than the code is refused.
+
+## 2026-11-23 — M11 task 2: the application (`service/app.py`, `runs.py`, `pages.py`, `review.render_run`)
+- **`render_run(story, title, top=None)`** is added to `review/page.py` and exported from `gao_idl.review`: the
+  existing `_run_html` plus the same "Detailed diagram" fold `_card` draws. `_card` and `render_page` are not
+  touched; `tests/service/test_render_run.py` checks `render_page` against the SHA-256s recorded before the change
+  (three example bundles, with and without `api`) and that every card's markup contains `render_run` of its story.
+- **The M10 page sends no token.** Its `page.js` posts verdicts with `fetch(api, {headers: Content-Type})` only, so
+  against a service where every `/api/...` route needs a bearer token every post would be a 401. The brief also says
+  the M10 page is reused unchanged and that "every page reads the token from `sessionStorage` and sends it". Chosen
+  (most conservative): `page.js` and `render_page` stay unchanged; the service's review page is
+  `render_page(bundle, "/api/environments/<slug>/verdicts")` with one extra inline `<script>` inserted before the
+  page's own, which wraps `window.fetch` to add `Authorization: Bearer <token from sessionStorage>` to same-origin
+  path requests. It is allowed by the page's own CSP (`script-src 'unsafe-inline'`). Not tested in a browser here.
+- **Which page a browser gets.** A browser navigation sends no bearer header, so `/environments/<slug>/review`
+  without a token is the page of the library's bundle (no user data; the same bytes for everyone, cached). With a
+  valid token (an API client, the tests) it is the page of the bundle with that user's verdicts overlaid; with a
+  wrong token it is 401. In a browser, earlier answers therefore come back from the page's `localStorage` (M10
+  behaviour, keyed by the bundle's hash), not from the server; the server's copy is `GET .../verdicts`. Recorded as
+  an underdetermined point; a later brief could have the page fetch its state.
+- **Library data in pages.** The index and run pages render library data (titles, summaries, the parameter form, the
+  casts) on the server: that is administrator configuration, not user data. Everything about the user (runs,
+  verdicts) comes from `/api/...` with the token. Client text is inserted with `textContent`; the only markup a page
+  script inserts is the `html` of `GET /api/runs/{id}`, made by `render_run` on the server and parsed with
+  `DOMParser` (scripts removed, none expected), never assembled from strings and never `innerHTML`.
+- **Running a cast.** The synchronous runner needs every agent's adapter up front, but which agents exist is known
+  only once the environment runs (the PD's entry config has no roles). `runs._Adapters` is a `dict` that makes a
+  `ScriptedAgent` the first time the runner calls `adapters.get(agent)` (the only lookup the runner makes);
+  agents made that way get no `episode_start` (a `ScriptedAgent` needs none). One adapter per agent; each decision is
+  answered by the cast's policy **for the role kind of that decision's role**, so an agent that holds different kinds
+  in different rounds (round-robin PD) is still served. A role kind the cast lacks cannot happen after
+  `load_library`; if it did, the policy raises and the runner times the decision out.
+- **Caps.** `asyncio.run` of `runner.run(...)` is `run_sync` with a handle on the task (the runner itself is
+  unchanged). A `Budget` counts the policy calls of each run (a retried decision counts twice) and reads the clock
+  passed to `make_app` (`time.monotonic` by default) at each decision and between seeds. On a cap it cancels the
+  runner task and the decision's own task; `play_cast` raises `CapExceeded`, the app answers 422 and stores
+  nothing. Limitation: time spent inside one `advance()` (automatic layers) is not interrupted; it is bounded by
+  the library's environments, all small.
+- `MAX_BODY` is 1,000,000 bytes ("1 MB" read as 10^6). A body is read only up to its `Content-Length`; a larger
+  `Content-Length` is refused unread with 413. JSON with `NaN`/`Infinity` is 422.
+- **Status codes.** A path that exists with another method is 404 (the brief lists 401/403/404/409/413/422 only;
+  405 would be more exact). 403 is used for a POST whose `Origin` header names another host than `Host`. A
+  stored run whose environment can no longer replay it is 409 `cannot_replay`. An unexpected exception is 500 with
+  plain words; the trace goes to the server log (`logging`, never the body or headers).
+- Seeds are whole numbers from 0 to 2^32 − 1. A run request with unknown fields (such as `env_ref`) is 422.
+- **Verdicts.** A posted card verdict for an unknown card, a No without a note, a Disagree without a note, a choice
+  whose index or text does not match, duplicates, or a `Verdicts` file for another spec title are 422 and nothing of
+  that request is stored. Otherwise, verdicts whose `outcome_hash` differs from the card's hash now, and
+  confirmations of a stale card, are not stored and the answer is 409 naming them; the rest of the request is
+  stored. The stored `reviewer` is the user's name, not the name in a posted file.
+- **Overlay.** `app.overlay(bundle, verdicts)` sets card `status`, `note` and `reviewer` and marks agreed choices
+  confirmed, and recounts `status.cards` / `assumptions_open`. A verdict whose hash no longer matches is not shown.
+  `expect` is not set (apply_card_verdicts would replay each card; the overlay is display only).
