@@ -56,6 +56,7 @@ nav:
       - testing: api/testing.md
       - authoring: api/authoring.md
       - review: api/review.md
+      - service: api/service.md
   - Design:
       - Decisions: design/decisions.md
   - Acceptance: ACCEPTANCE.md

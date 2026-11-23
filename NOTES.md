@@ -1961,3 +1961,34 @@ Made by the reviewer (Claude) on `m10-fixup` after opening the delivered pages i
   there too; the build cannot tell a broadcast from equal messages.
 - **Size**: the carbon market page grew from about 967 KB to about 1.03 MB; the test's cap is now 1.2 MB.
 
+
+## 2026-11-23 — M11 task 0: gate on the starting repository (`m10-fixup` at `34fe6ed`)
+- **PyPI is unreachable in this sandbox** (`pip download` finds no versions). Python 3.13 has pydantic, numpy, pytest,
+  mypy, mkdocs and mkdocs-material; ruff 0.16.9 is a standalone binary. Missing: `hypothesis`, `pytest-timeout`,
+  `httpx`, `mkdocstrings`, `build`, `hatchling`. No other Python has the dependencies.
+- Baseline, run with `PYTHONPATH=src` on Python 3.13: `ruff check .` pass; `ruff format --check .` pass (231 files);
+  `mypy src/gao_idl` pass (98 files); `pytest -q -m "not slow"` with the two hypothesis files ignored
+  (`tests/core/test_paths_property.py`, `tests/environments/test_pb_rules_property.py`): 960 passed, 5 skipped,
+  12 deselected, 115 s; `pytest -q -m slow` (same two ignored): 12 passed, 154 s. `mkdocs build --strict` does not
+  run (the `mkdocstrings` plugin is not installed); `tests/test_docs.py` runs the reduced build. `python -m build`
+  does not run (no `build`, no `hatchling`). `pytest.ini`'s `timeout` option is unknown without `pytest-timeout`.
+- Before touching `review/page.py` I recorded the SHA-256 of `render_page` for the three example bundles (no fuzz),
+  with and without an `api`, in `tests/service/golden/m10_pages.json`; task 2 tests `render_page` against it.
+
+## 2026-11-23 — M11 task 0: the library (`service/library.py`, `service/casts.py`, `examples/library/`)
+- `Library` keeps each entry's loaded spec, cards and resolved policies in private attributes, filled by
+  `load_library` (`spec_of`, `cards_of`, `policy`, `entry(slug)`). The pinned fields are unchanged; a `Library`
+  built by hand has no loaded specs. Spec and cards paths are relative to the library file (absolute ones work).
+- A cast must name **exactly** the spec's role kinds: a missing kind and an unknown kind are both refused (the brief
+  only asks for "covers"; an unknown kind can only be a typo).
+- `ParamSpec` checks: `int` refuses fractions and bools; `float` accepts ints (stored as floats) and refuses NaN and
+  infinities; `bool` refuses 0/1; `choice` compares with the type as well as the value (`1` is not `1.0`). Bounds
+  apply to numbers only; `choices` to `choice` only. `check_value` is the one checker for defaults and overrides.
+- `resolve_params` merges into a deep copy of `spec.params`. A parameter the user does not send keeps the spec's
+  value, not `ParamSpec.default`; the default is what the form shows first. In the shipped library the two agree.
+- Policies resolve with `importlib` at load time, from the library file only. Casts in `examples/library/library.json`:
+  auction (bid your value; bid 80%), PD (cooperators, defectors, tit for tat, tit for tat against a defector), carbon
+  market (honest verifiers and truthful sellers with naive or skeptical per-project buyers: `environments/vcm/scripted.py`
+  has only an honest verifier). Parameters: auction `reserve`, `rule`, `reveal_bids`; PD `rounds`, `matching`;
+  carbon market `rounds`, `p_audit`, `penalty`, `fee`, `reputation_visible`, `settle_on`. `market_form` is not
+  offered: the carbon-market spec covers `per_project` only.
