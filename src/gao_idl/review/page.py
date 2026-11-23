@@ -23,11 +23,13 @@ from gao_idl.authoring.spec import EnvSpec
 from gao_idl.review.bundle import Bundle, CardView, dump_bundle
 from gao_idl.review.draw import esc
 from gao_idl.review.tell import (
+    Tile,
     addressed,
     participants,
     plain_ending,
-    plain_steps,
+    run_steps,
     split_told,
+    words,
 )
 
 FIXED_SENTENCE = "These checks compare the code with the design, not the design with the world."
@@ -291,24 +293,134 @@ def _where(place: str, layer: str) -> str:
     return f"{place}, step {layer}" if place else f"step {layer}"
 
 
-def _payoffs_html(story: Story) -> list[str]:
+def _payoffs_html(story: Story, top: float) -> list[str]:
+    """Final payoffs as bars; ``top`` is the largest payoff size on the page (one scale)."""
+    if not story.utilities:
+        return []
+    rows = []
+    for agent in participants(story):
+        if agent not in story.utilities:
+            continue
+        value = story.utilities[agent]
+        share = 0 if top <= 0 else round(min(abs(value) / top, 1.0) * 100, 1)
+        side = "neg" if value < 0 else "pos"
+        rows.append(
+            f'<li><span class="who">{esc(agent)}</span>'
+            f'<span class="track"><span class="bar {side}" style="width:{share}%"></span></span>'
+            f'<span class="value">{esc(_value(value))}</span></li>'
+        )
     return [
-        "<h3>Payoffs</h3>",
-        _ul([esc(f"{a}: {_value(story.utilities[a])}") for a in sorted(story.utilities)]),
+        '<div class="run-step payoffs">',
+        "<h4>Final payoffs</h4>",
+        '<ul class="bars">' + "".join(rows) + "</ul>",
+        _p(
+            "Bars use one scale for every card on this page. A hatched bar is a loss.",
+            "muted small",
+        ),
+        "</div>",
     ]
 
 
-def _plain_html(story: Story) -> list[str]:
-    """What happened in plain sentences (from the run), before the picture and the record."""
-    items = []
-    for step in plain_steps(story):
-        rule = f' <span class="rule muted">{esc(step.rule)}</span>' if step.rule else ""
-        said = "".join(f"<li>{esc(line)}</li>" for line in step.happened)
-        items.append(f"<li><strong>{esc(step.where)}.</strong>{rule}<ul>{said}</ul></li>")
+def _simple(value: Any) -> bool:
+    return not isinstance(value, dict | list)
+
+
+def _rows(value: Any) -> bool:
+    """Whether ``value`` is a table: a non-empty dict of non-empty dicts of simple values."""
+    return (
+        isinstance(value, dict)
+        and bool(value)
+        and all(
+            isinstance(r, dict) and r and all(_simple(v) for v in r.values())
+            for r in value.values()
+        )
+    )
+
+
+def _table(value: dict[str, dict[str, Any]]) -> str:
+    cols = sorted({c for r in value.values() for c in r})
+    head = "<tr><th></th>" + "".join(f"<th>{esc(words(c))}</th>" for c in cols) + "</tr>"
+    body = "".join(
+        f"<tr><th>{esc(words(str(k)))}</th>"
+        + "".join(f"<td>{esc(_value(value[k][c])) if c in value[k] else ''}</td>" for c in cols)
+        + "</tr>"
+        for k in sorted(value)
+    )
+    return f'<table class="choice">{head}{body}</table>'
+
+
+def _lines(payload: dict[str, Any]) -> str:
+    """A payload as label and value lines; a nested value becomes a small table or a count."""
+    out = []
+    tables = []
+    for key in sorted(payload):
+        value = payload[key]
+        if _simple(value):
+            out.append(f"<dt>{esc(words(key))}</dt><dd>{esc(_value(value))}</dd>")
+        elif isinstance(value, dict) and value and all(_simple(v) for v in value.values()):
+            inner = ", ".join(f"{words(str(k))} {_value(value[k])}" for k in sorted(value))
+            out.append(f"<dt>{esc(words(key))}</dt><dd>{esc(inner)}</dd>")
+        elif _rows(value):
+            tables.append(f'<p class="what">{esc(words(key))}</p>{_table(value)}')
+        else:
+            n = len(value)
+            count = f"{n} {'entry' if n == 1 else 'entries'}, in the full record"
+            out.append(f'<dt>{esc(words(key))}</dt><dd class="muted">{esc(count)}</dd>')
+    return ("<dl>" + "".join(out) + "</dl>" if out else "") + "".join(tables)
+
+
+def _choice(action: dict[str, Any]) -> str:
+    """A choice inside a tile: one value large, a few as lines, a table of rows as a table."""
+    if not action:
+        return '<p class="did">nothing</p>'
+    if len(action) == 1 and _simple(next(iter(action.values()))):
+        ((key, value),) = action.items()
+        return f'<p class="what">{esc(words(key))}</p><p class="did">{esc(_value(value))}</p>'
+    if _rows(action):
+        return _table(action)
+    return _lines(action)
+
+
+def _tile(tile: Tile) -> str:
+    out = [f'<li class="tile"><p class="who">{esc(tile.agent)}']
+    if tile.kind == "chose":
+        out.append(" chose</p>" + _choice(tile.action or {}))
+    elif tile.kind == "defaulted":
+        out.append(
+            ' did not answer</p><p class="what">the standard choice was used</p>'
+            + _choice(tile.action or {})
+        )
+    elif tile.kind == "dropped":
+        out.append(' did not answer</p><p class="what">left out of this step</p>')
+    else:
+        out.append("</p>")
+    if tile.told:
+        out.append('<p class="what private">told privately</p>' + _lines(tile.told))
+    out.append("</li>")
+    return "".join(out)
+
+
+def _run_html(story: Story, top: float) -> list[str]:
+    """The run by participant: a block per step, a tile per participant, then the payoffs."""
     out = ["<h3>What happened</h3>"]
-    if items:
-        out.append('<ol class="plain">' + "".join(items) + "</ol>")
-    out.append(_p(" ".join(plain_ending(story)), "ending"))
+    for step in run_steps(story):
+        out.append('<div class="run-step">')
+        out.append(f"<h4>{esc(step.where)}</h4>")
+        if step.rule:
+            out.append(_p(step.rule, "rule muted"))
+        if step.tiles:
+            out.append('<ul class="tiles">' + "".join(_tile(t) for t in step.tiles) + "</ul>")
+        for said in step.announced:
+            # equal messages, not a broadcast: a field named "own payoff" can be here too
+            to = "Everyone was told the same" if said.to == "everyone" else f"Told to {said.to}"
+            out.append(
+                f'<div class="announced"><p class="what">{esc(to)}</p>{_lines(said.payload)}</div>'
+            )
+        if step.stopped is not None:
+            out.append(f'<p class="stopped"><strong>{esc(step.stopped)}</strong></p>')
+        out.append("</div>")
+    out.append(_p(" ".join(plain_ending(story)[:1]), "ending"))
+    out += _payoffs_html(story, top)
     return out
 
 
@@ -360,11 +472,10 @@ def _fold(title: str, count: str, body: str, is_open: bool) -> str:
 
 
 def _story_html(story: Story) -> list[str]:
-    """Payoffs, then the full record: every step and every message, both folded shut."""
+    """The full record: every step and every message, both folded shut."""
     steps = _steps_items(story)
     told = _told_items(story)
-    out = _payoffs_html(story)
-    out.append("<h3>The full record</h3>")
+    out = ["<h3>The full record</h3>"]
     out.append(
         _p("Every choice and every message of this run, exactly as the environment made it.")
     )
@@ -411,7 +522,7 @@ def _situation(view: CardView, spec: EnvSpec) -> list[str]:
     return out
 
 
-def _card(view: CardView, k: int, n: int, spec: EnvSpec) -> str:
+def _card(view: CardView, k: int, n: int, spec: EnvSpec, top: float) -> str:
     card = view.card
     i = k - 1
     out = [
@@ -427,11 +538,15 @@ def _card(view: CardView, k: int, n: int, spec: EnvSpec) -> str:
             "does now. A card that is out of date cannot be confirmed; you can still say No.</p>"
         )
     out += _situation(view, spec)
-    out += _plain_html(view.story)
-    out += [
-        "<h3>The same run as a picture</h3>",
-        f'<div class="picture">{view.timeline_svg}</div>',
-    ]
+    out += _run_html(view.story, top)
+    out.append(
+        _fold(
+            "Detailed diagram",
+            "every message, in order",
+            f'<div class="picture">{view.timeline_svg}</div>',
+            False,
+        )
+    )
     out += _story_html(view.story)
     if card.note:
         out.append(_p(f"Note already on this card: {card.note}", "muted"))
@@ -475,7 +590,8 @@ def _cards(bundle: Bundle) -> str:
     ]
     if not n:
         out.append(_p("There are no scenario cards."))
-    out += [_card(v, k, n, bundle.spec) for k, v in enumerate(bundle.cards, 1)]
+    top = max((abs(u) for v in bundle.cards for u in v.story.utilities.values()), default=0.0)
+    out += [_card(v, k, n, bundle.spec, top) for k, v in enumerate(bundle.cards, 1)]
     out.append("</section>")
     return "\n".join(out)
 

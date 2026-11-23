@@ -1949,4 +1949,15 @@ Made by the reviewer (Claude) on `m10-fixup` after opening the delivered pages i
   run ends through done" became "The run finished."; the card's id moved to a small line at the bottom.
 - **Not solved by this**: the words are still the build's field names (`amount`, `own payoff`, `round index 0` under "Round 1").
   Saying "bid" for "amount" needs the author to give wording in the spec; that is a spec change and is not made here.
+- **The run view by participant is the default picture; the timeline is a folded "Detailed diagram"** (the designer: the
+  timeline "is pretty difficult to read"; make the simpler one the default and keep a higher-fidelity one to open). `review.tell.run_steps`
+  gives, per step, a `Tile` per participant (its choice, what only it was told) and the `Announcement`s (what all recipients
+  were told alike); `page._run_html` draws them as HTML tiles that wrap (nine participants: a grid on a laptop, one column on a
+  phone). A one-field choice is shown large, a dict of rows as a small table. Payoffs are bars scaled to the largest payoff
+  size on the page. This replaced the plain-sentence list of the previous entry (`plain_steps` is gone; `plain_ending` stays).
+  The bundle is unchanged: `timeline_svg` is still in it and is what the fold shows.
+- **What the tile view does not show**: the order of moves inside a step (the detailed diagram does). A shared line reads
+  "Everyone was told the same", not "announced", because equal private messages (both defect: each one's "own payoff 1") land
+  there too; the build cannot tell a broadcast from equal messages.
+- **Size**: the carbon market page grew from about 967 KB to about 1.03 MB; the test's cap is now 1.2 MB.
 

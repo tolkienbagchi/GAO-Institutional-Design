@@ -172,9 +172,28 @@ label { display: block; margin: 0.75rem 0 0.35rem; }
   nav.screens .name { display: none; }
 }
 
-ol.plain { padding-left: 1.4rem; }
-ol.plain > li { margin-bottom: 0.6rem; }
-ol.plain .rule { display: block; font-size: 0.92rem; }
-ol.plain ul { margin: 0.25rem 0 0; padding-left: 1.1rem; }
+.run-step { border: 1px solid var(--line); border-radius: 8px; padding: 0.7rem 0.9rem; margin: 0.7rem 0; }
+.run-step h4 { margin: 0 0 0.15rem; font-size: 1rem; }
+.run-step .rule { margin: 0 0 0.6rem; font-size: 0.92rem; }
+ul.tiles { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.6rem;
+  grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr)); }
+.tile, .announced { background: var(--panel); border-radius: 6px; padding: 0.5rem 0.65rem; min-width: 0; }
+.announced { margin-top: 0.6rem; border-left: 4px solid var(--accent); border-radius: 0; }
+.tile .who { margin: 0; font-weight: 700; }
+.what { margin: 0; font-size: 0.85rem; color: var(--muted); }
+.what.private { margin-top: 0.45rem; border-top: 1px dashed var(--line); padding-top: 0.35rem; }
+.did { margin: 0.05rem 0 0; font-size: 1.5rem; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+.run-step dl { margin: 0.15rem 0 0; display: grid; grid-template-columns: auto 1fr; gap: 0.1rem 0.6rem; font-size: 0.92rem; }
+.run-step dt { color: var(--muted); }
+.run-step dd { margin: 0; overflow-wrap: anywhere; }
+table.choice { border-collapse: collapse; font-size: 0.88rem; margin-top: 0.2rem; }
+table.choice th, table.choice td { padding: 0.05rem 0.5rem 0.05rem 0; text-align: left; font-weight: 400; }
+table.choice tr:first-child th, table.choice th:first-child { color: var(--muted); }
+ul.bars { list-style: none; margin: 0.3rem 0 0; padding: 0; }
+ul.bars li { display: grid; grid-template-columns: minmax(2.5rem, max-content) 1fr minmax(3rem, max-content); gap: 0.6rem; align-items: center; margin: 0.2rem 0; }
+ul.bars .track { height: 0.7rem; background: var(--panel); border-radius: 0.35rem; overflow: hidden; }
+ul.bars .bar { display: block; height: 100%; background: var(--accent); }
+ul.bars .bar.neg { background: repeating-linear-gradient(45deg, var(--warn-line), var(--warn-line) 4px, transparent 4px, transparent 7px); }
+ul.bars .value { font-weight: 700; text-align: right; }
 p.ending { font-weight: 600; }
 p.small { font-size: 0.85rem; }

@@ -190,17 +190,18 @@ def test_a_public_report_is_shown_once_not_once_per_recipient() -> None:
     assert len(audit.told) == 9  # nine recipients in M10 meant nine copies
 
 
-def test_the_carbon_market_page_is_smaller_than_in_m10() -> None:
-    assert len(render_page(_bundle("vcm")).encode("utf-8")) < 978 * 1024
+def test_the_carbon_market_page_stays_a_reasonable_size() -> None:
+    # 978 KB in M10; the run view by participant added about 60 KB to the fix-up's page
+    assert len(render_page(_bundle("vcm")).encode("utf-8")) < 1200 * 1024
 
 
 def test_the_full_record_is_folded_shut_on_every_card() -> None:
     auction = _articles(render_page(_bundle("auction")))
     assert all('<details class="fold" open>' not in a for a in auction)
-    assert all(a.count('<details class="fold">') == 2 for a in auction)
+    assert all(a.count('<details class="fold">') == 3 for a in auction)
     vcm = _articles(render_page(_bundle("vcm")))
     folded = [a for a in vcm if '<details class="fold">' in a]
-    assert folded and all(a.count('<details class="fold">') == 2 for a in folded)
+    assert folded and all(a.count('<details class="fold">') == 3 for a in folded)
     assert all("message" in a and "step" in a for a in vcm)
 
 
@@ -210,9 +211,10 @@ def test_the_answer_bar_is_sticky_and_inside_every_card(auction_page: str) -> No
     assert re.search(r"\.verdict \{[^}]*background: var\(--bg\);", css, re.S)
     for article in _articles(auction_page):
         assert article.count('<div class="verdict only-js"') == 1
-        assert article.index("<h3>What happened</h3>") < article.index("<svg")
-        assert article.index("<svg") < article.index("<h3>Payoffs</h3>")
-        assert article.index("<h3>Payoffs</h3>") < article.index("The full record")
+        assert article.index("<h3>What happened</h3>") < article.index("<h4>Final payoffs</h4>")
+        assert article.index("<h4>Final payoffs</h4>") < article.index("Detailed diagram")
+        assert article.index("Detailed diagram") < article.index("<svg")
+        assert article.index("<svg") < article.index("The full record")
         assert article.index("Everything each participant was told") < article.index(
             'class="verdict'
         )
@@ -247,11 +249,26 @@ def test_every_choice_has_a_note_box_with_a_submit_button(auction_page: str) -> 
         assert "data-submit-note" in item and "data-cancel-note" in item
 
 
-def test_a_card_says_what_happened_in_plain_sentences_before_the_picture() -> None:
+def test_a_card_shows_the_run_by_participant_and_keeps_the_diagram_folded() -> None:
     (article,) = [a for a in _articles(render_page(_bundle("auction"))) if "name: tie-top." in a]
-    plain = article[article.index("<h3>What happened</h3>") : article.index("<svg")]
-    assert "<strong>Bidding.</strong>" in plain
-    assert "alice and bob chose amount 8; carol chose amount 1." in plain
-    assert "Everyone was told: winner alice, winning payment 8." in plain
-    assert "The run finished. At the end alice has 2; bob and carol each have 0." in plain
-    assert "own_bid" not in plain and " = " not in plain  # field names and pairs: record only
+    run = article[article.index("<h3>What happened</h3>") : article.index("Detailed diagram")]
+    assert "<h4>Bidding</h4>" in run and "<h4>Settlement</h4>" in run
+    assert run.count('<li class="tile">') == 6  # three bidders in each of two steps
+    assert '<p class="who">alice chose</p><p class="what">amount</p><p class="did">8</p>' in run
+    assert "Everyone was told the same" in run and "told privately" in run
+    assert "<dt>winner</dt><dd>alice</dd>" in run and "<dt>winning payment</dt><dd>8</dd>" in run
+    assert "own_bid" not in run and " = " not in run  # field names and pairs: record only
+    assert "<svg" not in run
+    bars = run[run.index("<h4>Final payoffs</h4>") :]
+    assert bars.count('<span class="bar pos"') == 3 and "The run finished." in run
+    folded = article[article.index("Detailed diagram") :]
+    assert folded.index("<svg") < folded.index("The full record")
+
+
+def test_payoff_bars_share_one_scale_and_mark_losses() -> None:
+    bundle = _bundle("auction")
+    top = max(abs(u) for v in bundle.cards for u in v.story.utilities.values())
+    articles = _articles(render_page(bundle))
+    (lost,) = [a for a in articles if "name: overbid." in a]
+    assert '<span class="bar neg" style="width:' in lost  # bob overbids and ends below zero
+    assert top == 10 and '<span class="bar pos" style="width:100.0%"' in "".join(articles)

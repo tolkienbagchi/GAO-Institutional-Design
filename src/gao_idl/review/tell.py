@@ -12,9 +12,9 @@ Stability: supporting API: documented in the API reference, but not re-exported 
 
 import json
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, Literal
 
-from gao_idl.authoring.cards import StepView, Story, Told, _value
+from gao_idl.authoring.cards import Story, Told, _value
 from gao_idl.core.ids import role_sort_key
 from gao_idl.core.schemas import FrozenModel
 
@@ -154,7 +154,6 @@ def participants(story: Story) -> list[str]:
 # ------------------------------------------------------------------ the run in plain sentences
 
 MANY_ENDINGS = 4  # with more distinct payoffs than this the ending points to the list
-WRITTEN_OUT = 3  # a choice or announcement with more fields than this is counted, not listed
 
 
 def words(name: str) -> str:
@@ -170,106 +169,77 @@ def names(people: Sequence[str]) -> str:
     return ", ".join(people[:-1]) + " and " + people[-1]
 
 
-def _short(payload: dict[str, Any]) -> str | None:
-    """``payload`` as ``field value, field value``; None when it is too long or nested to say."""
-    if not payload or len(payload) > WRITTEN_OUT or not all(_plain(v) for v in payload.values()):
-        return None
-    return ", ".join(f"{words(k)} {_value(payload[k])}" for k in sorted(payload))
+class Tile(FrozenModel):
+    """One participant in one step: what it did and what only it (or its group) was told."""
+
+    agent: str
+    kind: Literal["chose", "defaulted", "dropped", "told"]
+    action: dict[str, Any] | None
+    told: dict[str, Any]
 
 
-def _parts(payload: dict[str, Any]) -> str:
-    n = len(payload)
-    return "1 part" if n == 1 else f"{n} parts"
+class Announcement(FrozenModel):
+    """Something several participants of a step were told alike; ``to`` is ``everyone`` or names."""
+
+    to: str
+    payload: dict[str, Any]
 
 
-def _move_sentences(step: StepView) -> list[str]:
-    out: list[str] = []
-    groups: dict[str, tuple[list[str], dict[str, Any]]] = {}
-    for move in sorted(step.moves, key=lambda m: role_sort_key(m.agent)):
-        if move.kind == "dropped":
-            out.append(f"{move.agent} did not answer and was left out of this step.")
-            continue
-        action = move.action or {}
-        if move.kind == "defaulted":
-            said = _short(action)
-            used = f": {said}" if said else ""
-            out.append(f"{move.agent} did not answer, so the standard choice was used{used}.")
-            continue
-        key = _same(action)
-        if key in groups:
-            groups[key][0].append(move.agent)
-        else:
-            groups[key] = ([move.agent], action)
-    chose: list[str] = []
-    longer: list[str] = []
-    for who, action in groups.values():
-        said = _short(action)
-        if said is None:
-            longer += who
-        else:
-            chose.append(f"{names(who)} chose {said}")
-    lines = ["; ".join(chose) + "."] if chose else []
-    if longer:
-        verb = "each made a choice" if len(longer) > 1 else "made a choice"
-        lines.append(f"{names(longer)} {verb} with several parts (listed in the full record).")
-    return lines + out
-
-
-def _told_sentences(step: StepView, everyone: Sequence[str]) -> list[str]:
-    out: list[str] = []
-    private: list[str] = []
-    for row in split_told(step.told):
-        if row.to:
-            private += row.to
-            continue
-        to = addressed(row, step.told, everyone)
-        who = "Everyone" if to == "everyone" else names(to.split(", "))
-        simple = {k: row.payload[k] for k in sorted(row.payload) if _plain(row.payload[k])}
-        rest = len(row.payload) - len(simple)
-        said = ", ".join(f"{words(k)} {_value(v)}" for k, v in list(simple.items())[:6])
-        more = len(simple) - min(len(simple), 6) + rest
-        if said and more:
-            said += f", and {more} more {'item' if more == 1 else 'items'} (in the full record)"
-        elif not said:
-            said = f"{more} {'item' if more == 1 else 'items'} listed in the full record"
-        verb = "were" if who != "Everyone" and " and " in who else "was"
-        out.append(f"{who} {verb} told: {said}.")
-    if private:
-        if out:
-            out.append("Each was also told their own result (in the full record).")
-        else:
-            who = names(sorted(set(private), key=role_sort_key))
-            out.append(f"{who}: each was told their own result (in the full record).")
-    return out
-
-
-class PlainStep(FrozenModel):
-    """One step of a run in plain sentences: where, the rule as the spec words it, what happened."""
+class RunStep(FrozenModel):
+    """One step of a run for the run view: where, the rule as the spec words it, who did what."""
 
     where: str
     rule: str
-    happened: list[str]
+    tiles: list[Tile]
+    announced: list[Announcement]
+    stopped: str | None
 
 
-def plain_steps(story: Story) -> list[PlainStep]:
-    """The run as plain sentences, one entry per step in which somebody chose or was told.
+def run_steps(story: Story) -> list[RunStep]:
+    """The run by participant: one entry per step in which somebody chose or was told.
 
-    Every name and number comes from ``story`` (a run of the built environment); ``rule`` is the
-    step's description from the spec. Steps where nobody acts and nothing is announced (a round
-    counter) are left out. Long or nested choices are counted here and listed in the full record.
+    Every name and value comes from ``story`` (a run of the built environment); ``rule`` is the
+    step's description from the spec. Steps where nobody acts and nothing is told (a round
+    counter) are left out. A tile holds a participant's choice and the fields only it was told;
+    fields every recipient of the step was told alike are one announcement. Tiles are in natural
+    order of the participants' names, so the result does not depend on the order of events.
     """
     everyone = participants(story)
-    out: list[PlainStep] = []
+    out: list[RunStep] = []
     for step in story.steps:
-        happened = _move_sentences(step) + _told_sentences(step, everyone)
-        if step.stopped is not None:
-            happened.append(f"The run stopped here: {step.stopped}")
-        if not happened:
+        own: dict[str, dict[str, Any]] = {}
+        announced: list[Announcement] = []
+        for row in split_told(step.told):
+            if row.to:
+                for agent in row.to:
+                    own[agent] = row.payload
+            else:
+                to = addressed(row, step.told, everyone)
+                announced.append(Announcement(to=to, payload=row.payload))
+        moves = {m.agent: m for m in step.moves}
+        tiles = []
+        for agent in sorted(set(moves) | set(own), key=role_sort_key):
+            move = moves.get(agent)
+            tiles.append(
+                Tile(
+                    agent=agent,
+                    kind=move.kind if move else "told",
+                    action=move.action if move else None,
+                    told=own.get(agent, {}),
+                )
+            )
+        if not tiles and not announced and step.stopped is None:
             continue
         label = words(step.layer) or "step"
         where = f"{step.place}: {label}" if step.place else label
         out.append(
-            PlainStep(where=where[:1].upper() + where[1:], rule=step.description, happened=happened)
+            RunStep(
+                where=where[:1].upper() + where[1:],
+                rule=step.description,
+                tiles=tiles,
+                announced=announced,
+                stopped=step.stopped,
+            )
         )
     return out
 

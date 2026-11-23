@@ -33,13 +33,15 @@ internet connection and no installation, and it makes no network request.
    **Cancel**. A disagreement needs a note, as a "No" on a card does.
 4. **Cards, one at a time.** Each card is one concrete case: "alice bids 8, bob bids 8, carol bids
    1". The line under the title says which readings of your description the case tells apart.
-   Then come the setup (what differs from the design, if anything) and **What happened**: the
-   run in plain sentences, step by step ("alice and bob chose amount 8; carol chose amount 1.
-   Everyone was told: winner alice, winning payment 8"), ending with what each one has. The
-   sentences are written by the package from the run itself, never by a model; the line under
-   each step's name is the rule as the design words it. Below are the same run as a picture
-   (one column per participant), the payoffs, and the full record, folded shut: every step and
-   everything each participant was told, exactly. The answer bar stays at the bottom of the window while
+   Then come the setup (what differs from the design, if anything) and **What happened**: one
+   block per step in which somebody chose or was told something, with the rule as the design
+   words it and one tile per participant showing what it chose and what only it was told. What
+   every participant of the step was told alike is one marked line under the tiles. The final
+   payoffs follow as bars, on one scale for all cards of the page, so cards can be compared; a
+   hatched bar is a loss. All of it is made by the package from the run itself, never by a
+   model. Folded below, for when you need them: the **Detailed diagram** (one column per
+   participant, every message in the order it was sent) and the full record (every step and
+   everything each participant was told, exactly). The answer bar stays at the bottom of the window while
    you read: **Yes, this is what I meant**, **No…** (a box opens; write what should happen
    instead and press **Submit**, or **Cancel**), **Skip** or **Back**. Keys: `y`, `n` (opens the
    box), `s`, and the left and right arrows; in the box, Enter submits, Shift+Enter starts a new
