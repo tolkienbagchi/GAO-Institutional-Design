@@ -29,9 +29,10 @@ connection per request with `Store.open()`, a `Db`. Methods, all parameterised S
 | `Db.add_runs(user, slug, params, cast, [(seed, snapshot, summary), ...])` | Stores the runs of one request in one transaction; returns their ids |
 | `Db.runs(user, slug=None, limit=200)` | This user's runs, newest first, without snapshots |
 | `Db.run(user, run_id)` | One of this user's runs with its snapshot, or `None` (also for another user's run) |
-| `Db.add_card_verdict(user, slug, card_id, verdict, note, outcome_hash)` | Records a card verdict as given |
-| `Db.add_assumption_verdict(user, slug, index, text, verdict, note)` | Records an answer to a choice as given |
+| `Db.add_card_verdict(user, slug, card_id, verdict, note, outcome_hash, spec_title="")` | Records a card verdict as given |
+| `Db.add_assumption_verdict(user, slug, index, text, verdict, note, spec_title="")` | Records an answer to a choice as given |
 | `Db.card_verdicts(user, slug)`, `Db.assumption_verdicts(user, slug)` | The latest verdict per card, and per choice |
+| `Db.spec_title(user, slug)` | The spec title of this user's latest verdict on the entry, or `None` |
 
 ::: gao_idl.service.store
 

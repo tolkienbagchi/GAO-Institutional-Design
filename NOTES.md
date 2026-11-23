@@ -2056,3 +2056,17 @@ Made by the reviewer (Claude) on `m10-fixup` after opening the delivered pages i
 - **Overlay.** `app.overlay(bundle, verdicts)` sets card `status`, `note` and `reviewer` and marks agreed choices
   confirmed, and recounts `status.cards` / `assumptions_open`. A verdict whose hash no longer matches is not shown.
   `expect` is not set (apply_card_verdicts would replay each card; the overlay is display only).
+
+## 2026-11-23 — M11 task 3: administration (`gao-idl service ...`)
+- `service init --db`, `service add-user NAME --db` (prints the token once, on its own last line),
+  `service serve --library --db [--host 127.0.0.1] [--port 8000]` (wsgiref, says on stderr it is for development
+  only; request lines are logged by the app's logger, wsgiref's own per-request line is silenced) and
+  `service export-verdicts SLUG --user NAME --db --out` as pinned.
+- **The export needs a spec title** (`Verdicts.spec_title`), and the pinned command has no `--library`. Chosen: a
+  second migration adds `spec_title` to both verdict tables (the app stores the entry's spec title with each verdict)
+  and the export takes the title of the user's latest verdict on that entry. An optional `--library FILE` takes the
+  title from the library instead, which also allows exporting an empty file for a user with no verdicts (without it
+  that case exits 2 and says so). The export lists every latest verdict as stored; `cards import` applies the
+  hash rule again, so one made stale by a later change of the environment is refused there.
+- The second migration also exercises the ordered list of migrations: `tests/service/test_cli_service.py` migrates
+  a version-1 file with rows to version 2.

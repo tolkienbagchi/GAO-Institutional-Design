@@ -66,6 +66,12 @@ MIGRATIONS: tuple[str, ...] = (
     );
     CREATE INDEX assumption_verdicts_by_user ON assumption_verdicts (user_id, slug, idx, id);
     """,
+    # 2: the spec title a verdict was given under, so a verdicts file can be exported without
+    # the library (`gao-idl service export-verdicts`)
+    """
+    ALTER TABLE card_verdicts ADD COLUMN spec_title TEXT NOT NULL DEFAULT '';
+    ALTER TABLE assumption_verdicts ADD COLUMN spec_title TEXT NOT NULL DEFAULT '';
+    """,
 )
 SCHEMA_VERSION = len(MIGRATIONS)
 
@@ -284,24 +290,51 @@ class Db:
     # ---------------------------------------------------------------- verdicts
 
     def add_card_verdict(
-        self, user: User, slug: str, card_id: str, verdict: str, note: str, outcome_hash: str
+        self,
+        user: User,
+        slug: str,
+        card_id: str,
+        verdict: str,
+        note: str,
+        outcome_hash: str,
+        spec_title: str = "",
     ) -> None:
         """Record a card verdict as given (the latest per user and card counts)."""
         self._conn.execute(
             "INSERT INTO card_verdicts (user_id, slug, card_id, verdict, note, outcome_hash, "
-            "created) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (user.id, slug, card_id, verdict, note, outcome_hash, self._clock()),
+            "created, spec_title) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (user.id, slug, card_id, verdict, note, outcome_hash, self._clock(), spec_title),
         )
 
     def add_assumption_verdict(
-        self, user: User, slug: str, index: int, text: str, verdict: str, note: str
+        self,
+        user: User,
+        slug: str,
+        index: int,
+        text: str,
+        verdict: str,
+        note: str,
+        spec_title: str = "",
     ) -> None:
         """Record an answer to a choice as given (the latest per user and index counts)."""
         self._conn.execute(
-            "INSERT INTO assumption_verdicts (user_id, slug, idx, text, verdict, note, created) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (user.id, slug, index, text, verdict, note, self._clock()),
+            "INSERT INTO assumption_verdicts (user_id, slug, idx, text, verdict, note, created, "
+            "spec_title) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (user.id, slug, index, text, verdict, note, self._clock(), spec_title),
         )
+
+    def spec_title(self, user: User, slug: str) -> str | None:
+        """The spec title of this user's most recent verdict on one entry, or ``None``."""
+        row = self._conn.execute(
+            "SELECT spec_title, created, kind, id FROM ("
+            "SELECT spec_title, created, 0 AS kind, id FROM card_verdicts "
+            "WHERE user_id = ? AND slug = ? AND spec_title != '' UNION ALL "
+            "SELECT spec_title, created, 1 AS kind, id FROM assumption_verdicts "
+            "WHERE user_id = ? AND slug = ? AND spec_title != '') "
+            "ORDER BY created DESC, kind DESC, id DESC LIMIT 1",
+            (user.id, slug, user.id, slug),
+        ).fetchone()
+        return None if row is None else str(row["spec_title"])
 
     def card_verdicts(self, user: User, slug: str) -> list[CardVerdictRow]:
         """This user's latest verdict on each card of one entry, by card id."""
