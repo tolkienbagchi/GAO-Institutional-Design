@@ -42,6 +42,7 @@ nav:
       - 11. Carbon market with verifiers: tutorials/vcm.md
   - Designing an environment: designing.md
   - Verifying an environment: verifying.md
+  - The library service: service.md
   - Reproducible runs: runs.md
   - For AI agents: for-agents/llms.md
   - API reference:

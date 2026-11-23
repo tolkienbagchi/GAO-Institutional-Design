@@ -2087,3 +2087,14 @@ Made by the reviewer (Claude) on `m10-fixup` after opening the delivered pages i
 - The end-to-end test expects `cards verify` to exit 1 after the import: the imported "No" is a rejected card that
   the environment still reproduces, which is what `verify` reports (work for the author). Nothing under `examples/`
   is written (the test compares every JSON file's bytes before and after).
+
+## 2026-11-23 — M11 task 5: operating notes
+- `docs/service.md` (in the navigation after "Verifying an environment"): setting up, running under a WSGI server
+  behind a TLS proxy (an example `wsgi.py`; no server named as a dependency, no Dockerfile), what is stored and for
+  how long (until an administrator deletes it: there is no expiry), backing up with SQLite's `.backup`, what is
+  logged, who is trusted, the page-route exception to "every endpoint requires a token", the API, the caps and why,
+  and what is not done. Also `docs/api/service.md`, a section in `docs/for-agents/llms.md`, a pointer in
+  `docs/verifying.md` and `README.md`, the API index, and `CHANGELOG.md`.
+- **Not in the brief, written in `docs/service.md`:** a token can be revoked only by deleting the user's row; the
+  proxy must keep the `Host` header (the 403 origin check compares `Origin` with `Host`); the WSGI server's request
+  timeout must exceed the 10 s run cap.

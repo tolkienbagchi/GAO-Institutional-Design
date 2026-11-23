@@ -57,6 +57,16 @@ diagram" and the exact record folded below; "No…" and
 "Disagree…" open a note box with Submit and Cancel buttons (Enter submits, Shift+Enter is a new line); one-row navigation on phones; `clean_install.sh` and
 `tests/test_packaging.py` check that the wheel carries the page's files.
 
+**M11, the library service.** New supporting package `gao_idl.service`: a WSGI application on the
+standard library and `sqlite3` (no new dependency) through which a person with only a browser sees
+a library of vetted environments (`load_library`, `examples/library/library.json`), opens the M10
+review page with each verdict stored as they give it (refused with 409 if the card's behaviour
+changed), and runs an entry with changed parameters and a named cast of scripted policies over a few
+seeds within caps (10 seeds, 2,000 decisions per run, 10 seconds per request), shown as a card
+shows a run. Bearer tokens per user, stored only as hashes; parameterised SQL; bodies over 1 MB
+refused; nothing a client names is ever imported. `gao_idl.review.render_run` (one run as a card
+shows it). Command line: `gao-idl service init|add-user|serve|export-verdicts`. `docs/service.md`.
+
 Replace "Unreleased" with the date when the tag is cut.
 
 [0.1.0]: https://github.com/tolkienbagchi/GAO-Institutional-Design/releases/tag/v0.1.0

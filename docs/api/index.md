@@ -69,3 +69,5 @@ The other pages document **supporting** modules: reachable and described, but no
 - [`environments`](environments.md): Ready-made environments: auction, participatory budgeting, repeated prisoner's dilemma, toy tasks.
 - [`testing`](testing.md): Invariant checks to run on your own environments.
 - [`authoring`](authoring.md): Specs, design pages, the spec check and scenario cards.
+- [`review`](review.md): The review page, its bundle and its pictures, and verdicts.
+- [`service`](service.md): The library service: a WSGI application for people with only a browser.

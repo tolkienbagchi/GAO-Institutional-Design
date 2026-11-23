@@ -68,6 +68,16 @@ check that an environment is the institution its designer described: a spec of t
 self-contained review page (no server, no network) in which the designer reads the design and
 confirms or rejects worked scenarios one at a time. See `docs/verifying.md`.
 
+```bash
+gao-idl service init --db service.db
+gao-idl service add-user "Ana" --db service.db
+gao-idl service serve --library examples/library/library.json --db service.db
+```
+
+serve a library of vetted environments to people with only a browser: the review page with their
+verdicts stored, and runs with a cast of scripted participants (development server; see
+`docs/service.md`).
+
 ## License
 
 Apache License 2.0 (see `LICENSE`). Copyright 2026 Tolkien Bagchi. To cite the software, see

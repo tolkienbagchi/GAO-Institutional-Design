@@ -106,6 +106,14 @@ Cards are data: a script maps each agent to its actions in the order its decisio
 `null` means the agent does not act. To make a card from a run driven by policies, play it and
 call `gao_idl.authoring.script_of(session)`. `scripts/make_example_cards.py` shows both.
 
+## Reviewing through the library service
+
+Instead of handing out a page file, an administrator can put the environment in a library and run
+the [library service](service.md): the reviewer opens the same review page in a browser, each
+verdict is stored on the server as it is given, and
+`gao-idl service export-verdicts SLUG --user NAME --db DB --out verdicts.json` writes the file that
+`gao-idl cards import` applies, exactly as for a downloaded one.
+
 ## More evidence than a handful of cards
 
 Cards are few and chosen by the author. Two tools widen the net; neither needs a person until it
