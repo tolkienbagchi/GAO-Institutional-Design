@@ -2070,3 +2070,20 @@ Made by the reviewer (Claude) on `m10-fixup` after opening the delivered pages i
   hash rule again, so one made stale by a later change of the environment is refused there.
 - The second migration also exercises the ordered list of migrations: `tests/service/test_cli_service.py` migrates
   a version-1 file with rows to version 2.
+
+## 2026-11-23 — M11 task 4: tests (`tests/service/`)
+- Files: `test_library.py`, `test_store.py`, `test_render_run.py`, `test_app.py` (each route's happy path and error
+  codes), `test_cli_service.py`, `test_security.py` (the brief's list), `test_end_to_end.py`, `test_socket.py`
+  (`slow`: `gao-idl service serve` in a subprocess on a free local port, queried with `urllib` with proxies off).
+  `helpers.call` builds a WSGI environ and calls the application directly.
+- The import sentinel is a module written to a temporary directory put on `sys.path`; it writes a marker file when
+  imported. Its `module:function` is sent as `env_ref`, as a cast, as a parameter name and value, as a slug and as a
+  card id; the test checks the marker is absent and the module is not in `sys.modules`.
+- **The decision cap is costly to reach for real.** The PD slows down as rounds accumulate: 501 rounds (2,004
+  decisions) take about 5 s here, so a library entry that allows that many decisions would meet the 10 s time cap
+  at about the same point. The test reaches 2,001 decisions once through a test library that lets the PD's rounds
+  go to 1,000; the exact boundary (20 decisions pass at a cap of 20, fail at 19) is a unit test of `Budget`.
+- The time cap is tested with a clock that moves one second each time it is read.
+- The end-to-end test expects `cards verify` to exit 1 after the import: the imported "No" is a rejected card that
+  the environment still reproduces, which is what `verify` reports (work for the author). Nothing under `examples/`
+  is written (the test compares every JSON file's bytes before and after).
