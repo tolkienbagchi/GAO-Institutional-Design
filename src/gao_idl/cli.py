@@ -1,4 +1,5 @@
-"""Command line: ``gao-idl run``, ``replay``, ``spec``, ``cards`` and ``diverge``.
+"""Command line: ``gao-idl run``, ``replay``, ``spec``, ``cards``, ``diverge``, ``review`` and
+``service``.
 
 Also available as ``python -m gao_idl.cli``. ``run`` plays an environment from a JSON config and
 writes the session snapshot and ledger totals. The config names the environment factory
@@ -33,6 +34,7 @@ Stability: internal; the command-line interface is the supported way to use this
 
 import argparse
 import json
+import sqlite3
 import sys
 from pathlib import Path
 from typing import Any
@@ -464,6 +466,108 @@ def _cmd_review_page(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_service_init(args: argparse.Namespace) -> int:
+    from gao_idl.service.store import SCHEMA_VERSION, init_db
+
+    try:
+        applied = init_db(args.db)
+    except (OSError, RuntimeError, sqlite3.Error) as e:
+        print(f"cannot prepare the database {args.db}: {e}", file=sys.stderr)
+        return 2
+    done = f"migrations {applied} applied" if applied else "already current"
+    print(f"{args.db}: schema version {SCHEMA_VERSION} ({done})")
+    return 0
+
+
+def _cmd_service_add_user(args: argparse.Namespace) -> int:
+    from gao_idl.service.store import Store
+
+    try:
+        user, token = Store(args.db).add_user(args.name)
+    except (OSError, RuntimeError, sqlite3.Error, ValueError) as e:
+        print(f"cannot add the user: {e}", file=sys.stderr)
+        return 2
+    print(f"user {user.name!r} added. Their token, shown only now (only its hash is stored):")
+    print(token)
+    return 0
+
+
+def _cmd_service_serve(args: argparse.Namespace) -> int:  # pragma: no cover (blocks; slow test)
+    import logging
+    from wsgiref.simple_server import WSGIRequestHandler, make_server
+
+    from gao_idl.service import load_library
+    from gao_idl.service.app import make_app
+    from gao_idl.service.store import Store
+
+    class _Quiet(WSGIRequestHandler):
+        def log_message(self, format: str, *args: Any) -> None:  # the app logs each request
+            pass
+
+    try:
+        library = load_library(args.library)
+        store = Store(args.db)
+    except (OSError, RuntimeError, sqlite3.Error, ValueError) as e:
+        print(f"cannot start: {e}", file=sys.stderr)
+        return 2
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    server = make_server(args.host, args.port, make_app(library, store), handler_class=_Quiet)
+    print(
+        "This is wsgiref's development server, for development only: run the application under "
+        "a WSGI server behind a TLS proxy for anything else (see docs/service.md).",
+        file=sys.stderr,
+    )
+    print(f"serving {len(library.entries)} environments on {args.host}:{server.server_port}")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
+    return 0
+
+
+def _cmd_service_export(args: argparse.Namespace) -> int:
+    from gao_idl.service.app import user_verdicts
+    from gao_idl.service.store import Store
+
+    try:
+        store = Store(args.db)
+        title = None
+        if args.library is not None:
+            from gao_idl.service import load_library
+
+            library = load_library(args.library)
+            title = library.spec_of(library.entry(args.slug)).title
+        with store.open() as db:
+            user = db.user_by_name(args.user)
+            if user is None:
+                print(f"no user called {args.user!r}", file=sys.stderr)
+                return 2
+            title = title or db.spec_title(user, args.slug)
+            if title is None:
+                print(
+                    f"{args.user} has no verdicts on {args.slug!r}; give --library to export "
+                    "an empty file",
+                    file=sys.stderr,
+                )
+                return 2
+            verdicts = user_verdicts(db, user, args.slug, title)
+    except KeyError:
+        print(f"the library has no environment {args.slug!r}", file=sys.stderr)
+        return 2
+    except (OSError, RuntimeError, sqlite3.Error, ValueError) as e:
+        print(f"cannot export: {e}", file=sys.stderr)
+        return 2
+    text = json.dumps(verdicts.model_dump(mode="json"), indent=1, ensure_ascii=False)
+    args.out.write_text(text + "\n", encoding="utf-8")
+    print(
+        f"{len(verdicts.cards)} card verdicts and {len(verdicts.assumptions)} answers by "
+        f"{user.name} on {args.slug} -> {args.out}"
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """Command-line entry point (``gao-idl``); returns the exit status."""
     parser = argparse.ArgumentParser(
@@ -557,6 +661,33 @@ def main(argv: list[str] | None = None) -> int:
     page_p.add_argument("--api", default=None, help=argparse.SUPPRESS)  # M11: post verdicts here
     page_p.add_argument("--out", type=Path, required=True, help="HTML file to write")
     page_p.set_defaults(func=_cmd_review_page)
+
+    service_p = sub.add_parser("service", help="run and administer the library service")
+    service_sub = service_p.add_subparsers(dest="service_command", required=True)
+    init_p = service_sub.add_parser("init", help="create or migrate the service's database")
+    init_p.add_argument("--db", type=Path, required=True, help="SQLite database file")
+    init_p.set_defaults(func=_cmd_service_init)
+    add_user_p = service_sub.add_parser("add-user", help="add a user and print their token once")
+    add_user_p.add_argument("name")
+    add_user_p.add_argument("--db", type=Path, required=True, help="SQLite database file")
+    add_user_p.set_defaults(func=_cmd_service_add_user)
+    serve_p = service_sub.add_parser("serve", help="serve the library (development server only)")
+    serve_p.add_argument("--library", type=Path, required=True, help="library JSON file")
+    serve_p.add_argument("--db", type=Path, required=True, help="SQLite database file")
+    serve_p.add_argument("--host", default="127.0.0.1")
+    serve_p.add_argument("--port", type=int, default=8000)
+    serve_p.set_defaults(func=_cmd_service_serve)
+    export_p = service_sub.add_parser(
+        "export-verdicts", help="write one user's verdicts in the review page's format"
+    )
+    export_p.add_argument("slug", help="the library entry")
+    export_p.add_argument("--user", required=True, help="the user's name")
+    export_p.add_argument("--db", type=Path, required=True, help="SQLite database file")
+    export_p.add_argument("--out", type=Path, required=True, help="verdicts JSON file to write")
+    export_p.add_argument(
+        "--library", type=Path, default=None, help="library file (for the spec title)"
+    )
+    export_p.set_defaults(func=_cmd_service_export)
     args = parser.parse_args(argv)
     return int(args.func(args))
 

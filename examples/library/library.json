@@ -1,0 +1,194 @@
+{
+ "entries": [
+  {
+   "slug": "auction",
+   "title": "Sealed-bid auction with a public reserve price",
+   "spec": "../specs/auction.json",
+   "cards": "../cards/auction.json",
+   "params": [
+    {
+     "name": "reserve",
+     "label": "Reserve price",
+     "help": "The lowest bid the seller accepts. Bids below it are ignored.",
+     "kind": "float",
+     "minimum": 0,
+     "maximum": 15,
+     "default": 2.0
+    },
+    {
+     "name": "rule",
+     "label": "Pricing rule",
+     "help": "What the winner pays: their own bid, or the highest other bid (at least the reserve).",
+     "kind": "choice",
+     "choices": ["second_price", "first_price"],
+     "default": "second_price"
+    },
+    {
+     "name": "reveal_bids",
+     "label": "Publish all bids afterwards",
+     "help": "Whether every bidder is told all bids after the auction.",
+     "kind": "bool",
+     "default": false
+    }
+   ],
+   "casts": [
+    {
+     "name": "truthful",
+     "label": "Everyone bids their value",
+     "description": "Each bidder bids exactly what the item is worth to them.",
+     "policies": {"bidder": "gao_idl.service.casts:bid_value"}
+    },
+    {
+     "name": "shading",
+     "label": "Everyone bids 80% of their value",
+     "description": "Each bidder shades their bid to 80% of their value.",
+     "policies": {"bidder": "gao_idl.service.casts:bid_80_percent"}
+    }
+   ]
+  },
+  {
+   "slug": "prisoners-dilemma",
+   "title": "Repeated prisoner's dilemma in pairs",
+   "spec": "../specs/pd.json",
+   "cards": "../cards/pd.json",
+   "params": [
+    {
+     "name": "rounds",
+     "label": "Number of rounds",
+     "help": "How many times each pair plays.",
+     "kind": "int",
+     "minimum": 1,
+     "maximum": 20,
+     "default": 3
+    },
+    {
+     "name": "matching",
+     "label": "Who plays whom",
+     "help": "The same partner every round, or a new partner each round.",
+     "kind": "choice",
+     "choices": ["fixed", "round_robin"],
+     "default": "fixed"
+    }
+   ],
+   "casts": [
+    {
+     "name": "cooperators",
+     "label": "Everyone always cooperates",
+     "description": "Both players of every pair cooperate in every round.",
+     "policies": {
+      "row": "gao_idl.service.casts:always_cooperate",
+      "col": "gao_idl.service.casts:always_cooperate"
+     }
+    },
+    {
+     "name": "defectors",
+     "label": "Everyone always defects",
+     "description": "Both players of every pair defect in every round.",
+     "policies": {
+      "row": "gao_idl.service.casts:always_defect",
+      "col": "gao_idl.service.casts:always_defect"
+     }
+    },
+    {
+     "name": "tit-for-tat",
+     "label": "Everyone plays tit for tat",
+     "description": "Cooperate first, then copy what the partner did last round.",
+     "policies": {
+      "row": "gao_idl.service.casts:tit_for_tat",
+      "col": "gao_idl.service.casts:tit_for_tat"
+     }
+    },
+    {
+     "name": "tit-for-tat-vs-defector",
+     "label": "Tit for tat against a defector",
+     "description": "The first player of each pair plays tit for tat; the second always defects.",
+     "policies": {
+      "row": "gao_idl.service.casts:tit_for_tat",
+      "col": "gao_idl.service.casts:always_defect"
+     }
+    }
+   ]
+  },
+  {
+   "slug": "carbon-market",
+   "title": "Carbon credit market with paid verifiers and audits",
+   "spec": "../specs/vcm.json",
+   "cards": "../cards/vcm.json",
+   "params": [
+    {
+     "name": "rounds",
+     "label": "Number of rounds",
+     "help": "How many times verification, trading and auditing repeat.",
+     "kind": "int",
+     "minimum": 1,
+     "maximum": 10,
+     "default": 2
+    },
+    {
+     "name": "p_audit",
+     "label": "Audit probability",
+     "help": "The chance that a verified project is audited in a round.",
+     "kind": "float",
+     "minimum": 0,
+     "maximum": 1,
+     "default": 0.0
+    },
+    {
+     "name": "penalty",
+     "label": "Penalty for a caught verifier",
+     "help": "What a verifier pays when an audit finds its report too far from the truth.",
+     "kind": "float",
+     "minimum": 0,
+     "maximum": 50,
+     "default": 5.0
+    },
+    {
+     "name": "fee",
+     "label": "Verification fee",
+     "help": "What a verifier is paid per project it verifies.",
+     "kind": "float",
+     "minimum": 0,
+     "maximum": 10,
+     "default": 1.0
+    },
+    {
+     "name": "reputation_visible",
+     "label": "Buyers see verifiers' track records",
+     "help": "Whether buyers are shown each verifier's past audit results.",
+     "kind": "bool",
+     "default": true
+    },
+    {
+     "name": "settle_on",
+     "label": "Credits are paid on",
+     "help": "Whether sellers are paid for the reported quality or the true quality.",
+     "kind": "choice",
+     "choices": ["reported", "true"],
+     "default": "reported"
+    }
+   ],
+   "casts": [
+    {
+     "name": "naive-buyers",
+     "label": "Buyers trust the reports",
+     "description": "Verifiers report what they measured, sellers offer at cost, buyers take every reported quality at face value.",
+     "policies": {
+      "verifier": "gao_idl.environments.vcm.scripted:honest_verifier",
+      "seller": "gao_idl.environments.vcm.scripted:truthful_seller",
+      "buyer": "gao_idl.environments.vcm.scripted:naive_project_buyer"
+     }
+    },
+    {
+     "name": "skeptical-buyers",
+     "label": "Buyers discount by track record",
+     "description": "As before, but buyers subtract each verifier's past over-statement when it is shown.",
+     "policies": {
+      "verifier": "gao_idl.environments.vcm.scripted:honest_verifier",
+      "seller": "gao_idl.environments.vcm.scripted:truthful_seller",
+      "buyer": "gao_idl.environments.vcm.scripted:skeptical_project_buyer"
+     }
+    }
+   ]
+  }
+ ]
+}

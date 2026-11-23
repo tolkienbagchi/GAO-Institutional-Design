@@ -1961,3 +1961,158 @@ Made by the reviewer (Claude) on `m10-fixup` after opening the delivered pages i
   there too; the build cannot tell a broadcast from equal messages.
 - **Size**: the carbon market page grew from about 967 KB to about 1.03 MB; the test's cap is now 1.2 MB.
 
+
+## 2026-11-23 — M11 task 0: gate on the starting repository (`m10-fixup` at `34fe6ed`)
+- **PyPI is unreachable in this sandbox** (`pip download` finds no versions). Python 3.13 has pydantic, numpy, pytest,
+  mypy, mkdocs and mkdocs-material; ruff 0.16.9 is a standalone binary. Missing: `hypothesis`, `pytest-timeout`,
+  `httpx`, `mkdocstrings`, `build`, `hatchling`. No other Python has the dependencies.
+- Baseline, run with `PYTHONPATH=src` on Python 3.13: `ruff check .` pass; `ruff format --check .` pass (231 files);
+  `mypy src/gao_idl` pass (98 files); `pytest -q -m "not slow"` with the two hypothesis files ignored
+  (`tests/core/test_paths_property.py`, `tests/environments/test_pb_rules_property.py`): 960 passed, 5 skipped,
+  12 deselected, 115 s; `pytest -q -m slow` (same two ignored): 12 passed, 154 s. `mkdocs build --strict` does not
+  run (the `mkdocstrings` plugin is not installed); `tests/test_docs.py` runs the reduced build. `python -m build`
+  does not run (no `build`, no `hatchling`). `pytest.ini`'s `timeout` option is unknown without `pytest-timeout`.
+- Before touching `review/page.py` I recorded the SHA-256 of `render_page` for the three example bundles (no fuzz),
+  with and without an `api`, in `tests/service/golden/m10_pages.json`; task 2 tests `render_page` against it.
+
+## 2026-11-23 — M11 task 0: the library (`service/library.py`, `service/casts.py`, `examples/library/`)
+- `Library` keeps each entry's loaded spec, cards and resolved policies in private attributes, filled by
+  `load_library` (`spec_of`, `cards_of`, `policy`, `entry(slug)`). The pinned fields are unchanged; a `Library`
+  built by hand has no loaded specs. Spec and cards paths are relative to the library file (absolute ones work).
+- A cast must name **exactly** the spec's role kinds: a missing kind and an unknown kind are both refused (the brief
+  only asks for "covers"; an unknown kind can only be a typo).
+- `ParamSpec` checks: `int` refuses fractions and bools; `float` accepts ints (stored as floats) and refuses NaN and
+  infinities; `bool` refuses 0/1; `choice` compares with the type as well as the value (`1` is not `1.0`). Bounds
+  apply to numbers only; `choices` to `choice` only. `check_value` is the one checker for defaults and overrides.
+- `resolve_params` merges into a deep copy of `spec.params`. A parameter the user does not send keeps the spec's
+  value, not `ParamSpec.default`; the default is what the form shows first. In the shipped library the two agree.
+- Policies resolve with `importlib` at load time, from the library file only. Casts in `examples/library/library.json`:
+  auction (bid your value; bid 80%), PD (cooperators, defectors, tit for tat, tit for tat against a defector), carbon
+  market (honest verifiers and truthful sellers with naive or skeptical per-project buyers: `environments/vcm/scripted.py`
+  has only an honest verifier). Parameters: auction `reserve`, `rule`, `reveal_bids`; PD `rounds`, `matching`;
+  carbon market `rounds`, `p_audit`, `penalty`, `fee`, `reputation_visible`, `settle_on`. `market_form` is not
+  offered: the carbon-market spec covers `per_project` only.
+
+## 2026-11-23 — M11 task 1: storage (`service/store.py`)
+- `Store(path, clock=time.time, token_source=new_token)`: the third parameter is an addition to the pinned
+  signature, so tests can fix tokens ("random tokens only through a token source passed in"). `init_db(path,
+  clock=time.time)` likewise takes the clock it writes into `schema_version.applied`; it returns the versions it
+  applied (`[]` when current) so "reopening does not migrate again" is testable.
+- "One connection per request": `Store.open()` is a context manager yielding a `Db` around one fresh `sqlite3`
+  connection (autocommit, foreign keys on, 10 s busy timeout); the app opens exactly one per request. `add_runs`
+  writes all runs of a request in one transaction. WAL is set once, by `init_db` (it persists in the file).
+- Tables as in the brief. The column for the cast is `cast_name` (`cast` is an SQL keyword). Verdicts are appended,
+  never updated: the latest per user and card (by row id, not by `created`, which a coarse or fake clock can tie)
+  is the one that counts. A database at a newer schema version than the code is refused.
+
+## 2026-11-23 — M11 task 2: the application (`service/app.py`, `runs.py`, `pages.py`, `review.render_run`)
+- **`render_run(story, title, top=None)`** is added to `review/page.py` and exported from `gao_idl.review`: the
+  existing `_run_html` plus the same "Detailed diagram" fold `_card` draws. `_card` and `render_page` are not
+  touched; `tests/service/test_render_run.py` checks `render_page` against the SHA-256s recorded before the change
+  (three example bundles, with and without `api`) and that every card's markup contains `render_run` of its story.
+- **The M10 page sends no token.** Its `page.js` posts verdicts with `fetch(api, {headers: Content-Type})` only, so
+  against a service where every `/api/...` route needs a bearer token every post would be a 401. The brief also says
+  the M10 page is reused unchanged and that "every page reads the token from `sessionStorage` and sends it". Chosen
+  (most conservative): `page.js` and `render_page` stay unchanged; the service's review page is
+  `render_page(bundle, "/api/environments/<slug>/verdicts")` with one extra inline `<script>` inserted before the
+  page's own, which wraps `window.fetch` to add `Authorization: Bearer <token from sessionStorage>` to same-origin
+  path requests. It is allowed by the page's own CSP (`script-src 'unsafe-inline'`). Not tested in a browser here.
+- **Which page a browser gets.** A browser navigation sends no bearer header, so `/environments/<slug>/review`
+  without a token is the page of the library's bundle (no user data; the same bytes for everyone, cached). With a
+  valid token (an API client, the tests) it is the page of the bundle with that user's verdicts overlaid; with a
+  wrong token it is 401. In a browser, earlier answers therefore come back from the page's `localStorage` (M10
+  behaviour, keyed by the bundle's hash), not from the server; the server's copy is `GET .../verdicts`. Recorded as
+  an underdetermined point; a later brief could have the page fetch its state.
+- **Library data in pages.** The index and run pages render library data (titles, summaries, the parameter form, the
+  casts) on the server: that is administrator configuration, not user data. Everything about the user (runs,
+  verdicts) comes from `/api/...` with the token. Client text is inserted with `textContent`; the only markup a page
+  script inserts is the `html` of `GET /api/runs/{id}`, made by `render_run` on the server and parsed with
+  `DOMParser` (scripts removed, none expected), never assembled from strings and never `innerHTML`.
+- **Running a cast.** The synchronous runner needs every agent's adapter up front, but which agents exist is known
+  only once the environment runs (the PD's entry config has no roles). `runs._Adapters` is a `dict` that makes a
+  `ScriptedAgent` the first time the runner calls `adapters.get(agent)` (the only lookup the runner makes);
+  agents made that way get no `episode_start` (a `ScriptedAgent` needs none). One adapter per agent; each decision is
+  answered by the cast's policy **for the role kind of that decision's role**, so an agent that holds different kinds
+  in different rounds (round-robin PD) is still served. A role kind the cast lacks cannot happen after
+  `load_library`; if it did, the policy raises and the runner times the decision out.
+- **Caps.** `asyncio.run` of `runner.run(...)` is `run_sync` with a handle on the task (the runner itself is
+  unchanged). A `Budget` counts the policy calls of each run (a retried decision counts twice) and reads the clock
+  passed to `make_app` (`time.monotonic` by default) at each decision and between seeds. On a cap it cancels the
+  runner task and the decision's own task; `play_cast` raises `CapExceeded`, the app answers 422 and stores
+  nothing. Limitation: time spent inside one `advance()` (automatic layers) is not interrupted; it is bounded by
+  the library's environments, all small.
+- `MAX_BODY` is 1,000,000 bytes ("1 MB" read as 10^6). A body is read only up to its `Content-Length`; a larger
+  `Content-Length` is refused unread with 413. JSON with `NaN`/`Infinity` is 422.
+- **Status codes.** A path that exists with another method is 404 (the brief lists 401/403/404/409/413/422 only;
+  405 would be more exact). 403 is used for a POST whose `Origin` header names another host than `Host`. A
+  stored run whose environment can no longer replay it is 409 `cannot_replay`. An unexpected exception is 500 with
+  plain words; the trace goes to the server log (`logging`, never the body or headers).
+- Seeds are whole numbers from 0 to 2^32 − 1. A run request with unknown fields (such as `env_ref`) is 422.
+- **Verdicts.** A posted card verdict for an unknown card, a No without a note, a Disagree without a note, a choice
+  whose index or text does not match, duplicates, or a `Verdicts` file for another spec title are 422 and nothing of
+  that request is stored. Otherwise, verdicts whose `outcome_hash` differs from the card's hash now, and
+  confirmations of a stale card, are not stored and the answer is 409 naming them; the rest of the request is
+  stored. The stored `reviewer` is the user's name, not the name in a posted file.
+- **Overlay.** `app.overlay(bundle, verdicts)` sets card `status`, `note` and `reviewer` and marks agreed choices
+  confirmed, and recounts `status.cards` / `assumptions_open`. A verdict whose hash no longer matches is not shown.
+  `expect` is not set (apply_card_verdicts would replay each card; the overlay is display only).
+
+## 2026-11-23 — M11 task 3: administration (`gao-idl service ...`)
+- `service init --db`, `service add-user NAME --db` (prints the token once, on its own last line),
+  `service serve --library --db [--host 127.0.0.1] [--port 8000]` (wsgiref, says on stderr it is for development
+  only; request lines are logged by the app's logger, wsgiref's own per-request line is silenced) and
+  `service export-verdicts SLUG --user NAME --db --out` as pinned.
+- **The export needs a spec title** (`Verdicts.spec_title`), and the pinned command has no `--library`. Chosen: a
+  second migration adds `spec_title` to both verdict tables (the app stores the entry's spec title with each verdict)
+  and the export takes the title of the user's latest verdict on that entry. An optional `--library FILE` takes the
+  title from the library instead, which also allows exporting an empty file for a user with no verdicts (without it
+  that case exits 2 and says so). The export lists every latest verdict as stored; `cards import` applies the
+  hash rule again, so one made stale by a later change of the environment is refused there.
+- The second migration also exercises the ordered list of migrations: `tests/service/test_cli_service.py` migrates
+  a version-1 file with rows to version 2.
+
+## 2026-11-23 — M11 task 4: tests (`tests/service/`)
+- Files: `test_library.py`, `test_store.py`, `test_render_run.py`, `test_app.py` (each route's happy path and error
+  codes), `test_cli_service.py`, `test_security.py` (the brief's list), `test_end_to_end.py`, `test_socket.py`
+  (`slow`: `gao-idl service serve` in a subprocess on a free local port, queried with `urllib` with proxies off).
+  `helpers.call` builds a WSGI environ and calls the application directly.
+- The import sentinel is a module written to a temporary directory put on `sys.path`; it writes a marker file when
+  imported. Its `module:function` is sent as `env_ref`, as a cast, as a parameter name and value, as a slug and as a
+  card id; the test checks the marker is absent and the module is not in `sys.modules`.
+- **The decision cap is costly to reach for real.** The PD slows down as rounds accumulate: 501 rounds (2,004
+  decisions) take about 5 s here, so a library entry that allows that many decisions would meet the 10 s time cap
+  at about the same point. The test reaches 2,001 decisions once through a test library that lets the PD's rounds
+  go to 1,000; the exact boundary (20 decisions pass at a cap of 20, fail at 19) is a unit test of `Budget`.
+- The time cap is tested with a clock that moves one second each time it is read.
+- The end-to-end test expects `cards verify` to exit 1 after the import: the imported "No" is a rejected card that
+  the environment still reproduces, which is what `verify` reports (work for the author). Nothing under `examples/`
+  is written (the test compares every JSON file's bytes before and after).
+
+## 2026-11-23 — M11 task 5: operating notes
+- `docs/service.md` (in the navigation after "Verifying an environment"): setting up, running under a WSGI server
+  behind a TLS proxy (an example `wsgi.py`; no server named as a dependency, no Dockerfile), what is stored and for
+  how long (until an administrator deletes it: there is no expiry), backing up with SQLite's `.backup`, what is
+  logged, who is trusted, the page-route exception to "every endpoint requires a token", the API, the caps and why,
+  and what is not done. Also `docs/api/service.md`, a section in `docs/for-agents/llms.md`, a pointer in
+  `docs/verifying.md` and `README.md`, the API index, and `CHANGELOG.md`.
+- **Not in the brief, written in `docs/service.md`:** a token can be revoked only by deleting the user's row; the
+  proxy must keep the `Host` header (the 403 origin check compares `Origin` with `Host`); the WSGI server's request
+  timeout must exceed the 10 s run cap.
+
+## After M11: the reviewer's changes
+
+- **The run page is a table of runs, not a stack of run views.** Three seeds of the auction gave three identical screens and
+  nothing to compare. Now one row per run (cast by its label, seed, what differs from the design in the form's own labels, each
+  participant's payoff, finished or stopped early) and a Show button that opens that run below. The table is built from
+  `GET /api/runs` alone; a run's view is fetched when opened. The page's embedded data gained `design` and `casts`.
+- **The review page asks its server for earlier answers.** `page.js` gained a pure `mergeServer(state, bundle, verdicts)` (tested
+  under node) and one `GET` to `config.api` at start. Server answers fill in only where the browser has none, and only if they
+  still fit (same outcome hash, same choice text, the same validity checks as `restore`). This changes `render_page`'s output,
+  so the pinned hashes (`tests/service/golden/pages.json`, renamed from `m10_pages.json`) were rewritten on purpose. A page made
+  with the hidden `--api` now also sends one `GET` there; a failed one is ignored.
+- **"Remove answer" is still local only**: the service has no way to withdraw a verdict, so a removed answer comes back from the
+  server on the next visit. Left as is and documented in `docs/service.md`.
+- **A run shown on its own says so under its bars** ("scaled to this run's largest payoff"); cards keep "one scale for every card
+  on this page". The run header no longer prints raw parameters or "ended through done".
+- **A verdicts file is stored in one transaction** (`Db.transaction()`): whole or not at all.
+

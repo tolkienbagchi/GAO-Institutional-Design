@@ -290,6 +290,7 @@ from a bundle, no network, no server. Nothing here calls a model or records a ve
 | --- | --- |
 | `make_bundle(spec, cards, fuzz=0, seed=0)` | `Bundle` (`bundle_version: 1`): spec, flow SVG, outline, who-knows-what table, one `CardView` per card (`story`, `timeline_svg`, `outcome_hash`, `stale`), `CheckStatus`; `dump_bundle`, `save_bundle`, `load_bundle` |
 | `render_page(bundle, api=None)` | the page as one HTML string; with `api` it also posts each verdict there (M11) |
+| `render_run(story, title, top=None)` | one run as a card shows it (the run by participant, payoff bars, the folded timeline) as an HTML fragment |
 | `flow_svg(describe(p))`, `timeline_svg(story, title)` | the pictures, SVG drawn in Python |
 | `tell_card(card, spec)`, `tell_session(session, spec)` | (in `gao_idl.authoring`) a run as a `Story` of `StepView`s with `Move`s and `Told`s |
 | `split_told(told)`, `summarize(payload, limit=60)` | what a step told everyone alike once, then each one's own; a payload as a short label |
@@ -300,6 +301,28 @@ Command line: `gao-idl review page SPEC --cards CARDS [--fuzz N] --out review.ht
 `gao-idl review page --bundle bundle.json --out review.html`, `gao-idl review bundle SPEC --cards CARDS --out bundle.json`,
 `gao-idl cards import CARDS VERDICTS [--spec SPEC]` (exit 1 if any verdict was refused). Hand the person
 `review.html`; **never write, edit or import a verdicts file yourself**.
+
+## The library service (`gao_idl.service`)
+
+A WSGI application (standard library and `sqlite3` only) that serves an administrator's library of
+vetted environments to people with only a browser: the review page with verdicts stored per user,
+and runs with a named cast of scripted policies. See `docs/service.md`.
+
+| Name | Purpose |
+| --- | --- |
+| `load_library(path)` | `Library` of `Entry`s (`slug`, `title`, `spec`, `cards`, `params: list[ParamSpec]`, `casts: list[Cast]`), checked: unique slugs, files load, params are spec params with defaults in bounds, casts cover exactly the role kinds, policies resolve |
+| `resolve_params(entry, spec, overrides)` | `spec.params` with checked overrides; `ValueError` naming the field for anything undeclared, mistyped or out of bounds |
+| `Store(path, clock, token_source)`, `init_db(path)` | the SQLite file (WAL, ordered migrations); `Store.add_user(name) -> (User, token)`, `Store.open()` gives one `Db` per request |
+| `make_app(library, store, clock=time.monotonic)` | the WSGI application; every `/api/...` route needs `Authorization: Bearer <token>` |
+| `play_cast(library, spec, params, cast, seeds, budget)` | (in `service.runs`) runs within the caps: 10 seeds, 2,000 decisions per run, 10 s per request |
+| `gao_idl.service.casts` | small scripted policies: `bid_value`, `bid_80_percent`, `always_cooperate`, `always_defect`, `tit_for_tat` |
+
+Command line: `gao-idl service init --db DB`, `gao-idl service add-user NAME --db DB` (prints the token
+once), `gao-idl service serve --library FILE --db DB [--host H] [--port P]` (development server only),
+`gao-idl service export-verdicts SLUG --user NAME --db DB --out verdicts.json [--library FILE]`, then
+`gao-idl cards import`. The library file is the only place a `module:function` string may come from;
+a client names entries by slug and casts by name. **Never record a verdict yourself**, through the
+service or otherwise: the service stores the verdicts people give.
 
 ## Test fixtures (`gao_idl.testing`)
 

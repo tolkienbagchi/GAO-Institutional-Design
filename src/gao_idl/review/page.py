@@ -21,7 +21,7 @@ from gao_idl._version import __version__
 from gao_idl.authoring.cards import Story, _pairs, _value
 from gao_idl.authoring.spec import EnvSpec
 from gao_idl.review.bundle import Bundle, CardView, dump_bundle
-from gao_idl.review.draw import esc
+from gao_idl.review.draw import esc, timeline_svg
 from gao_idl.review.tell import (
     Tile,
     addressed,
@@ -293,7 +293,11 @@ def _where(place: str, layer: str) -> str:
     return f"{place}, step {layer}" if place else f"step {layer}"
 
 
-def _payoffs_html(story: Story, top: float) -> list[str]:
+PAGE_SCALE = "Bars use one scale for every card on this page."
+RUN_SCALE = "Bars are scaled to this run's largest payoff."
+
+
+def _payoffs_html(story: Story, top: float, scale: str = PAGE_SCALE) -> list[str]:
     """Final payoffs as bars; ``top`` is the largest payoff size on the page (one scale)."""
     if not story.utilities:
         return []
@@ -313,10 +317,7 @@ def _payoffs_html(story: Story, top: float) -> list[str]:
         '<div class="run-step payoffs">',
         "<h4>Final payoffs</h4>",
         '<ul class="bars">' + "".join(rows) + "</ul>",
-        _p(
-            "Bars use one scale for every card on this page. A hatched bar is a loss.",
-            "muted small",
-        ),
+        _p(f"{scale} A hatched bar is a loss.", "muted small"),
         "</div>",
     ]
 
@@ -400,7 +401,7 @@ def _tile(tile: Tile) -> str:
     return "".join(out)
 
 
-def _run_html(story: Story, top: float) -> list[str]:
+def _run_html(story: Story, top: float, scale: str = PAGE_SCALE) -> list[str]:
     """The run by participant: a block per step, a tile per participant, then the payoffs."""
     out = ["<h3>What happened</h3>"]
     for step in run_steps(story):
@@ -420,8 +421,32 @@ def _run_html(story: Story, top: float) -> list[str]:
             out.append(f'<p class="stopped"><strong>{esc(step.stopped)}</strong></p>')
         out.append("</div>")
     out.append(_p(" ".join(plain_ending(story)[:1]), "ending"))
-    out += _payoffs_html(story, top)
+    out += _payoffs_html(story, top, scale)
     return out
+
+
+def render_run(story: Story, title: str, top: float | None = None) -> str:
+    """One run as a scenario card shows it: "What happened", the payoff bars, a folded diagram.
+
+    An HTML fragment, rendered and escaped here: the run by participant, the final payoffs as
+    bars scaled to ``top`` (default: the largest payoff size in ``story``), and the
+    ``timeline_svg(story, title)`` folded under "Detailed diagram". The same markup as a card of
+    ``render_page`` shows for that story.
+    """
+    scale = PAGE_SCALE
+    if top is None:
+        top = max((abs(u) for u in story.utilities.values()), default=0.0)
+        scale = RUN_SCALE
+    out = _run_html(story, top, scale)
+    out.append(
+        _fold(
+            "Detailed diagram",
+            "every message, in order",
+            f'<div class="picture">{timeline_svg(story, title)}</div>',
+            False,
+        )
+    )
+    return "\n".join(out)
 
 
 def _steps_items(story: Story) -> list[str]:
@@ -631,8 +656,10 @@ def render_page(bundle: Bundle, api: str | None = None) -> str:
 
     With ``api`` unset the page only exports verdicts. With ``api`` set (a same-origin path or
     an http(s) URL) it also posts each verdict, as one ``CardVerdict`` or ``AssumptionVerdict``
-    JSON object, to ``api`` as it is given. Progress is keyed in ``localStorage`` by the
-    SHA-256 of the bundle.
+    JSON object, to ``api`` as it is given, and when it opens it asks ``api`` once with ``GET``
+    for a ``Verdicts`` object: answers in it that still fit (same outcome hash, same choice text)
+    are shown where this browser has none of its own. A failed ``GET`` is ignored. Progress is
+    also keyed in ``localStorage`` by the SHA-256 of the bundle.
     """
     key = hashlib.sha256(dump_bundle(bundle).encode("utf-8")).hexdigest()
     body = "\n".join(

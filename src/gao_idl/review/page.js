@@ -217,6 +217,45 @@
     return state;
   }
 
+  /* Answers kept by a server (a Verdicts object) added where this page has none of its own.
+   * Only answers that still fit: a card verdict for the outcome the card shows now, a choice
+   * whose text is the same. An answer already given here is never replaced. */
+  function mergeServer(state, bundle, verdicts) {
+    if (!verdicts || typeof verdicts !== "object") { return state; }
+    var saved = { cards: {}, assumptions: {} };
+    var views = {};
+    bundle.cards.forEach(function (v) { views[v.card.id] = v; });
+    (Array.isArray(verdicts.cards) ? verdicts.cards : []).forEach(function (c) {
+      if (!c || typeof c !== "object" || typeof c.id !== "string") { return; }
+      var view = Object.prototype.hasOwnProperty.call(views, c.id) ? views[c.id] : null;
+      if (!view || c.outcome_hash !== view.outcome_hash) { return; }
+      if (Object.prototype.hasOwnProperty.call(state.cards, c.id)) { return; }
+      saved.cards[c.id] = { verdict: c.verdict, note: c.note };
+    });
+    (Array.isArray(verdicts.assumptions) ? verdicts.assumptions : []).forEach(function (a) {
+      if (!a || typeof a !== "object" || typeof a.index !== "number") { return; }
+      var item = bundle.spec.assumptions[a.index];
+      if (!item || item.text !== a.text) { return; }
+      if (Object.prototype.hasOwnProperty.call(state.assumptions, String(a.index))) { return; }
+      saved.assumptions[String(a.index)] = { verdict: a.verdict, note: a.note };
+    });
+    var fit = restore(saved, bundle);  // the same checks as for progress saved in this browser
+    var next = copy(state);
+    next.cards = copy(state.cards);
+    next.assumptions = copy(state.assumptions);
+    var added = 0;
+    Object.keys(fit.cards).forEach(function (id) { next.cards[id] = fit.cards[id]; added += 1; });
+    Object.keys(fit.assumptions).forEach(function (key) {
+      next.assumptions[key] = fit.assumptions[key];
+      added += 1;
+    });
+    if (!next.reviewer && typeof verdicts.reviewer === "string" && verdicts.reviewer) {
+      next.reviewer = verdicts.reviewer;
+      added += 1;
+    }
+    return added ? next : state;
+  }
+
   var pure = {
     SCREENS: SCREENS,
     CARD_SCREEN: CARD_SCREEN,
@@ -237,6 +276,7 @@
     keyAction: keyAction,
     submitsNote: submitsNote,
     restore: restore,
+    mergeServer: mergeServer,
   };
 
   if (typeof module === "object" && module.exports) {
@@ -291,6 +331,22 @@
       } catch (err) {
         say("Could not send that answer. It is kept here and in the download.");
       }
+    }
+
+    /* With a server, ask it once for the answers it already holds (given on another device). */
+    function fetchEarlier() {
+      if (!config.api) { return; }
+      try {
+        fetch(config.api, { method: "GET", headers: { "Accept": "application/json" } })
+          .then(function (response) { return response.ok ? response.json() : null; })
+          .then(function (verdicts) {
+            var next = mergeServer(state, bundle, verdicts);
+            if (next !== state) {
+              update(next);
+              say("Your earlier answers were loaded.");
+            }
+          }).catch(function () { /* the page works without them */ });
+      } catch (err) { /* the page works without them */ }
     }
 
     var cardArticles = all("article.card");
@@ -531,6 +587,7 @@
       cardAct(act);
     });
     refresh();
+    fetchEarlier();
   }
 
   root.GaoReview = pure;
