@@ -1691,3 +1691,273 @@ Append-only log of deviations, ambiguities, deferrals and dependency changes.
 - `tests/environments/test_vcm_portability.py` pins the exact bits of one run's payoffs (the run that differed in M8's first CI run);
   CI runs it on 3.11 and 3.13. On 3.13 no existing number changed: the shipped cards regenerate byte-identically.
 - Card outcomes are still compared to within 1e-9. Other environments were not audited for float `sum`.
+
+## 2026-11-20 — M10 task 0: baseline and the missing `cards review` commit
+- PyPI is unreachable in this sandbox (network off): `pip install -e ".[dev,llm,docs]"`, `python -m build`, `mkdocstrings`,
+  `hypothesis` and `pytest-timeout` are absent. Tests run with `PYTHONPATH=src` on Python 3.13 (3.11 and 3.12 exist here but
+  have no pydantic). `tests/core/test_paths_property.py`, `tests/environments/test_pb_rules_property.py` (no `hypothesis`) and
+  `tests/test_packaging.py` (no `build`) are ignored; the 30 s `timeout` option is unknown to pytest here and not enforced.
+- On `main` at `5453d93`: `ruff check .` and `ruff format --check .` clean (214 files), `mypy src/gao_idl` clean (92 files),
+  `pytest -q -m "not slow"` 880 passed, 4 skipped, 12 deselected in 72 s.
+- Applied `0001-cards-review.patch` with `git am` on `m10-review-page`, then amended its message to `M10 task 0: ...` (author and
+  content unchanged) so the branch follows the one-commit-per-task convention. Gate again: same clean lint/types,
+  881 passed (the new `test_cards_review_goes_one_card_at_a_time_and_saves_each_answer`), 4 skipped.
+
+## 2026-11-20 — M10 task 1: narration as data (`authoring/cards.py`)
+- `Move`, `Told`, `StepView`, `Story`, `tell_session`, `tell_card` as pinned, exported from `gao_idl.authoring`. `render_card` now
+  renders a `Story`. Checked beyond the existing tests: the old and new `render_card` give byte-identical text for all 37 shipped
+  cards, with and without their spec (74 comparisons; script kept out of the repo).
+- **`StepView.place` excludes the step name** (`"round 2, pair_0"`, `""` at the top level, as the brief's example); `render_card`
+  composes `"round 2, pair_0, step pd_round"` as before.
+- **Events outside any layer instance.** A `Loop`'s `Truncated` (and a connector's `Failed`) happen at a path where no layer was
+  entered. They get their own `StepView` with `layer == ""`, and the reason in `stopped` ("The repetition is cut off: ..."). Places
+  outside layers where only `StoreAccess` happened (the PD's round counter store) are dropped: nothing visible occurred there.
+- **Delivery order of reports.** Under `Par`, reports are delivered in completion order, which need not be entry order.
+  `render_card` lists "What each participant is told" in delivery order, so an internal `_story` also returns each report's step
+  index; the public `Story` carries reports per step only.
+- `tell_session` lists payoffs for every agent asked to decide, told something or paid; `tell_card` uses the same agents as
+  `CardExpect` (script, paid, told), so `Story.utilities == CardExpect.utilities` for a card.
+
+## 2026-11-20 — M10 task 2: pictures in Python (`review/draw.py`)
+- `flow_svg(tree)` and `timeline_svg(story, title)` as pinned. Both emit no `id`, no `url(...)`, no `href`, no `xmlns`: several
+  SVGs are inlined in one page, so ids (and `<marker>` arrowheads that need them) would collide. Arrowheads are small polygons.
+  Colours are `currentColor` presentation attributes plus CSS classes (`step`, `frame loop`, `frame par`, `edge`, `port`, `end`,
+  `lane`, `lane rules`, `move chose|defaulted|dropped`, `told`, `stopped`, `payoff`, `band`), so a standalone SVG still draws.
+- **Layout choices (brief silent):** the flow is a recursive block layout; a `Seq` with several routes puts the routed blocks side
+  by side; a port that passes by later blocks of a `Seq`, and every `Loop` repeat arrow, runs along a rail on the block's right.
+  Step boxes show the roles the contract declares on wrapped lines (as `to_mermaid`). The loop's reserved `truncated` port is not
+  drawn as an end, as in `to_mermaid` (no layer leaves through it); the limit is in the frame's label.
+- **Timeline:** lanes left to right are "the rules" then participants in natural order; within a band, one row per arrow (moves in
+  trace order, then reports). A default is a dashed arrow labelled `default: ...`; someone left out (`drop`) is a dashed stub
+  "did not act". Someone silent in a step whose policy stops the run has no `Move` (the pinned `Move.kind` has no such case), so
+  the band shows the step's `stopped` text ("■ stops: b did not act. ...") instead of a per-person mark.
+- Over 8 participants / 12 steps: the picture says "+k more participants/steps not drawn (see the steps in words)", and each band
+  says how many arrows for undrawn participants it left out. The two-round carbon-market card `reputation-shown` has nine
+  participants, so one (`v1`) is not drawn there; its timeline is 36 KB.
+- Text widths are estimated (7 px per character at 13 px); nothing measures fonts. During development I rasterized the SVGs with
+  `rsvg-convert` to look for overlaps. That is a check of the pictures alone, not of the page in a browser.
+- `docs/api/review.md` and its nav entry are added now (with `draw` only) because `tests/test_docs.py` requires every module to
+  have one; task 6 completes the page.
+
+## 2026-11-20 — M10 task 3: the bundle (`review/bundle.py`)
+- `CheckStatus`, `CardView`, `Bundle`, `outcome_hash`, `make_bundle` as pinned; added `dump_bundle`, `save_bundle`, `load_bundle`
+  (sorted keys, indent 1, no timestamp) and `gao-idl review bundle`.
+- **What `runs` counts (brief silent):** every run checked, one per card plus the fuzzed ones; `fuzzed` is how many of those were
+  fuzzed. **The who-knows-what table** in the bundle is built from the same runs (cards and fuzzed), so the page's table and its
+  mismatches describe the same evidence. (`gao-idl spec render` builds its table from cards only.)
+- `mismatches` holds everything `check_spec` and `check_invariants(..., secrets=False)` return except `invariant_unchecked`
+  (those statements are `unchecked_invariants`); `not_exercised` stays in, since it is never a pass.
+- **Each card is played once** and that session gives its story, timeline, `outcome_hash` and `stale`. A card for a different
+  `env_ref` than the spec's, or one whose run raises, makes `make_bundle` raise `ValueError` (conservative: the page shows only what
+  runs; `render_card` instead prints "cannot be played").
+- **`outcome_hash`:** SHA-256 of `json.dumps(..., sort_keys=True, separators=(",", ":"), ensure_ascii=True)` over
+  `CardExpect.model_dump(mode="json")` with floats rounded to 9 places and `-0.0` as `0.0`; ints are left as ints. Pinned for the
+  carbon-market card `buyer-stays-out` (the one that differed between 3.11 and 3.13 in M8). **Verified on Python 3.13 only**:
+  3.11 has no pydantic here. Rounding fails to agree only if two interpreters' values straddle a 9th-decimal boundary.
+- Bundle sizes (no fuzz): auction 123 KB, PD 131 KB, carbon market 651 KB.
+
+## 2026-11-20 — M10 task 4: the page (`review/page.py`, `page.html`, `page.css`, `page.js`)
+- `render_page(bundle, api=None)` as pinned; `gao-idl review page SPEC --cards CARDS [--fuzz N] --out` and
+  `gao-idl review page --bundle bundle.json --out`. `--api` exists but is hidden from `--help` until M11.
+- **All content is rendered and escaped in Python**, including the five screens, every card's story and the inlined SVGs; `page.js`
+  only switches screens and cards, records answers, saves progress and exports. Reasons: the script can only be tested under node
+  (pure functions), so a page whose content does not depend on it still reads fine if the script fails; no markup is ever built
+  from strings in JavaScript (text goes in with `textContent`; there is no `innerHTML`). Without scripts every screen is shown in
+  one long page and a note says answers cannot be saved. The SVGs are therefore present twice (in the markup and inside the
+  embedded bundle); the carbon-market page is still 978 KB.
+- **Embedded JSON escapes every `<`, `>` and `&`** as `<` etc., a superset of the brief's "`</` escaped": with only `</`
+  escaped, a title containing `<script>` would appear literally inside the JSON block, which the escaping test forbids, and `<!--`
+  inside a script block has its own parsing traps.
+- **Content-Security-Policy** in a `<meta>`: `default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline';
+  connect-src 'none'` (or `'self'` / the api's origin when `api` is given), so a browser itself refuses any network request even if
+  something slipped through. `api` must be a plain path (`/verdicts`) or an http(s) URL without query; anything else raises.
+  **Untested in a browser:** whether every viewer allows the blob download under this policy (the text box is the fallback).
+- **`api` (M11):** each verdict is `POST`ed to exactly `api` as JSON, body one `CardVerdict` or `AssumptionVerdict` object
+  (`page.js` `cardVerdict` / `assumptionVerdict`); a failed send is shown in the status line and the verdict stays in the export.
+- **Progress** is kept in memory and in `localStorage` under `gao-idl-review:<sha256 of dump_bundle(bundle)>` inside try/catch;
+  restored answers are re-validated against the bundle (unknown ids, confirmed stale cards and note-less rejections are dropped).
+- Brief silent, chosen: after the last card the page moves to Finish; a "Remove my answer" button undoes a card verdict; `Skip`
+  advances without recording; `ArrowRight` moves without recording too. The download is named `verdicts.json`. A stale card's Yes
+  button is `disabled` and the pure `decideCard` refuses it as well.
+- **Package data:** `pyproject.toml` lists the three files as wheel `artifacts`. Hatchling includes non-Python files under
+  `packages` anyway (that is how `py.typed` ships), so this is belt and braces; `python -m build` could not run here, so whether the
+  wheel contains them is verified only by CI's `package` job. The test loads them through `importlib.resources`.
+- **What ran:** `tests/review/test_page_js.py` executed the pure half of `page.js` under node 22 (passes). Outside the test suite I
+  opened the generated auction page once in headless Chrome with `--dump-dom` (no screenshot): it booted under its CSP with no
+  script error (`<html class="js">`, one screen and one card visible, the summary line filled in). No click or key press was
+  simulated, and nobody has looked at the page rendered.
+
+## 2026-11-20 — M10 task 5: verdicts (`review/verdicts.py`, `gao-idl cards import`)
+- `CardVerdict`, `AssumptionVerdict`, `Verdicts`, `load_verdicts`, `apply_verdicts` as pinned; `Card.reviewer: str = ""` added.
+  Also `apply_card_verdicts` (the card half, used by `cards import` without `--spec`), `disputed` and `save_spec` (writes
+  `exclude_unset`, indent 1: the shipped specs round-trip byte-identically, so agreeing to one choice changes two lines).
+- The export's shape lives in `page.js` (`cardVerdict`, `assumptionVerdict`, `exportVerdicts`) and is mirrored in a comment above
+  the models. `tests/review/test_page_js.py` runs those functions under node, validates the output as `Verdicts` and imports it.
+- **Brief underdetermined, chosen conservatively:**
+  - A verdicts file whose `spec_title` differs from the spec's title is refused whole (one problem, nothing applied).
+  - Two verdicts for one card id: a problem, neither applied.
+  - **A stale card** (recorded outcome no longer reproduced) whose hash matches what it does now: a rejection is applied and the
+    card's `expect` is replaced by the current outcome, the behaviour the person actually rejected. Keeping the old `expect` would
+    make the rejection vacuous (`cards verify` would pass at once, though the environment still does the rejected thing). A
+    confirmation of a stale card is refused, as on the page.
+  - **Disputed choices are not "problems"**: `cards import` prints them for the author ("choice 1 disputed: ... Note: ...") and they
+    do not change the exit status. Problems are verdicts that could not be applied.
+  - Without `--spec`, choice answers are listed as problems ("no --spec given") and the cards are still updated.
+  - An empty reviewer name is accepted (the page does not force one); `cards import` reports "an unnamed reviewer".
+  - The cards file is rewritten only if some card changed; the spec only if some choice changed.
+- Never run on anything under `examples/`: every test copies the files to a temporary directory first, and asserts the shipped
+  files are still all `proposed` / unconfirmed afterwards.
+
+## 2026-11-20 — M10 task 6: docs and example pages
+- `docs/verifying.md`: the designer's section now leads with `review.html` (five screens, keys, the download and its fallback) and
+  keeps `cards review` / `spec render` as "In a terminal instead"; the author's section gains `review page|bundle` and
+  `cards import`. `docs/api/review.md` (with nav), a `gao_idl.review` section in `docs/for-agents/llms.md`, CHANGELOG, README.
+- `skills/design-environment/SKILL.md`: the definition of done gains item 8, build `review.html` and hand the person that file;
+  183 lines.
+- `scripts/make_example_pages.py` writes `build/review/{auction,pd,vcm}.html` with `--fuzz 200 --seed 1` by default (the M9
+  settings). Result: 213 / 211 / 213 runs, 0 mismatches each; 239 KB, 254 KB, 978 KB. `build/` was already in `.gitignore`;
+  `build/review/` is added explicitly as the brief asks.
+
+## 2026-11-20 — M10 fix-up task 0: inputs
+- The fix-up brief names `00_SHARED_CONTEXT.md` "incl. Amendments after M10"; only the earlier shared context (ending with the
+  amendments after M8 and M9) was provided. Worked from it, the fix-up brief and the M10 report.
+- Branch `m10-fixup` from `m10-review-page` at `939c2d8`. Same sandbox limits as M10 (no PyPI; Python 3.13 with `PYTHONPATH=src`).
+
+## 2026-11-20 — M10 fix-up task 1: shared and own parts of what people are told (`review/tell.py`)
+- `ToldRow`, `split_told`, `summarize` as pinned (exported from `gao_idl.review`, API page entry added).
+- `split_told`: shared fields keep the first payload's key order; own rows are ordered by their first recipient in natural order;
+  two payloads that both lack a field never share it. Recipients are `Told` entries, so an agent told twice in one step counts
+  twice (no shipped environment does that).
+- `summarize`: nested values as `name: k entries` / `name: 1 entry` / `name: none`; `None` and booleans as `render_card` shows them
+  (`none`, `yes`, `no`); an empty payload is `nothing`. When the first pair fits but adding `, …` would pass `limit`, the first
+  pair is still shown whole with `, …` (the brief forbids cutting inside a pair that fits), so such a label may run up to 3
+  characters over.
+
+## 2026-11-20 — M10 fix-up task 2: a timeline that fits and stays labelled (`review/draw.py`)
+- `timeline_svg` keeps its signature. Width is at most 920 (lane spacing `min(90, room / (lanes + 0.5))`, a "what" column of at
+  least 300 on the right). Root element: `viewBox`, `width="100%"`, inline `style="max-width:<W>px;min-width:<0.9·W>px"` (12-unit
+  text stays at about 11 px or more; below that width the picture scrolls inside its `overflow-x: auto` container). `flow_svg` is
+  unchanged. `LABEL_CUT` is gone; `cut(text, n)` now always takes `n`.
+- Labels moved to the "what" column, `summarize`d to the column's width (about 6.1 units per 12-unit character); the full text is in
+  each row's `<title>`. Moves read `b0: ...`, defaults `b (default): ...`, drops `a: did not act`.
+- **"Everyone" rows (deviation in wording, kept to the meaning).** `split_told`'s `to == []` means "everyone told in this step".
+  In a `Par` step (the PD's `pair_0`) only two of four participants are told, so an arrow "across all lanes" labelled "everyone"
+  would claim that `c` and `d` were told. The row therefore has a head on each lane told in that step, and its text starts
+  `everyone:` only when every participant of the run was told; otherwise it names them (`a, b: ...`).
+- Every band's header repeats the lane names (10 units, each with its full name in a `<title>`) next to the step heading. A step's
+  "+k not drawn" note moved into that header (it was a row of its own); the rule is unchanged.
+- **`reputation-shown`:** M10 drew 54 rows (16 moves, 32 reports, 6 "+k more" notes) in a 1680×1700 picture. Now 39 rows (16
+  moves, 23 report rows) in 920×1156, 34 KB. **The exit criterion "fewer than half of M10's rows" (< 27) is not met.** Splitting the
+  reports removes 9 rows and moving the notes into the headers removes 6. The other 16 rows are one per move, which the brief
+  specifies ("each row has its arrow ... `summarize(...)` of the action for a move"). Getting under 27 would need simultaneous moves
+  of a step to share a row. That would drop the per-move text the brief asks for, so I did not improvise it. The test pins 39.
+- The `svg` element carries `data-rows="N"` (rows drawn), for tests and the report.
+- Regenerated golden files (looked at as rasterized pictures): `tests/review/golden/auction.tie-top.svg`, `auction.no-bid.svg`,
+  `pd.two-pairs.svg`, `pd.no-move-default.svg`. `auction.flow.svg`, `pd.flow.svg` and `tests/authoring/golden/` are unchanged.
+
+## 2026-11-20 — M10 fix-up task 3: shorter cards (`review/page.py`, `page.css`)
+- "What each participant is told" lists `split_told` rows per step (everyone line first, then own lines) with the full payload
+  text. Who a row went to is worded by a new helper `tell.addressed` shared with the timeline ("everyone" only when every participant
+  was told, else the names); `tell.participants(story)` is the other shared helper.
+- Both lists are `<details class="fold">`, `open` when the card has at most 12 told rows after splitting (`FOLD_AFTER`), with a
+  summary "(N steps)" / "(M messages)". Not scripted.
+- Card order: title, why, id line, stale warning, situation, timeline, payoffs and ending, the two folded lists, any existing note,
+  the answer bar. The answer bar (`.verdict`) is `position: sticky; bottom: 0` inside its card with an opaque background, a top
+  border and a faint shadow. The note field is one line (`rows="1"`) and grows on focus. Under 30 rem the label is visually hidden
+  but still the field's label (the field has the same text as a placeholder), the keys line is hidden and the buttons wrap
+  onto two rows.
+- `#status` no longer reserves a line when empty.
+- **The audited card's `revealed` payload** now appears once in the card's text (the everyone line) and once in the timeline,
+  as the `<title>` (full text) of the everyone row that task 2 requires. In M10 it appeared nine times in each. The test asserts
+  both counts.
+- Sizes without fuzz: auction 239 → 297 KB, PD 254 → 338 KB (wider timelines, lane names repeated in every band), carbon market
+  978 → 886 KB. The auction and PD pages are bigger. The brief only asks for the carbon market to shrink.
+- Screenshots (headless Chrome, outside the tests): the carbon-market card `reputation-shown` is 2,184 px tall at 1280 wide and
+  2,250 at 390 wide (the reviewer measured about 6,500 in M10). The answer bar stays at the bottom of the window while the card
+  scrolls.
+
+## 2026-11-20 — M10 fix-up task 4: answers (`page.js`, `page.py`, `review/verdicts.py`)
+- `decideAssumption` refuses `disputed` with an empty note ("Please write why you disagree, then press Disagree again.") and moves
+  focus to the note field; `restore` drops a note-less dispute. The choice's label now says the note is needed to disagree.
+- `apply_verdicts` lists a note-less dispute as a problem ("disputed without a note; answer not applied"), so `cards import` exits
+  1; `disputed()` lists only disputes with notes.
+- New pure function `submitsNote(key, ctrlKey, metaKey)`: Ctrl+Enter or Cmd+Enter in a card's note records No with that note, in
+  a choice's note records Disagree. Enter alone stays a new line. The keys line on each card mentions it.
+
+## 2026-11-20 — M10 fix-up task 5: the wheel, and small layout fixes
+- `scripts/clean_install.sh` gains a step after the selftest: in the clean venv it reads `page.html/css/js` through
+  `importlib.resources.files("gao_idl.review")` (fails with the missing names) and, when `examples/` is reachable from the script's
+  repository root, builds the auction bundle and renders its page (fails if it contains `http://`/`https://` or a fourth
+  `<script>`).
+- `tests/test_packaging.py::test_the_wheel_contains_the_review_page_files` checks the wheel's file list. It uses
+  `dist/gao_idl-<version>-*.whl` if exactly one exists, else builds one with `python -m build --wheel --no-isolation` when both
+  `build` and `hatchling` are importable (no network: tests must not use it), else **skips**. CI's `test` job has `build` but not
+  `hatchling` and no `dist/`, so the test will skip there. The enforcing check in CI is `clean_install.sh` in the `package` job.
+  Adding a dev dependency on `hatchling` is not allowed this round.
+- Neither could run against a real wheel here (no `build`, no `hatchling`). I zipped `src/gao_idl` into a hand-made stand-in wheel
+  in the git-ignored `dist/` to exercise the logic: with all files, `clean_install.sh` (`--no-index --no-deps`,
+  `CLEAN_INSTALL_SYSTEM_SITE=1`) passes and renders the auction page (309 KB), and the test passes. With `page.js` left out, both fail
+  and name it. This shows the checks work, not that hatchling includes the files.
+- **`tests/test_packaging.py` runs here after all** (it needs no `build`); the M8–M10 reports ignored it out of habit. It is in this
+  round's gate: 4 passed, 1 skipped.
+- Under 30 rem the navigation is one row of numbers; each button keeps its full name in `aria-label` and `title`, and each screen's
+  own heading names it. Labels are block elements with normal spacing (the "Your name" label no longer touches its field).
+
+## 2026-11-20 — M10 fix-up task 6: docs, pages, screenshots
+- `docs/verifying.md` describes the folded lists, the answer bar, the note needed to disagree and Ctrl/Cmd+Enter; CHANGELOG;
+  `llms.md` lists `split_told` / `summarize`.
+- Example pages rebuilt (`--fuzz 200 --seed 1`): auction 245,184 → 308,784 bytes, PD 260,607 → 349,995, carbon market
+  1,001,768 → 911,393; 0 mismatches each.
+- **Screenshots** with headless Chrome (outside the tests). Headless Chrome will not make a window narrower than 500 px
+  (`innerWidth` was 500 when asked for 390), so the narrow shots load the page in a 390-px iframe inside a wrapper page; there the
+  page's own `innerWidth` is 390 and nothing overflows horizontally. All screenshots were taken by injecting a short script into a
+  temporary copy of each page to open a screen and card.
+- An end-to-end run in headless Chrome (synthetic clicks and key events in a temporary copy of the auction page): Yes on one card,
+  Ctrl+Enter in another's note, `s` to skip, a note-less No (refused with the message), a note-less Disagree (refused), Cmd+Enter
+  with a note (recorded), Agree, a reviewer name. The export imported with `gao-idl cards import` into temporary copies: exit 0,
+  the dispute printed for the author.
+
+## 2026-11-20 — M10 fix-up, reviewer's changes after looking at the pages in a browser
+Made by the reviewer (Claude) on `m10-fixup` after opening the delivered pages in headless Chrome at 1280 and 390 wide.
+- **The timeline draws up to 12 participants** (`MAX_LANES` 8 → 12). With eight, the two-round carbon-market card left out `v1`,
+  the verifier that is caught and ends at −16: the participant the card is about. Lanes already shrink to fit, so nine fit at 920.
+  `reputation-shown` now has 9 lanes and 43 rows (the delivered fix-up: 8 and 39; M10: 8 and 54) and says nothing is "not drawn".
+- **The text column is left of the lanes** (`WHAT_X`, at most `WHAT_MAX = 440` wide, at least 300). On a phone the picture scrolls
+  sideways; with the text on the right a phone showed arrows and no words. Now it shows the words first.
+- **`summarize` writes small nested values out**: a nested dict with at most four plain fields inline
+  (`s0: (price = 8.84, qty = 3)`, `all_bids: (alice = 8, bob = 8, carol = 1)`), and a small table of such rows when all of it fits
+  the limit; otherwise by size as before. A buyer's order used to read `s0: 2 entries`. Never JSON.
+- **The answer bar is slimmer**: the note's visible label (it repeated the placeholder) is hidden for the eye at every width and kept
+  for screen readers; smaller keys line and padding. 156 px tall at 1280 × 800 (was about 197); unchanged on a phone (196 px).
+- Four timeline golden files regenerated (`auction.tie-top`, `auction.no-bid`, `pd.two-pairs`, `pd.no-move-default`) and looked at
+  in the rebuilt pages. `tests/authoring/golden/`, the bundle's shape, `Story` and the verdict models are untouched.
+- Rebuilt pages with 200 fuzzed runs: auction 309 KB, PD 351 KB, carbon market 962 KB (M10: 1,002 KB). No script error and no
+  network request at 1280, 390 and in dark mode. Fast suite: 955 passed, 5 skipped.
+- **Notes have a Submit button** (the designer's report: the text boxes "aren't quite working", nothing said how to send one).
+  The note box was always on screen and only Ctrl+Enter or a second press of No sent it. Now "No…" (or `n`) on a card and
+  "Disagree…" on a choice open a box with a visible label, **Submit** and **Cancel**; Enter submits, Shift+Enter is a new line,
+  Esc closes. An empty note is still refused. A recorded note is put back in the box when it is reopened, and a choice's answer
+  line now shows its note. `submitsNote` takes the Shift key as a fourth argument. Bundle, verdict file and state are unchanged.
+- **Screens have one-word names**: Checks, Design, Choices, Cards, Finish (the designer's request).
+- **Cards say what happened in plain sentences** (the designer: the card "is written too technically for a policymaker").
+  `review.tell.plain_steps` and `plain_ending` turn the `Story` into sentences: equal choices are grouped ("alice and bob chose
+  amount 8"), field names read as words, what everyone was told is one sentence, each one's own results are left to the record,
+  steps where nothing happens (a round counter) are skipped, long or nested choices are counted and not listed. Keys are taken in
+  sorted order so a page made from a spec and one made from a saved bundle are identical. Still V3: every name and number is from
+  the run, and the only authored text is the step's description from the spec. The card now reads title, why, setup, what
+  happened, the picture, payoffs, then "The full record" with both lists always folded (`FOLD_AFTER` is gone). "How it ends: the
+  run ends through done" became "The run finished."; the card's id moved to a small line at the bottom.
+- **Not solved by this**: the words are still the build's field names (`amount`, `own payoff`, `round index 0` under "Round 1").
+  Saying "bid" for "amount" needs the author to give wording in the spec; that is a spec change and is not made here.
+- **The run view by participant is the default picture; the timeline is a folded "Detailed diagram"** (the designer: the
+  timeline "is pretty difficult to read"; make the simpler one the default and keep a higher-fidelity one to open). `review.tell.run_steps`
+  gives, per step, a `Tile` per participant (its choice, what only it was told) and the `Announcement`s (what all recipients
+  were told alike); `page._run_html` draws them as HTML tiles that wrap (nine participants: a grid on a laptop, one column on a
+  phone). A one-field choice is shown large, a dict of rows as a small table. Payoffs are bars scaled to the largest payoff
+  size on the page. This replaced the plain-sentence list of the previous entry (`plain_steps` is gone; `plain_ending` stays).
+  The bundle is unchanged: `timeline_svg` is still in it and is what the fold shows.
+- **What the tile view does not show**: the order of moves inside a step (the detailed diagram does). A shared line reads
+  "Everyone was told the same", not "announced", because equal private messages (both defect: each one's "own payoff 1") land
+  there too; the build cannot tell a broadcast from equal messages.
+- **Size**: the carbon market page grew from about 967 KB to about 1.03 MB; the test's cap is now 1.2 MB.
+

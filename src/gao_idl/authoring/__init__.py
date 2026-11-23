@@ -18,12 +18,18 @@ Stability: supporting API: documented in the API reference, but not re-exported 
 from gao_idl.authoring.cards import (
     Card,
     CardExpect,
+    Move,
+    StepView,
+    Story,
+    Told,
     freeze,
     load_cards,
     render_card,
     run_card,
     same_outcome,
     save_cards,
+    tell_card,
+    tell_session,
     verify_cards,
 )
 from gao_idl.authoring.check import Mismatch, Run, check_secrets, check_spec
@@ -62,6 +68,12 @@ from gao_idl.authoring.spec import (
 )
 
 __all__ = [
+    "Move",
+    "StepView",
+    "Story",
+    "Told",
+    "tell_card",
+    "tell_session",
     "to_choice_cards",
     "save_choices",
     "sample_action",

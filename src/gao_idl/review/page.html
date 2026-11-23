@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="{{CSP}}">
+<meta name="referrer" content="no-referrer">
+<meta name="generator" content="gao_idl {{VERSION}}">
+<title>{{TITLE}}</title>
+<style>
+{{CSS}}
+</style>
+</head>
+<body>
+<header class="top">
+<h1>{{HEADING}}</h1>
+<nav class="screens only-js" aria-label="Parts of this review">
+<button type="button" data-screen="0" aria-label="1. Checks" title="Checks"><span class="num">1</span><span class="name">. Checks</span></button>
+<button type="button" data-screen="1" aria-label="2. Design" title="Design"><span class="num">2</span><span class="name">. Design</span></button>
+<button type="button" data-screen="2" aria-label="3. Choices" title="Choices"><span class="num">3</span><span class="name">. Choices</span></button>
+<button type="button" data-screen="3" aria-label="4. Cards" title="Cards"><span class="num">4</span><span class="name">. Cards</span></button>
+<button type="button" data-screen="4" aria-label="5. Finish" title="Finish"><span class="num">5</span><span class="name">. Finish</span></button>
+</nav>
+<p id="status" role="status" aria-live="polite"></p>
+</header>
+<main>
+<noscript><p class="warning"><strong>Scripts are off.</strong> You can read everything below, but your answers cannot be saved or downloaded without scripts.</p></noscript>
+{{BODY}}
+</main>
+<script type="application/json" id="gao-bundle">{{BUNDLE}}</script>
+<script type="application/json" id="gao-config">{{CONFIG}}</script>
+<script>
+{{JS}}
+</script>
+</body>
+</html>

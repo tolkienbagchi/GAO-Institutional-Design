@@ -16,12 +16,17 @@ status 0 means identical; 1 means they differ.
 
 ``spec render`` writes the reviewable design page of a spec and ``spec check`` compares the spec
 with the environment it names (exit status 1 on any mismatch); with ``--cards`` each card supplies
-one run to draw on. ``cards show`` prints cards in plain language, ``cards confirm`` and
+one run to draw on. ``cards review`` shows cards one at a time and asks for a verdict after each,
+saving as it goes. ``cards show`` prints cards in plain language, ``cards confirm`` and
 ``cards reject`` record a person's verdict, and ``cards verify`` checks that confirmed cards are
-still reproduced and rejected ones are not (exit status 1 otherwise). ``spec check --fuzz N`` adds
+still reproduced and rejected ones are not (exit status 1 otherwise). ``cards import`` applies the
+verdicts file a person downloaded from the review page (exit status 1 if any verdict could not be
+applied). ``spec check --fuzz N`` adds
 N edge-biased runs and checks the spec's invariants on all runs. ``diverge SPEC REF...`` replays
 edge-biased scripts on other implementations of the spec and writes one question per distinct
-disagreement (exit status 1 if there is any). See ``docs/verifying.md``.
+disagreement (exit status 1 if there is any). ``review bundle`` writes the JSON bundle the review
+page shows and ``review page`` the self-contained HTML page itself (from a spec and cards, or
+from a bundle). See ``docs/verifying.md``.
 
 Stability: internal; the command-line interface is the supported way to use this module.
 """
@@ -289,6 +294,112 @@ def _cmd_cards_mark(args: argparse.Namespace) -> int:
     return 0
 
 
+_REVIEW_KEYS = "[c] yes, this is what I meant   [r] no, reject   [s] skip   [b] back   [q] stop"
+
+
+def _cmd_cards_review(args: argparse.Namespace) -> int:
+    """Show cards one at a time and record a verdict after each; saves after every answer."""
+    from gao_idl.authoring import freeze, load_cards, load_spec, render_card, save_cards
+
+    try:
+        cards = load_cards(args.cards)
+        spec = load_spec(args.spec) if args.spec is not None else None
+    except (OSError, ValueError) as e:
+        print(f"cannot read: {type(e).__name__}: {e}", file=sys.stderr)
+        return 2
+    queue = [i for i, c in enumerate(cards) if args.status in ("all", c.status)]
+    if not queue:
+        print(f"no {args.status} cards in {args.cards}")
+        return 0
+
+    def ask(prompt: str) -> str | None:
+        try:
+            return input(prompt).strip()
+        except EOFError:
+            return None
+
+    at = 0
+    decided = 0
+    while at < len(queue):
+        card = cards[queue[at]]
+        print(f"\n{'=' * 72}\nCard {at + 1} of {len(queue)}\n")
+        print(render_card(card, spec))
+        answer = ask(f"{_REVIEW_KEYS}\n> ")
+        if answer is None or answer.lower() in ("q", "quit", "stop"):
+            break
+        key = answer.lower()[:1]
+        if key == "b":
+            at = max(0, at - 1)
+            continue
+        if key == "s" or answer == "":
+            at += 1
+            continue
+        if key not in ("c", "y", "r", "n"):
+            print(f"did not understand {answer!r}")
+            continue
+        update: dict[str, Any] = {"status": "confirmed" if key in ("c", "y") else "rejected"}
+        if update["status"] == "rejected":
+            note = ask("What should happen instead? > ")
+            if not note:
+                print("a rejected card needs a note; nothing recorded")
+                continue
+            update["note"] = note
+        if card.expect is None:
+            card = freeze(card)
+        cards[queue[at]] = card.model_copy(update=update)
+        save_cards(args.cards, cards)
+        decided += 1
+        print(f"recorded: {card.id} {update['status']}")
+        at += 1
+    left = sum(c.status == "proposed" for c in cards)
+    print(f"\n{decided} cards decided this time; {left} still proposed in {args.cards}")
+    return 0
+
+
+def _cmd_cards_import(args: argparse.Namespace) -> int:
+    """Apply a person's verdicts file (written by the review page) to the cards and the spec."""
+    from gao_idl.authoring import load_cards, load_spec, save_cards
+    from gao_idl.review.verdicts import (
+        apply_card_verdicts,
+        apply_verdicts,
+        disputed,
+        load_verdicts,
+        save_spec,
+    )
+
+    try:
+        cards = load_cards(args.cards)
+        verdicts = load_verdicts(args.verdicts)
+        spec = load_spec(args.spec) if args.spec is not None else None
+    except (OSError, ValueError) as e:
+        print(f"cannot read: {type(e).__name__}: {e}", file=sys.stderr)
+        return 2
+    if spec is not None:
+        new_cards, new_spec, problems = apply_verdicts(cards, spec, verdicts)
+    else:
+        new_cards, problems = apply_card_verdicts(cards, verdicts)
+        new_spec = None
+        problems += [
+            f"choice {v.index}: no --spec given; answer not applied" for v in verdicts.assumptions
+        ]
+    changed = sum(a != b for a, b in zip(cards, new_cards, strict=True))
+    if changed:
+        save_cards(args.cards, new_cards)
+    if spec is not None and new_spec is not None and new_spec != spec:
+        save_spec(args.spec, new_spec)
+    for problem in problems:
+        print(problem, file=sys.stderr)
+    for line in disputed(verdicts):
+        print(line)
+    agreed = sum(v.verdict == "agreed" for v in verdicts.assumptions)
+    print(
+        f"{changed} cards updated from {len(verdicts.cards)} verdicts by "
+        f"{verdicts.reviewer or 'an unnamed reviewer'}; {agreed} choices agreed; "
+        f"{len(problems)} problems"
+    )
+    return 1 if problems else 0
+
+
 def _cmd_cards_verify(args: argparse.Namespace) -> int:
     from gao_idl.authoring import load_cards, verify_cards
 
@@ -306,6 +417,51 @@ def _cmd_cards_verify(args: argparse.Namespace) -> int:
         f"{counts['proposed']} still proposed (not checked); {len(problems)} problems"
     )
     return 1 if problems else 0
+
+
+def _make_bundle(args: argparse.Namespace) -> Any:
+    """The bundle of ``args.spec`` and ``args.cards`` with ``args.fuzz`` runs (``review``)."""
+    from gao_idl.authoring import load_cards, load_spec
+    from gao_idl.review import make_bundle
+
+    return make_bundle(load_spec(args.spec), load_cards(args.cards), args.fuzz, args.seed)
+
+
+def _cmd_review_bundle(args: argparse.Namespace) -> int:
+    from gao_idl.review import save_bundle
+
+    try:
+        bundle = _make_bundle(args)
+    except (OSError, ValueError, RuntimeError, GaoError) as e:
+        print(f"cannot build the bundle: {type(e).__name__}: {e}", file=sys.stderr)
+        return 2
+    save_bundle(args.out, bundle)
+    print(
+        f"{bundle.spec.title}: {len(bundle.cards)} cards, {bundle.status.runs} runs, "
+        f"{len(bundle.status.mismatches)} mismatches -> {args.out}"
+    )
+    return 0
+
+
+def _cmd_review_page(args: argparse.Namespace) -> int:
+    from gao_idl.review import load_bundle, render_page
+
+    if (args.bundle is None) == (args.spec is None):
+        print("give either SPEC with --cards, or --bundle", file=sys.stderr)
+        return 2
+    if args.spec is not None and args.cards is None:
+        print("SPEC needs --cards", file=sys.stderr)
+        return 2
+    try:
+        bundle = load_bundle(args.bundle) if args.bundle is not None else _make_bundle(args)
+        text = render_page(bundle, args.api)
+    except (OSError, ValueError, RuntimeError, GaoError) as e:
+        print(f"cannot build the page: {type(e).__name__}: {e}", file=sys.stderr)
+        return 2
+    args.out.write_text(text, encoding="utf-8")
+    size = len(text.encode("utf-8"))
+    print(f"{bundle.spec.title}: {len(bundle.cards)} cards, {size // 1024} KB -> {args.out}")
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -353,6 +509,15 @@ def main(argv: list[str] | None = None) -> int:
     show_p.add_argument("--status", choices=["proposed", "confirmed", "rejected"], default=None)
     show_p.add_argument("--spec", type=Path, default=None, help="spec for step descriptions")
     show_p.set_defaults(func=_cmd_cards_show)
+    review_p = cards_sub.add_parser(
+        "review", help="go through cards one at a time and confirm or reject each"
+    )
+    review_p.add_argument("cards", type=Path)
+    review_p.add_argument("--spec", type=Path, default=None, help="spec for step descriptions")
+    review_p.add_argument(
+        "--status", choices=["proposed", "confirmed", "rejected", "all"], default="proposed"
+    )
+    review_p.set_defaults(func=_cmd_cards_review)
     confirm_p = cards_sub.add_parser("confirm", help="record that these cards are as intended")
     confirm_p.add_argument("cards", type=Path)
     confirm_p.add_argument("ids", nargs="+", metavar="ID")
@@ -363,9 +528,35 @@ def main(argv: list[str] | None = None) -> int:
     reject_p.add_argument("ids", nargs=1, metavar="ID")
     reject_p.add_argument("--note", required=True, help="what should happen instead")
     reject_p.set_defaults(func=_cmd_cards_mark, status="rejected")
+    import_p = cards_sub.add_parser(
+        "import", help="apply a person's verdicts file from the review page"
+    )
+    import_p.add_argument("cards", type=Path)
+    import_p.add_argument("verdicts", type=Path, help="verdicts JSON downloaded from the page")
+    import_p.add_argument("--spec", type=Path, default=None, help="spec whose choices to update")
+    import_p.set_defaults(func=_cmd_cards_import)
     verify_p = cards_sub.add_parser("verify", help="check confirmed and rejected cards")
     verify_p.add_argument("cards", type=Path)
     verify_p.set_defaults(func=_cmd_cards_verify)
+
+    review_p = sub.add_parser("review", help="build the review page (or its bundle) for a person")
+    review_sub = review_p.add_subparsers(dest="review_command", required=True)
+    bundle_p = review_sub.add_parser("bundle", help="write the JSON bundle the page shows")
+    bundle_p.add_argument("spec", type=Path, help="spec JSON file")
+    bundle_p.add_argument("--cards", type=Path, required=True, help="cards JSON file")
+    bundle_p.add_argument("--fuzz", type=int, default=0, metavar="N", help="add N edge-biased runs")
+    bundle_p.add_argument("--seed", type=int, default=0, help="seed for the fuzzed runs")
+    bundle_p.add_argument("--out", type=Path, required=True, help="bundle JSON file to write")
+    bundle_p.set_defaults(func=_cmd_review_bundle)
+    page_p = review_sub.add_parser("page", help="write the self-contained review page (HTML)")
+    page_p.add_argument("spec", type=Path, nargs="?", default=None, help="spec JSON file")
+    page_p.add_argument("--cards", type=Path, default=None, help="cards JSON file (with SPEC)")
+    page_p.add_argument("--bundle", type=Path, default=None, help="a bundle instead of SPEC")
+    page_p.add_argument("--fuzz", type=int, default=0, metavar="N", help="add N edge-biased runs")
+    page_p.add_argument("--seed", type=int, default=0, help="seed for the fuzzed runs")
+    page_p.add_argument("--api", default=None, help=argparse.SUPPRESS)  # M11: post verdicts here
+    page_p.add_argument("--out", type=Path, required=True, help="HTML file to write")
+    page_p.set_defaults(func=_cmd_review_page)
     args = parser.parse_args(argv)
     return int(args.func(args))
 

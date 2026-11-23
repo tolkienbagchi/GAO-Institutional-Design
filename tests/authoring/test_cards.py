@@ -128,3 +128,67 @@ def test_shipped_cards_are_proposed_frozen_and_current(name: str) -> None:
         assert card.status == "proposed", "only a person confirms or rejects a card"
         assert card.why and card.expect is not None
         assert same_outcome(run_card(card), card.expect), card.id
+
+
+# ------------------------------------------------------------------ the story as data (M10)
+
+
+def _shipped(name: str, card_id: str) -> Card:
+    return next(
+        c for c in load_cards(ROOT / "examples" / "cards" / f"{name}.json") if c.id == card_id
+    )
+
+
+def test_tell_card_gives_one_step_per_layer_instance_in_order_of_entry() -> None:
+    from gao_idl.authoring import load_spec, tell_card
+
+    spec = load_spec(ROOT / "examples" / "specs" / "pd.json")
+    story = tell_card(_shipped("pd", "no-move-stops"), spec)
+    assert [(s.place, s.layer) for s in story.steps] == [
+        ("round 1, pair_0", "pd_round"),
+        ("round 1, pair_1", "pd_round"),
+        ("round 1", "round_counter"),
+        ("round 2, pair_0", "pd_round"),
+        ("round 2, pair_1", "pd_round"),
+    ]
+    first = story.steps[0]
+    assert first.description == spec.steps[0].description
+    assert [m.kind for m in first.moves] == ["chose", "chose"]
+    assert sorted(t.agent for t in first.told) == ["a", "b"]  # a report belongs to its step
+    assert story.steps[3].stopped == (
+        "b did not act. Under the rules of this step the whole run stops here."
+    )
+    assert [s.stopped for s in story.steps].count(None) == 4
+    assert story.failed and story.exit_port is None
+    assert tell_card(_shipped("pd", "no-move-stops")).steps[0].description == ""
+
+
+def test_tell_session_marks_defaults_and_drops() -> None:
+    from gao_idl.authoring import play, tell_session
+
+    card = Card(
+        id="silent",
+        title="t",
+        why="w",
+        env_ref=ULTIMATUM,
+        params={"pie": 10.0, "cost": 1.0},
+        seed=0,
+        script={"ann": [{"offer": 4.0}], "ben": [None]},
+    )
+    story = tell_session(play(card.env_ref, card.params, card.seed, card.script))
+    moves = [m for s in story.steps for m in s.moves]
+    assert [(m.agent, m.kind, m.action) for m in moves] == [
+        ("ann", "chose", {"offer": 4.0}),
+        ("ben", "dropped", None),
+    ]
+    assert story.exit_port == "done" and set(story.utilities) == {"ann", "ben"}
+    pd = _shipped("pd", "no-move-default")
+    default = tell_session(play(pd.env_ref, pd.params, pd.seed, pd.script))
+    assert any(m.kind == "defaulted" and m.action for s in default.steps for m in s.moves)
+
+
+def test_story_round_trips_through_json() -> None:
+    from gao_idl.authoring import Story, tell_card
+
+    story = tell_card(_shipped("vcm", "reputation-shown"))
+    assert Story.model_validate_json(story.model_dump_json()) == story

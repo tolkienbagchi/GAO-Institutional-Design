@@ -1,0 +1,14 @@
+<svg class="gao-flow" viewBox="0 0 266 212" width="266" height="212" role="img" aria-label="How the steps of auction connect" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="13">
+<title>How the steps of auction connect</title>
+<g class="step"><rect x="16" y="16" width="120" height="38" rx="6" fill="none" stroke="currentColor"/>
+<text x="76" y="40" text-anchor="middle" fill="currentColor" font-weight="600">bidding</text>
+</g>
+<g class="step"><rect x="16" y="94" width="120" height="38" rx="6" fill="none" stroke="currentColor"/>
+<text x="76" y="118" text-anchor="middle" fill="currentColor" font-weight="600">settlement</text>
+</g>
+<g class="end"><rect x="16" y="172" width="98" height="24" rx="12" fill="none" stroke="currentColor"/><text x="65" y="188.5" text-anchor="middle" fill="currentColor" font-size="12">ends: done</text></g>
+<g class="end"><rect x="138" y="172" width="112" height="24" rx="12" fill="none" stroke="currentColor"/><text x="194" y="188.5" text-anchor="middle" fill="currentColor" font-size="12">ends: unsold</text></g>
+<g class="edge"><path d="M76 54 V80 H76 V94" fill="none" stroke="currentColor"/><polygon class="head" points="76,94 72,87 80,87" fill="currentColor"/><text x="81" y="89" text-anchor="start" font-size="11" class="port" fill="currentColor">settle</text></g>
+<g class="edge"><path d="M58 132 V158 H65 V172" fill="none" stroke="currentColor"/><polygon class="head" points="65,172 61,165 69,165" fill="currentColor"/><text x="70" y="167" text-anchor="start" font-size="11" class="port" fill="currentColor">done</text></g>
+<g class="edge"><path d="M94 132 V158 H194 V172" fill="none" stroke="currentColor"/><polygon class="head" points="194,172 190,165 198,165" fill="currentColor"/><text x="199" y="167" text-anchor="start" font-size="11" class="port" fill="currentColor">unsold</text></g>
+</svg>

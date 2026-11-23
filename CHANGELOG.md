@@ -36,6 +36,27 @@ and proposed cards for the auction, the prisoner's dilemma and the carbon market
 `gao-idl spec check --fuzz N` and `gao-idl diverge`; skills `second-implementation` and
 `write-spec-tests`; `examples/candidates/auction_second.py`.
 
+**M10, the review page.** New supporting package `gao_idl.review`: `make_bundle` (the JSON bundle,
+`bundle_version: 1`, the only contract between the engine and a front end), `flow_svg` and
+`timeline_svg` (SVG drawn in Python), `render_page` (one self-contained HTML file with no network
+request, in which a designer reads the design and gives a verdict on each card), and verdicts
+(`Verdicts`, `apply_verdicts`; a verdict is refused if the card's outcome changed since the page
+was made). `gao_idl.authoring` gains `Story`, `tell_card` and `tell_session` (`render_card` is
+built on them), and `Card.reviewer`. Command line: `gao-idl review bundle|page`,
+`gao-idl cards import`, and `gao-idl cards review` (one card at a time in a terminal).
+`scripts/make_example_pages.py` writes the three example pages to `build/review/`.
+
+**M10 fix-up.** The review page after a first look at it rendered: `gao_idl.review.tell`
+(`split_told`, `summarize`) shows what a step told everyone alike once instead of once per
+recipient; the timeline is at most 920 wide, puts its text in a column on the left (what a phone shows first), draws up to twelve participants, writes small nested values out, and repeats the
+lane names in every band; cards show payoffs before two folded lists and keep the answer bar in
+view; disagreeing with a choice needs a note (`cards import` refuses one without); screens are named Checks, Design,
+Choices, Cards, Finish; each card shows what happened by participant (`run_steps`: a tile per
+participant per step, payoffs as bars on one scale), with the timeline as a folded "Detailed
+diagram" and the exact record folded below; "No…" and
+"Disagree…" open a note box with Submit and Cancel buttons (Enter submits, Shift+Enter is a new line); one-row navigation on phones; `clean_install.sh` and
+`tests/test_packaging.py` check that the wheel carries the page's files.
+
 Replace "Unreleased" with the date when the tag is cut.
 
 [0.1.0]: https://github.com/tolkienbagchi/GAO-Institutional-Design/releases/tag/v0.1.0

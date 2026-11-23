@@ -276,10 +276,30 @@ cards. Nothing here calls a model. Workflow and limits: `docs/verifying.md`.
 | `check_invariants(spec, runs)` | runs `InvariantSpec.predicate(session, **args)` and the secrets over many runs; `gao_idl.authoring.predicates` |
 | `diverge(env_refs, params, seeds, scripts)`, `to_choice_cards`, `render_choice` | where implementations of one spec disagree, as questions |
 
-Command line: `gao-idl spec render|check SPEC [--cards CARDS] [--fuzz N]`, `gao-idl cards show|confirm|reject|verify CARDS`,
+Command line: `gao-idl spec render|check SPEC [--cards CARDS] [--fuzz N]`, `gao-idl cards review|show|confirm|reject|verify CARDS` (`review` is the interactive, one-at-a-time one for the person),
 `gao-idl diverge SPEC REF... --out choices.json`.
 A role *kind* is the role id before the first `:`. **Never confirm or reject a card, answer a choice card, or set
 an assumption to confirmed**: both record a person's judgement.
+
+## The review page (`gao_idl.review`)
+
+What the person who described the institution reviews: one self-contained HTML file, generated
+from a bundle, no network, no server. Nothing here calls a model or records a verdict by itself.
+
+| Name | Purpose |
+| --- | --- |
+| `make_bundle(spec, cards, fuzz=0, seed=0)` | `Bundle` (`bundle_version: 1`): spec, flow SVG, outline, who-knows-what table, one `CardView` per card (`story`, `timeline_svg`, `outcome_hash`, `stale`), `CheckStatus`; `dump_bundle`, `save_bundle`, `load_bundle` |
+| `render_page(bundle, api=None)` | the page as one HTML string; with `api` it also posts each verdict there (M11) |
+| `flow_svg(describe(p))`, `timeline_svg(story, title)` | the pictures, SVG drawn in Python |
+| `tell_card(card, spec)`, `tell_session(session, spec)` | (in `gao_idl.authoring`) a run as a `Story` of `StepView`s with `Move`s and `Told`s |
+| `split_told(told)`, `summarize(payload, limit=60)` | what a step told everyone alike once, then each one's own; a payload as a short label |
+| `outcome_hash(expect)` | SHA-256 of a `CardExpect` (floats rounded to 9 places); a verdict names the hash it saw |
+| `Verdicts`, `CardVerdict`, `AssumptionVerdict`, `load_verdicts`, `apply_verdicts(cards, spec, v)` | what the page exports; applied only where the card still does exactly what was seen |
+
+Command line: `gao-idl review page SPEC --cards CARDS [--fuzz N] --out review.html`,
+`gao-idl review page --bundle bundle.json --out review.html`, `gao-idl review bundle SPEC --cards CARDS --out bundle.json`,
+`gao-idl cards import CARDS VERDICTS [--spec SPEC]` (exit 1 if any verdict was refused). Hand the person
+`review.html`; **never write, edit or import a verdicts file yourself**.
 
 ## Test fixtures (`gao_idl.testing`)
 

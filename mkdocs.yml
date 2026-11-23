@@ -55,6 +55,7 @@ nav:
       - environments: api/environments.md
       - testing: api/testing.md
       - authoring: api/authoring.md
+      - review: api/review.md
   - Design:
       - Decisions: design/decisions.md
   - Acceptance: ACCEPTANCE.md

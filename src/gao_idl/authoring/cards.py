@@ -39,7 +39,11 @@ class CardExpect(FrozenModel):
 
 
 class Card(FrozenModel):
-    """One scenario. ``why`` says which readings of the design this case tells apart."""
+    """One scenario. ``why`` says which readings of the design this case tells apart.
+
+    ``reviewer`` names the person whose verdict set ``status`` when it came from a verdicts file
+    (``gao-idl cards import``); it is empty otherwise.
+    """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -53,16 +57,23 @@ class Card(FrozenModel):
     expect: CardExpect | None = None
     status: Literal["proposed", "confirmed", "rejected"] = "proposed"
     note: str = ""
+    reviewer: str = ""
 
 
 _CARDS = TypeAdapter(list[Card])
 
 
-def _expect(session: Session, script: ActionScript) -> CardExpect:
+def _card_agents(session: Session, script: ActionScript) -> set[str]:
+    """The agents a card reports on: those in its script, paid, or told something."""
     agents = set(script) | set(session.ledger.snapshot()["increments"])
     for event in session.trace:
         if isinstance(event, ev.ReportDelivered):
             agents.add(str(event.report.agent_id))
+    return agents
+
+
+def _expect(session: Session, script: ActionScript) -> CardExpect:
+    agents = _card_agents(session, script)
     result = session.result
     return CardExpect(
         exit_port=None if result is None else str(result.port),
@@ -206,40 +217,250 @@ def _pairs(d: dict[str, Any]) -> str:
     return ", ".join(f"{k} = {_value(d[k])}" for k in sorted(d)) if d else "nothing"
 
 
-def _place(path: Sequence[Any], layer: str) -> str:
+def _key(path: Sequence[Any]) -> str:
+    return "/".join(repr(e) for e in path)
+
+
+def _where(path: Sequence[Any]) -> str:
+    """Rounds and branches of a path in words: ``"round 2, pair_0"``; ``""`` at the top level."""
     parts: list[str] = []
     for e in path:
         if isinstance(e, LoopIter):
             parts.append(f"round {e.i + 1}")
         elif isinstance(e, Branch):
             parts.append(e.name)
-    return ", ".join([*parts, f"step {layer}"])
+    return ", ".join(parts)
 
 
-def _key(path: Sequence[Any]) -> str:
-    return "/".join(repr(e) for e in path)
+# ------------------------------------------------------------------ the story as data
+
+
+class Move(FrozenModel):
+    """What one participant did in a step: chose an action, had the default used, or was left out.
+
+    ``action`` is the action chosen or used by default; None when the participant was dropped.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    agent: str
+    kind: Literal["chose", "defaulted", "dropped"]
+    action: dict[str, Any] | None
+
+
+class Told(FrozenModel):
+    """One report: what ``agent`` was told after a step."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    agent: str
+    payload: dict[str, Any]
+
+
+class StepView(FrozenModel):
+    """One layer instance of a run, in words and data.
+
+    ``place`` names the round and branch (``"round 2, pair_0"``, empty at the top level),
+    ``layer`` the step, ``description`` the spec's description of it (empty without a spec).
+    ``stopped`` is the plain-language reason when the run stops (or a repetition is cut off) in
+    this step. A view with an empty ``layer`` holds an event of the rules outside any step, such
+    as a repetition cut off at its limit.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    place: str
+    layer: str
+    description: str
+    moves: list[Move]
+    told: list[Told]
+    stopped: str | None
+
+
+class Story(FrozenModel):
+    """A run told step by step: one ``StepView`` per layer instance in order of entry, the total
+    payoff of every agent, and how the run ended."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    steps: list[StepView]
+    utilities: dict[str, float]
+    exit_port: str | None
+    failed: bool
+
+
+def _story(session: Session, spec: EnvSpec | None, agents: set[str]) -> tuple[Story, list[int]]:
+    """The story of ``session`` and, for each report in trace order, the index of its step.
+
+    The second value lets ``render_card`` list what everyone was told in the order it was
+    delivered, which under ``Par`` need not be the order the steps were entered.
+    """
+    requests: dict[str, ev.DecisionRequested] = {}
+    layers: dict[str, str] = {}  # a layer's name is not in its path under a Par branch
+    silent: set[str] = set()
+    for logged in session.input_log:
+        if isinstance(logged, ev.TimedOut):
+            silent.add(str(logged.decision_id))
+    for event in session.trace:
+        if isinstance(event, ev.DecisionRequested):
+            layers.setdefault(_key(event.path), event.request.layer)
+            requests[str(event.request.decision_id)] = event
+        elif isinstance(event, ev.LayerCompleted):
+            layers.setdefault(_key(event.path), event.layer)
+    order: list[str] = []  # one step per layer instance, in order of entry
+    parts: dict[str, dict[str, Any]] = {}
+    told_at: list[int] = []
+
+    def part(key: str, path: Sequence[Any], layer: str) -> dict[str, Any]:
+        if key not in parts:
+            order.append(key)
+            step = spec.step(layer) if spec is not None and layer else None
+            parts[key] = {
+                "place": _where(path),
+                "layer": layer,
+                "description": step.description if step is not None else "",
+                "moves": [],
+                "told": [],
+                "stopped": None,
+            }
+        return parts[key]
+
+    def stop(view: dict[str, Any], text: str) -> None:
+        view["stopped"] = text if view["stopped"] is None else f"{view['stopped']} {text}"
+
+    for event in session.trace:
+        key = _key(event.path)
+        if isinstance(event, ev.LayerEntered):
+            part(key, event.path, layers.get(key, ""))
+            continue
+        if isinstance(event, ev.ReportDelivered):
+            report = event.report
+            rkey = _key(report.path)
+            view = part(rkey, report.path, report.layer)
+            view["told"].append(Told(agent=str(report.agent_id), payload=dict(report.payload)))
+            told_at.append(order.index(rkey))
+            continue
+        view = part(key, event.path, layers.get(key, ""))
+        if isinstance(event, ev.ActionAccepted):
+            view["moves"].append(
+                Move(agent=str(event.agent_id), kind="chose", action=dict(event.action))
+            )
+        elif isinstance(event, ev.ActionDefaulted):
+            who = str(requests[str(event.decision_id)].request.agent_id)
+            view["moves"].append(Move(agent=who, kind="defaulted", action=dict(event.action)))
+        elif isinstance(event, ev.RoleDropped):
+            who = str(requests[str(event.decision_id)].request.agent_id)
+            view["moves"].append(Move(agent=who, kind="dropped", action=None))
+        elif isinstance(event, ev.Failed):
+            quiet = sorted(
+                str(r.request.agent_id)
+                for d, r in requests.items()
+                if d in silent and _key(r.path) == key
+            )
+            if quiet:
+                stop(
+                    view,
+                    f"{', '.join(quiet)} did not act. Under the rules of this step the "
+                    "whole run stops here.",
+                )
+            else:
+                stop(view, f"The run stops here: {event.reason}.")
+        elif isinstance(event, ev.Truncated):
+            stop(view, f"The repetition is cut off: {event.reason}.")
+    # keep layer instances, and places outside them only where the rules did something visible
+    kept = [k for k in order if parts[k]["layer"] or parts[k]["told"] or parts[k]["stopped"]]
+    index = {k: i for i, k in enumerate(kept)}
+    told_at = [index[order[i]] for i in told_at]
+    result = session.result
+    story = Story(
+        steps=[StepView(**parts[k]) for k in kept],
+        utilities={a: session.ledger.utility(AgentId(a)) for a in sorted(agents)},
+        exit_port=None if result is None else str(result.port),
+        failed=session.failed,
+    )
+    return story, told_at
+
+
+def _agents(session: Session) -> set[str]:
+    agents = set(session.ledger.snapshot()["increments"])
+    for event in session.trace:
+        if isinstance(event, ev.ReportDelivered):
+            agents.add(str(event.report.agent_id))
+        elif isinstance(event, ev.DecisionRequested):
+            agents.add(str(event.request.agent_id))
+    return agents
+
+
+def tell_session(session: Session, spec: EnvSpec | None = None) -> Story:
+    """The story of a finished (or stopped) session: one ``StepView`` per layer instance.
+
+    Payoffs are listed for every agent that was asked to decide, told something or paid. Step
+    descriptions come from ``spec`` when given. A pure function of the session's trace.
+    """
+    return _story(session, spec, _agents(session))[0]
+
+
+def tell_card(card: Card, spec: EnvSpec | None = None) -> Story:
+    """Play the card's scenario and tell it; payoffs are listed for every agent of the script too.
+
+    Raises what ``play`` raises when the scenario cannot be played.
+    """
+    session = play(card.env_ref, card.params, card.seed, card.script)
+    return _story(session, spec, _card_agents(session, card.script))[0]
+
+
+# ------------------------------------------------------------------ the story in words
+
+
+def render_story(story: Story, told_at: Sequence[int] | None = None) -> list[str]:
+    """The markdown lines of "What happens", "What each participant is told" and "Payoffs"."""
+    out = ["**What happens.**", ""]
+    for step in story.steps:
+        if step.layer:
+            where = f"{step.place}, step {step.layer}" if step.place else f"step {step.layer}"
+            text = f" {step.description}" if step.description else ""
+            out.append(f"- *{where.capitalize()}.*{text}")
+        for move in step.moves:
+            if move.kind == "chose":
+                out.append(f"    - {move.agent} chooses {_pairs(move.action or {})}.")
+            elif move.kind == "defaulted":
+                out.append(
+                    f"    - {move.agent} does not act; the default is used instead: "
+                    f"{_pairs(move.action or {})}."
+                )
+            else:
+                out.append(f"    - {move.agent} does not act and is left out of this step.")
+        if step.stopped is not None:
+            out.append(f"    - {step.stopped}")
+    out.append("")
+    reports = [(i, t) for i, step in enumerate(story.steps) for t in step.told]
+    if told_at is not None:  # restore delivery order (Par branches interleave)
+        queues = {i: [t for j, t in reports if j == i] for i in range(len(story.steps))}
+        reports = [(i, queues[i].pop(0)) for i in told_at]
+    told: list[str] = []
+    for i, t in reports:
+        step = story.steps[i]
+        where = f"{step.place}, step {step.layer}" if step.place else f"step {step.layer}"
+        told.append(f"- {t.agent}, after {where}: {_pairs(t.payload)}")
+    out += ["**What each participant is told.**", ""]
+    out += told or ["- Nobody is told anything."]
+    out.append("")
+    out += ["**Payoffs in total.**", ""]
+    out += [f"- {agent}: {_value(story.utilities[agent])}" for agent in sorted(story.utilities)]
+    out.append("")
+    return out
 
 
 def render_card(card: Card, spec: EnvSpec | None = None) -> str:
     """The card as markdown a non-programmer can check: setup, who did what, what each was told.
 
-    The scenario is run again to tell the story step by step. If the card has a recorded outcome
-    that the run no longer matches, the card says so at the top. Step descriptions come from
-    ``spec`` when given.
+    The scenario is run again and told with ``tell_card``'s story. If the card has a recorded
+    outcome that the run no longer matches, the card says so at the top. Step descriptions come
+    from ``spec`` when given.
     """
     out = [f"### {card.title}", "", f"Card `{card.id}` ({card.status}). {card.why}", ""]
     out += ["**The situation.**", ""]
-    shown = sorted(card.params)
-    if spec is not None and spec.env_ref == card.env_ref:
-        shown = [k for k in shown if k not in spec.params or spec.params[k] != card.params[k]]
-        dropped = sorted(k for k in spec.params if k not in card.params)
-        if shown or dropped:
-            out.append("As in the design, except:")
-            out.append("")
-        else:
-            out.append("Exactly the parameters of the design.")
-        out += [f"- {key}: left at its default" for key in dropped]
-    out += [f"- {key}: {_value(card.params[key])}" for key in shown]
+    out += _situation(card, spec)
     out.append("")
     try:
         session = play(card.env_ref, card.params, card.seed, card.script)
@@ -253,72 +474,27 @@ def render_card(card: Card, spec: EnvSpec | None = None) -> str:
             f"({_diff(card.expect, now)}). What follows is what happens now.",
             "",
         ]
-    out += ["**What happens.**", ""]
-    requests: dict[str, ev.DecisionRequested] = {}
-    told: list[str] = []
-    layers: dict[str, str] = {}  # a layer's name is not in its path under a Par branch
-    silent: set[str] = set()
-    for entry in session.input_log:
-        if isinstance(entry, ev.TimedOut):
-            silent.add(str(entry.decision_id))
-    for event in session.trace:
-        if isinstance(event, ev.DecisionRequested):
-            layers.setdefault(_key(event.path), event.request.layer)
-            requests[str(event.request.decision_id)] = event
-        elif isinstance(event, ev.LayerCompleted):
-            layers.setdefault(_key(event.path), event.layer)
-    blocks: dict[str, list[str]] = {}  # one block per step instance, in order of entry
-    for event in session.trace:
-        key = _key(event.path)
-        if isinstance(event, ev.LayerEntered):
-            name = layers.get(key, "")
-            step = spec.step(name) if spec is not None else None
-            text = f" {step.description}" if step is not None else ""
-            blocks[key] = [f"- *{_place(event.path, name).capitalize()}.*{text}"]
-            continue
-        lines = blocks.setdefault(key, [])
-        if isinstance(event, ev.ActionAccepted):
-            lines.append(f"    - {event.agent_id} chooses {_pairs(event.action)}.")
-        elif isinstance(event, ev.ActionDefaulted):
-            who = requests[str(event.decision_id)].request.agent_id
-            lines.append(
-                f"    - {who} does not act; the default is used instead: {_pairs(event.action)}."
-            )
-        elif isinstance(event, ev.RoleDropped):
-            who = requests[str(event.decision_id)].request.agent_id
-            lines.append(f"    - {who} does not act and is left out of this step.")
-        elif isinstance(event, ev.Failed):
-            quiet = sorted(
-                str(r.request.agent_id)
-                for d, r in requests.items()
-                if d in silent and _key(r.path) == key
-            )
-            if quiet:
-                lines.append(
-                    f"    - {', '.join(quiet)} did not act. Under the rules of this step the "
-                    "whole run stops here."
-                )
-            else:
-                lines.append(f"    - The run stops here: {event.reason}.")
-        elif isinstance(event, ev.Truncated):
-            lines.append(f"    - The repetition is cut off: {event.reason}.")
-        elif isinstance(event, ev.ReportDelivered):
-            report = event.report
-            told.append(
-                f"- {report.agent_id}, after {_place(report.path, report.layer)}: "
-                f"{_pairs(report.payload)}"
-            )
-    for lines in blocks.values():
-        out += lines
-    out.append("")
-    out += ["**What each participant is told.**", ""]
-    out += told or ["- Nobody is told anything."]
-    out.append("")
-    out += ["**Payoffs in total.**", ""]
-    out += [f"- {agent}: {_value(now.utilities[agent])}" for agent in sorted(now.utilities)]
-    out.append("")
-    ending = "the run fails" if now.failed else f"the run ends through `{now.exit_port}`"
+    story, told_at = _story(session, spec, _card_agents(session, card.script))
+    out += render_story(story, told_at)
+    ending = "the run fails" if story.failed else f"the run ends through `{story.exit_port}`"
     out += [f"**How it ends:** {ending}.", ""]
     if card.note:
         out += [f"Note: {card.note}", ""]
     return "\n".join(out)
+
+
+def _situation(card: Card, spec: EnvSpec | None = None) -> list[str]:
+    """The card's parameters as markdown lines; with a matching spec, only what differs from it."""
+    out: list[str] = []
+    shown = sorted(card.params)
+    if spec is not None and spec.env_ref == card.env_ref:
+        shown = [k for k in shown if k not in spec.params or spec.params[k] != card.params[k]]
+        dropped = sorted(k for k in spec.params if k not in card.params)
+        if shown or dropped:
+            out.append("As in the design, except:")
+            out.append("")
+        else:
+            out.append("Exactly the parameters of the design.")
+        out += [f"- {key}: left at its default" for key in dropped]
+    out += [f"- {key}: {_value(card.params[key])}" for key in shown]
+    return out

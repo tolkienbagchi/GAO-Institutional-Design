@@ -19,16 +19,52 @@ comes from the process tree, the table and the cards from real runs.
 
 ## For the designer
 
-1. **Read the design page.** `gao-idl spec render spec.json --cards cards.json --out design.md`.
-   The section "Who knows what" is what the built environment actually showed each role in the
-   runs. The last section lists choices the author made that you never stated. Each is a
-   modelling decision that is currently nobody's.
-2. **Go through the cards.** `gao-idl cards show cards.json --spec spec.json`. Each card is one
-   concrete case: "alice bids 8, bob bids 8, carol bids 1", then what everyone is told and paid.
-   The line under the title says which readings of your description the case tells apart.
-3. **Confirm or reject each card.** `gao-idl cards confirm cards.json tie-top` if that is what you
-   meant; `gao-idl cards reject cards.json no-bid --note "a missing bid should count as zero"` if
-   it is not. Only you do this. A card its author confirms is not evidence.
+The author hands you one file, `review.html`. Open it in any browser: it needs no server, no
+internet connection and no installation, and it makes no network request.
+
+1. **Checks.** How many runs of the environment were compared with the design, every
+   difference found, and the rules of the design that nothing checks automatically. These checks
+   compare the code with the design, not the design with the world.
+2. **Design.** Who takes part, the steps, a picture of how they connect, and who knows what
+   (taken from runs of the built environment, not from the description), with secrets, payoffs and
+   parameters.
+3. **Choices.** Decisions the author made because your description did not settle
+   them. Press **Agree**, or press **Disagree…**: a box opens for why, with **Submit** and
+   **Cancel**. A disagreement needs a note, as a "No" on a card does.
+4. **Cards, one at a time.** Each card is one concrete case: "alice bids 8, bob bids 8, carol bids
+   1". The line under the title says which readings of your description the case tells apart.
+   Then come the setup (what differs from the design, if anything) and **What happened**: one
+   block per step in which somebody chose or was told something, with the rule as the design
+   words it and one tile per participant showing what it chose and what only it was told. What
+   every participant of the step was told alike is one marked line under the tiles. The final
+   payoffs follow as bars, on one scale for all cards of the page, so cards can be compared; a
+   hatched bar is a loss. All of it is made by the package from the run itself, never by a
+   model. Folded below, for when you need them: the **Detailed diagram** (one column per
+   participant, every message in the order it was sent) and the full record (every step and
+   everything each participant was told, exactly). The answer bar stays at the bottom of the window while
+   you read: **Yes, this is what I meant**, **No…** (a box opens; write what should happen
+   instead and press **Submit**, or **Cancel**), **Skip** or **Back**. Keys: `y`, `n` (opens the
+   box), `s`, and the left and right arrows; in the box, Enter submits, Shift+Enter starts a new
+   line and Esc closes it. A card marked out of date shows what the environment does
+   now and cannot be confirmed. On a phone the timeline scrolls sideways rather than shrinking
+   its text.
+5. **Finish.** Type your name and press **Download verdicts**. If your viewer blocks downloads,
+   copy the text in the box into a file called `verdicts.json`. Give that file to the author.
+
+Your answers are kept in the page while it is open (and, where the browser allows, when you reopen
+it on the same computer). Nothing is sent anywhere.
+
+The author applies your file with `gao-idl cards import cards.json verdicts.json --spec spec.json`.
+A verdict is about one exact behaviour: if the environment changed after the page was made, that
+card's verdict is refused and the card comes back to you. A "No" or a disagreement without a note
+is refused too. Only you give verdicts. A card its author
+confirms is not evidence.
+
+**In a terminal instead.** `gao-idl spec render spec.json --cards cards.json --out design.md`
+writes the design as a page, and `gao-idl cards review cards.json --spec spec.json` shows one card
+at a time, waits for `c` (yes), `r` (no, followed by one line on what should happen instead), `s`
+(skip), `b` (back) or `q` (stop), and saves each answer as it goes. `gao-idl cards show` prints all
+cards at once, and `gao-idl cards confirm` / `reject` record a verdict by card id, for scripts.
 
 A confirmed card is from then on a regression test: the environment must keep doing exactly that.
 A rejected card is one too: `gao-idl cards verify` fails until the environment stops doing it.
@@ -38,7 +74,17 @@ A rejected card is one too: `gao-idl cards verify` fails until the environment s
 ```bash
 gao-idl spec check  examples/specs/auction.json --cards examples/cards/auction.json
 gao-idl cards verify examples/cards/auction.json
+gao-idl review page examples/specs/auction.json --cards examples/cards/auction.json --out review.html
 ```
+
+`review page` builds the page the designer reviews (add `--fuzz 200` to put fuzzed runs into its
+"Checks" screen). Everything on it comes from the spec, the built process and real runs;
+no part of it is written by hand or by a model. `gao-idl review bundle ... --out bundle.json`
+writes the same content as JSON (`bundle_version: 1`), the format any other front end reads, and
+`gao-idl review page --bundle bundle.json --out review.html` turns a bundle into the page. When the
+designer sends back `verdicts.json`, `gao-idl cards import cards.json verdicts.json --spec spec.json`
+applies it and exits 1 if any verdict could not be applied (each is listed); choices the designer
+disagreed with are printed for you to resolve. Never import a file you wrote yourself.
 
 `spec check` exits 1 and prints one line per mismatch. The kinds:
 

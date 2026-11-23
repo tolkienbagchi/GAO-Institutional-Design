@@ -175,4 +175,9 @@ Fixture list in `gao_idl.testing`, and when each applies:
 7. 10 to 15 scenario cards exist, each with a `why`, chosen to separate plausible readings (ties,
    boundaries, nobody acting, the last round). Leave every card `proposed` and every assumption
    unconfirmed: only the person who described the institution confirms or rejects
-   (`docs/verifying.md`). Hand them the rendered design and `gao-idl cards show`.
+   (`docs/verifying.md`).
+8. Build the review page and hand the person that one file, not terminal commands:
+   `gao-idl review page spec.json --cards cards.json --fuzz 200 --out review.html`. It opens in
+   any browser with no server. They send back `verdicts.json`; apply it with
+   `gao-idl cards import cards.json verdicts.json --spec spec.json` and resolve every problem and
+   disputed choice it prints. Never write or import a verdicts file yourself.

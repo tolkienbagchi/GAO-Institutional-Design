@@ -38,6 +38,12 @@ docs = ["mkdocs>=1.6,<2", "mkdocs-material>=9.5", "mkdocstrings[python]>=0.25"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gao_idl"]
+# the review page's files are package data, read with importlib.resources (listed explicitly)
+artifacts = [
+    "src/gao_idl/review/page.html",
+    "src/gao_idl/review/page.css",
+    "src/gao_idl/review/page.js",
+]
 
 [tool.hatch.build.targets.sdist]
 include = [

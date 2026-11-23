@@ -61,12 +61,12 @@ gao-idl replay run.json                               # rebuild it from the log,
 
 ```bash
 gao-idl spec check examples/specs/auction.json --cards examples/cards/auction.json
-gao-idl cards show examples/cards/auction.json --spec examples/specs/auction.json
+gao-idl review page examples/specs/auction.json --cards examples/cards/auction.json --out review.html
 ```
 
-check that an environment is the institution its designer described: a spec of the design, a page
-rendered from the built environment, and worked scenarios a person confirms or rejects. See
-`docs/verifying.md`.
+check that an environment is the institution its designer described: a spec of the design, and a
+self-contained review page (no server, no network) in which the designer reads the design and
+confirms or rejects worked scenarios one at a time. See `docs/verifying.md`.
 
 ## License
 
