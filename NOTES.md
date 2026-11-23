@@ -1992,3 +1992,15 @@ Made by the reviewer (Claude) on `m10-fixup` after opening the delivered pages i
   has only an honest verifier). Parameters: auction `reserve`, `rule`, `reveal_bids`; PD `rounds`, `matching`;
   carbon market `rounds`, `p_audit`, `penalty`, `fee`, `reputation_visible`, `settle_on`. `market_form` is not
   offered: the carbon-market spec covers `per_project` only.
+
+## 2026-11-23 — M11 task 1: storage (`service/store.py`)
+- `Store(path, clock=time.time, token_source=new_token)`: the third parameter is an addition to the pinned
+  signature, so tests can fix tokens ("random tokens only through a token source passed in"). `init_db(path,
+  clock=time.time)` likewise takes the clock it writes into `schema_version.applied`; it returns the versions it
+  applied (`[]` when current) so "reopening does not migrate again" is testable.
+- "One connection per request": `Store.open()` is a context manager yielding a `Db` around one fresh `sqlite3`
+  connection (autocommit, foreign keys on, 10 s busy timeout); the app opens exactly one per request. `add_runs`
+  writes all runs of a request in one transaction. WAL is set once, by `init_db` (it persists in the file).
+- Tables as in the brief. The column for the cast is `cast_name` (`cast` is an SQL keyword). Verdicts are appended,
+  never updated: the latest per user and card (by row id, not by `created`, which a coarse or fake clock can tie)
+  is the one that counts. A database at a newer schema version than the code is refused.
