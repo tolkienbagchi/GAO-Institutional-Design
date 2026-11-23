@@ -1,5 +1,6 @@
 """Each route's happy path and each error code, by calling the WSGI application directly."""
 
+import json
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -311,6 +312,11 @@ def test_pages_answer_without_a_token(world: dict[str, Any]) -> None:
         assert label in run
     assert 'type="number" id="param-reserve" step="any" min="0" max="15"' in run
     assert "Everyone bids 80% of their value" in run
+    # what the runs table needs to say "Reserve price 5" and name a cast: design values, labels
+    data = json.loads(run.split('id="gao-entry">', 1)[1].split("</script>", 1)[0])
+    assert data["design"] == {"reserve": 2.0, "rule": "second_price", "reveal_bids": False}
+    assert data["casts"]["shading"] == "Everyone bids 80% of their value"
+    assert 'id="results"' in run and 'id="run-detail"' in run
     review = call(app, "GET", "/environments/auction/review").text
     assert "/api/environments/auction/verdicts" in review and "Authorization" in review
     assert "connect-src 'self'" in review

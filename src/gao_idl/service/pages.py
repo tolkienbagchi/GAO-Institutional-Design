@@ -45,6 +45,13 @@ fieldset { border: 1px solid var(--line); border-radius: 6px; margin: 0 0 1rem;
 .cast { display: block; margin: 0 0 0.5rem; }
 .run-result { border-top: 2px solid var(--line); margin-top: 1.5rem; padding-top: 0.5rem; }
 .run-result h3 { margin-top: 0.4rem; }
+.runs-wrap { overflow-x: auto; }
+table.runs { border-collapse: collapse; font-size: 0.95rem; }
+table.runs caption { text-align: left; color: var(--muted); padding-bottom: 0.3rem; }
+table.runs th, table.runs td { padding: 0.3rem 0.7rem 0.3rem 0; text-align: left;
+  border-bottom: 1px solid var(--line); vertical-align: baseline; }
+table.runs .num { text-align: right; font-variant-numeric: tabular-nums; }
+table.runs button { padding: 0.1rem 0.6rem; }
 .signed-out[hidden], .signed-in[hidden] { display: none; }
 """
 
@@ -172,7 +179,9 @@ RUN_JS = r"""
   var entry = g.readJson("gao-entry");
   if (!g.showSignedIn()) { return; }
   var results = document.getElementById("results");
+  var detail = document.getElementById("run-detail");
   var runButton = document.getElementById("run");
+  var opened = null;
 
   function value(p) {
     var input = document.getElementById("param-" + p.name);
@@ -199,32 +208,111 @@ RUN_JS = r"""
     return { params: params, cast: cast, seeds: seeds };
   }
 
-  function describe(run) {
-    var s = run.summary;
-    var ending = s.failed ? "the run failed" : "the run ended through " + s.exit_port;
-    var params = Object.keys(run.params).sort().map(function (k) {
-      return k + " = " + JSON.stringify(run.params[k]);
-    }).join(", ");
-    return "Cast " + run.cast + ", seed " + run.seed + "; " + ending + ". Parameters: " +
-      params + ".";
+  function casting(name) {
+    return Object.prototype.hasOwnProperty.call(entry.casts, name) ? entry.casts[name] : name;
   }
 
-  function show(run) {
-    var box = g.el("article", "run-result");
-    box.appendChild(g.el("h3", "", "Run " + run.id + ": " + run.title));
-    box.appendChild(g.el("p", "muted", describe(run)));
-    box.appendChild(g.serverMarkup(run.html));
-    results.appendChild(box);
+  function shown(v) {
+    if (v === true) { return "yes"; }
+    if (v === false) { return "no"; }
+    return typeof v === "string" || typeof v === "number" ? String(v) : JSON.stringify(v);
+  }
+
+  // what this run changed from the design, in the words of the form: "Reserve price 5"
+  function changes(run) {
+    var out = [];
+    entry.params.forEach(function (p) {
+      if (!Object.prototype.hasOwnProperty.call(run.params, p.name)) { return; }
+      var v = run.params[p.name];
+      if (JSON.stringify(v) !== JSON.stringify(entry.design[p.name])) {
+        out.push(p.label + " " + shown(v));
+      }
+    });
+    return out.length ? out.join("; ") : "as designed";
+  }
+
+  function payoff(v) {
+    if (typeof v !== "number") { return ""; }
+    return String(Math.round(v * 100) / 100);
+  }
+
+  function open(run, button) {
+    while (detail.firstChild) { detail.removeChild(detail.firstChild); }
+    if (opened) { opened.setAttribute("aria-expanded", "false"); opened.textContent = "Show"; }
+    if (opened === button) { opened = null; return; }
+    opened = button;
+    button.setAttribute("aria-expanded", "true");
+    button.textContent = "Hide";
+    g.api("/api/runs/" + run.id).then(function (full) {
+      if (opened !== button) { return; }
+      var box = g.el("article", "run-result");
+      var head = g.el("h3", "", "Run " + full.id);
+      head.tabIndex = -1;
+      box.appendChild(head);
+      box.appendChild(g.el("p", "muted", "Cast: " + casting(full.cast) + ". Seed " + full.seed +
+        ". Changed from the design: " + changes(full) + "."));
+      box.appendChild(g.serverMarkup(full.html));
+      detail.appendChild(box);
+      head.focus();
+    }).catch(function (err) { g.say("Could not load run " + run.id + " (" + err.message + ")."); });
+  }
+
+  // one row per run, so runs can be compared; a run's steps open below on demand
+  function table(mine) {
+    var agents = [];
+    mine.forEach(function (r) {
+      Object.keys(r.summary.payoffs || {}).forEach(function (a) {
+        if (agents.indexOf(a) < 0) { agents.push(a); }
+      });
+    });
+    agents.sort(function (x, y) { return x.localeCompare(y, undefined, { numeric: true }); });
+    var wrap = g.el("div", "runs-wrap");
+    var t = g.el("table", "runs");
+    t.appendChild(g.el("caption", "", "Payoff of each participant in each run, newest first"));
+    var head = g.el("tr");
+    ["Run", "Cast", "Seed", "Changed from the design"].concat(agents, ["Ended", ""])
+      .forEach(function (name, i) {
+        var th = g.el("th", i >= 4 && i < 4 + agents.length ? "num" : "", name);
+        th.scope = "col";
+        head.appendChild(th);
+      });
+    var thead = g.el("thead"); thead.appendChild(head); t.appendChild(thead);
+    var body = g.el("tbody");
+    mine.forEach(function (r) {
+      var row = g.el("tr");
+      var first = g.el("th", "", r.id); first.scope = "row"; row.appendChild(first);
+      row.appendChild(g.el("td", "", casting(r.cast)));
+      row.appendChild(g.el("td", "", r.seed));
+      row.appendChild(g.el("td", "", changes(r)));
+      agents.forEach(function (a) {
+        row.appendChild(g.el("td", "num", payoff((r.summary.payoffs || {})[a])));
+      });
+      row.appendChild(g.el("td", "", r.summary.failed ? "stopped early" : "finished"));
+      var cell = g.el("td");
+      var button = g.el("button", "", "Show");
+      button.type = "button";
+      button.setAttribute("aria-expanded", "false");
+      button.setAttribute("aria-label", "Show run " + r.id + " step by step");
+      button.addEventListener("click", function () { open(r, button); });
+      cell.appendChild(button); row.appendChild(cell);
+      body.appendChild(row);
+    });
+    t.appendChild(body);
+    wrap.appendChild(t);
+    return wrap;
   }
 
   function load() {
     return g.api("/api/runs").then(function (data) {
       var mine = data.runs.filter(function (r) { return r.slug === entry.slug; }).slice(0, 20);
       while (results.firstChild) { results.removeChild(results.firstChild); }
+      while (detail.firstChild) { detail.removeChild(detail.firstChild); }
+      opened = null;
       if (!mine.length) { results.appendChild(g.el("p", "muted", "No runs yet.")); return null; }
-      return mine.reduce(function (chain, r) {
-        return chain.then(function () { return g.api("/api/runs/" + r.id).then(show); });
-      }, Promise.resolve());
+      results.appendChild(table(mine));
+      results.appendChild(g.el("p", "muted small",
+        "Your 20 newest runs. Press Show to see a run step by step."));
+      return null;
     }).catch(function (err) { g.say("Could not load your runs (" + err.message + ")."); });
   }
 
@@ -404,7 +492,7 @@ def _param_field(p: Any, current: Any) -> str:
 
 def run_page(entry: Entry, spec: EnvSpec) -> str:
     """The run page of ``entry``: a form from its ``ParamSpec``s, a cast picker, and the user's
-    results (loaded with the token), each shown as a run view with its diagram folded."""
+    runs (loaded with the token) as a table of payoffs, each opening as a run view on demand."""
     params = "".join(_param_field(p, spec.params.get(p.name)) for p in entry.params)
     casts = "".join(
         f'<label class="cast"><input type="radio" name="cast" value="{esc(c.name)}"'
@@ -429,11 +517,17 @@ def run_page(entry: Entry, spec: EnvSpec) -> str:
             "Run</button></div>",
             "<h2>Your runs of this environment</h2>",
             '<div id="results" aria-live="polite"></div>',
+            '<div id="run-detail"></div>',
             f'<p class="muted small"><a href="/environments/{esc(entry.slug)}/review">'
             "Review the design and its cards</a></p>",
         ]
     )
-    data = {"slug": entry.slug, "params": [p.model_dump(mode="json") for p in entry.params]}
+    data = {
+        "slug": entry.slug,
+        "params": [p.model_dump(mode="json") for p in entry.params],
+        "design": {p.name: spec.params.get(p.name) for p in entry.params},
+        "casts": {c.name: c.label for c in entry.casts},
+    }
     return _shell(f"Run: {entry.title}", body, RUN_JS, data)
 
 

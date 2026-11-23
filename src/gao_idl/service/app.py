@@ -378,15 +378,16 @@ class _Service:
             or (views[c.id].stale and c.verdict == "confirmed")
         )
         db, user = req.db, req.user
-        for c in cards:
-            if c.id not in stale:
-                db.add_card_verdict(
-                    user, entry.slug, c.id, c.verdict, c.note, c.outcome_hash, spec.title
+        with db.transaction():  # a verdicts file is stored whole or not at all
+            for c in cards:
+                if c.id not in stale:
+                    db.add_card_verdict(
+                        user, entry.slug, c.id, c.verdict, c.note, c.outcome_hash, spec.title
+                    )
+            for a in choices:
+                db.add_assumption_verdict(
+                    user, entry.slug, a.index, a.text, a.verdict, a.note, spec.title
                 )
-        for a in choices:
-            db.add_assumption_verdict(
-                user, entry.slug, a.index, a.text, a.verdict, a.note, spec.title
-            )
         if stale:
             raise HttpError(
                 409,

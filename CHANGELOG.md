@@ -65,7 +65,9 @@ changed), and runs an entry with changed parameters and a named cast of scripted
 seeds within caps (10 seeds, 2,000 decisions per run, 10 seconds per request), shown as a card
 shows a run. Bearer tokens per user, stored only as hashes; parameterised SQL; bodies over 1 MB
 refused; nothing a client names is ever imported. `gao_idl.review.render_run` (one run as a card
-shows it). Command line: `gao-idl service init|add-user|serve|export-verdicts`. `docs/service.md`.
+shows it). Command line: `gao-idl service init|add-user|serve|export-verdicts`. `docs/service.md`. The run
+page lists runs in one table for comparison and opens a run on demand; the review page, when it has
+a server, asks it for the answers it already holds; a verdicts file is stored whole or not at all.
 
 Replace "Unreleased" with the date when the tag is cut.
 

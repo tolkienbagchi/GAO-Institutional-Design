@@ -186,6 +186,17 @@ class Db:
         self._conn = conn
         self._clock = clock
 
+    @contextmanager
+    def transaction(self) -> Iterator[None]:
+        """Everything written inside is kept together or not at all."""
+        self._conn.execute("BEGIN IMMEDIATE")
+        try:
+            yield
+        except BaseException:
+            self._conn.execute("ROLLBACK")
+            raise
+        self._conn.execute("COMMIT")
+
     # ---------------------------------------------------------------- users
 
     def add_user(self, name: str, token: str) -> User:

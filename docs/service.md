@@ -121,9 +121,16 @@ one. `/health` needs no token. **Page routes are the exception:** `/`, `/login`,
 browser navigating to a page cannot send the header. These pages carry no user data: they show
 library data (titles, the parameter form, the casts, the library's review bundle) and fetch
 everything about the user from `/api/...`, sending the token from `sessionStorage`. The review page
-is the M10 page unchanged plus one small script that adds the token to the verdicts it posts. In the
-browser, the review page restores earlier answers from its own `localStorage` (as in M10); the
-server's copy is what `GET /api/environments/<slug>/verdicts` returns. A page request that does
+is the review page of `gao-idl review page` plus one small script that adds the token to its
+requests. When it opens it asks `GET /api/environments/<slug>/verdicts` once and shows the answers
+the server already holds for this user (given on any device) wherever this browser has none of its
+own; an answer for a card whose outcome has changed since is left out. "Remove answer" on the page
+is local only: the server keeps the last verdict it was sent, so a removed answer returns on the
+next visit until another answer replaces it.
+
+The run page lists the user's 20 newest runs of the environment in one table (cast, seed, what was
+changed from the design, each participant's payoff, whether the run finished) so runs can be
+compared; "Show" opens one run step by step below the table. A page request that does
 carry a token must carry a valid one (401 otherwise); the review page then shows that user's
 verdicts.
 

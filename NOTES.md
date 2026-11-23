@@ -2098,3 +2098,21 @@ Made by the reviewer (Claude) on `m10-fixup` after opening the delivered pages i
 - **Not in the brief, written in `docs/service.md`:** a token can be revoked only by deleting the user's row; the
   proxy must keep the `Host` header (the 403 origin check compares `Origin` with `Host`); the WSGI server's request
   timeout must exceed the 10 s run cap.
+
+## After M11: the reviewer's changes
+
+- **The run page is a table of runs, not a stack of run views.** Three seeds of the auction gave three identical screens and
+  nothing to compare. Now one row per run (cast by its label, seed, what differs from the design in the form's own labels, each
+  participant's payoff, finished or stopped early) and a Show button that opens that run below. The table is built from
+  `GET /api/runs` alone; a run's view is fetched when opened. The page's embedded data gained `design` and `casts`.
+- **The review page asks its server for earlier answers.** `page.js` gained a pure `mergeServer(state, bundle, verdicts)` (tested
+  under node) and one `GET` to `config.api` at start. Server answers fill in only where the browser has none, and only if they
+  still fit (same outcome hash, same choice text, the same validity checks as `restore`). This changes `render_page`'s output,
+  so the pinned hashes (`tests/service/golden/pages.json`, renamed from `m10_pages.json`) were rewritten on purpose. A page made
+  with the hidden `--api` now also sends one `GET` there; a failed one is ignored.
+- **"Remove answer" is still local only**: the service has no way to withdraw a verdict, so a removed answer comes back from the
+  server on the next visit. Left as is and documented in `docs/service.md`.
+- **A run shown on its own says so under its bars** ("scaled to this run's largest payoff"); cards keep "one scale for every card
+  on this page". The run header no longer prints raw parameters or "ended through done".
+- **A verdicts file is stored in one transaction** (`Db.transaction()`): whole or not at all.
+

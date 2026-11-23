@@ -131,6 +131,41 @@ assert.strictEqual(back.reviewer, "Ann Example");
 assert.deepStrictEqual(P.restore(null, bundle), P.initialState());
 assert.deepStrictEqual(P.restore("junk", bundle), P.initialState());
 
+// answers held by a server fill in where this browser has none, if they still fit
+const fresh = P.initialState();
+const hash = (i) => bundle.cards[i].outcome_hash;
+const choice = bundle.spec.assumptions[open[0].index];
+const held = {
+  reviewer: "Ann Example",
+  cards: [
+    { id: id(1), verdict: "confirmed", note: "", outcome_hash: hash(1) },
+    { id: id(2), verdict: "rejected", note: "not this", outcome_hash: hash(2) },
+    { id: id(3), verdict: "confirmed", note: "", outcome_hash: "0".repeat(64) },   // other outcome
+    { id: id(0), verdict: "confirmed", note: "", outcome_hash: hash(0) },          // stale card
+    { id: "no-such-card", verdict: "confirmed", note: "", outcome_hash: hash(1) },
+    { id: "__proto__", verdict: "confirmed", note: "", outcome_hash: hash(1) },
+  ],
+  assumptions: [
+    { index: open[0].index, text: choice.text, verdict: "agreed", note: "" },
+    { index: open[1].index, text: "other words", verdict: "agreed", note: "" },
+    { index: 999, text: "x", verdict: "agreed", note: "" },
+  ],
+};
+const merged = P.mergeServer(fresh, bundle, held);
+assert.deepStrictEqual(Object.keys(merged.cards).sort(), [id(1), id(2)].sort());
+assert.strictEqual(merged.cards[id(2)].note, "not this");
+assert.deepStrictEqual(Object.keys(merged.assumptions), [String(open[0].index)]);
+assert.strictEqual(merged.reviewer, "Ann Example");
+assert.deepStrictEqual(fresh, P.initialState());                       // the input is untouched
+// an answer given here is never replaced, and nothing new means the same object back
+let mine = P.initialState();
+mine.cards[id(1)] = { verdict: "rejected", note: "mine" };
+const kept = P.mergeServer(mine, bundle, held);
+assert.strictEqual(kept.cards[id(1)].note, "mine");
+assert.strictEqual(P.mergeServer(merged, bundle, held), merged);
+assert.strictEqual(P.mergeServer(fresh, bundle, null), fresh);
+assert.strictEqual(P.mergeServer(fresh, bundle, { cards: "junk", assumptions: 3 }), fresh);
+
 process.stdout.write(JSON.stringify(out));
 """
 

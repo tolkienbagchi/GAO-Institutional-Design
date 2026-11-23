@@ -1,0 +1,26 @@
+{
+  "auction": {
+    "bytes": 350745,
+    "sha256": "352da5a3f16e597777fb75276b0b5e90dd514a700014e6dfdde360fcbf1834e7"
+  },
+  "auction+api": {
+    "bytes": 350777,
+    "sha256": "da10c1b03a34f271aef7bebc96b0a231f2786d53fc63bf059f8f06d526f091ca"
+  },
+  "pd": {
+    "bytes": 388639,
+    "sha256": "4e40dea7b458010489c4f3866bb75719aa70679878b3a582eda1a71dd7f14cc9"
+  },
+  "pd+api": {
+    "bytes": 388666,
+    "sha256": "7e78634b153064acca349eac3113a784e5ad6cc9e733bff0cdb33922797ae1cf"
+  },
+  "vcm": {
+    "bytes": 1065646,
+    "sha256": "799b088e607aa79ae9a8b52a09b352e010323301380cc5765e8ffc84091f425f"
+  },
+  "vcm+api": {
+    "bytes": 1065674,
+    "sha256": "d8542cef72857537d315e6722ccf0beddeb944a013a96e3e0a3cfdcbbb9b6804"
+  }
+}

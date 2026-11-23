@@ -128,3 +128,19 @@ def test_hostile_text_is_stored_as_data(tmp_path: Path) -> None:
         assert db.user_by_name(name) == user
         (v,) = db.card_verdicts(user, "auction")
         assert v.note == note and v.card_id == "c'; --"
+
+
+def test_a_transaction_keeps_everything_or_nothing(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    user, _ = store.add_user("ann")
+    with store.open() as db:
+        with pytest.raises(RuntimeError), db.transaction():
+            db.add_card_verdict(user, "auction", "a", "confirmed", "", "h")
+            db.add_assumption_verdict(user, "auction", 0, "t", "agreed", "")
+            raise RuntimeError("the request died half way")
+        assert db.card_verdicts(user, "auction") == []
+        assert db.assumption_verdicts(user, "auction") == []
+        with db.transaction():
+            db.add_card_verdict(user, "auction", "a", "confirmed", "", "h")
+            db.add_card_verdict(user, "auction", "b", "rejected", "no", "h")
+        assert [v.card_id for v in db.card_verdicts(user, "auction")] == ["a", "b"]
